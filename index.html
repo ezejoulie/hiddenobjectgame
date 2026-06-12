@@ -262,6 +262,7 @@ body.touch #tip.show{transform:translateX(-50%) translateY(0)}
 @keyframes escudoPop{40%{transform:scale(1.1)}}
 body.touch #escudoUI{right:14px;bottom:120px}
 
+/* botón escudo (táctil) */
 /* botón escudo DEFENDERSE (táctil) */
 #btnJump{position:absolute;right:max(22px,env(safe-area-inset-right));bottom:26px;width:94px;height:94px;border-radius:50%;
   background:linear-gradient(180deg,#5BC4F0,#1F95CC 55%,#1A80B0);color:#fff;
@@ -299,6 +300,16 @@ body.touch #btnJump{display:flex}
 #defensaTxt.show{animation:defPop 1.1s cubic-bezier(.34,1.56,.64,1) forwards}
 @keyframes defPop{0%{transform:translate(-50%,-50%) scale(0)}25%{transform:translate(-50%,-50%) scale(1.15)}
   45%{transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+
+/* velo gris de lluvia */
+#lluviaVelo{position:absolute;inset:0;pointer-events:none;z-index:6;opacity:0;
+  background:linear-gradient(180deg,rgba(70,95,115,.34),rgba(70,95,115,.16));transition:opacity 1.4s}
+#lluviaVelo.show{opacity:1}
+
+/* peligro: tinte rojo progresivo cuando Denguín ataca */
+#peligro{position:absolute;inset:0;pointer-events:none;z-index:7;opacity:0;
+  background:radial-gradient(ellipse at center,rgba(232,75,72,0) 38%,rgba(200,30,30,.62) 100%);
+  transition:opacity .12s linear}
 
 /* flash picadura */
 #flash{position:absolute;inset:0;pointer-events:none;z-index:8;opacity:0;
@@ -467,6 +478,8 @@ body.touch #btnJump{display:flex}
     <div id="alerta">¡Denguín quiere picarte! ¡Activá el escudo!</div>
     <div id="defensaTxt">¡DOBLE DEFENSA!</div>
     <div id="flash"></div>
+  <div id="peligro"></div>
+  <div id="lluviaVelo"></div>
     <div id="hint">WASD para caminar · ESPACIO activa el escudo · arrastrá para mirar</div>
   </div>
   <div id="tray"></div>
@@ -796,16 +809,28 @@ const ASSETS={
   bote:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/5135f625-059c-4abd-90ae-d340b2b1ddb0.glb","assets/bote.glb"],alto:.8},
   carretilla:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/3cb5db3b-1393-4d5a-95f4-79ded4b10994.glb","assets/carretilla.glb"],alto:.9},
   conservadora:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/a64000b6-fba9-4ade-93db-0db9a5177509.glb","assets/conservadora.glb"],alto:.68},
+  cerca:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/1690500c-2641-4e8d-a8b6-0e0f60ab48d9.glb","assets/cerca.glb"],alto:1.0},
+  arbusto:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/fba18785-8c06-4d55-bf87-3a60916c229d.glb","assets/arbusto.glb"],alto:1.1},
+  roca:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/023bd0b4-495f-4483-9bee-f3de5c58112a.glb","assets/roca.glb"],alto:.8},
+  banco:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/e9a56aee-483f-4f64-a32c-241e7a72f94b.glb","assets/banco.glb"],alto:1.0},
+  cantero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/44558271-09e4-4644-8ec7-ebd46dc3120e.glb","assets/cantero.glb"],alto:.6},
+  perro:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/fc7764b2-2b75-4c0d-b96f-3dd260711fc9.glb","assets/perro.glb"],alto:.85},
+  piscina:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/db9df476-b047-410f-994e-be16b57ce7aa.glb","assets/piscina.glb"],alto:.45},
+  hamacas:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/57d2c7c4-0fe5-44b0-a225-100f02dc8c65.glb","assets/hamacas.glb"],alto:2.3},
+  arenero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/96f4d585-c334-4fb6-96c6-6558676a20d3.glb","assets/arenero.glb"],alto:.5},
+  castillo:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/41c888c9-1607-4773-b995-f7f5ca2b5dd8.glb","assets/castillo.glb"],alto:.8},
+  velero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/a8e12138-0b6a-4cfe-8f29-34a30d452fa5.glb","assets/velero.glb"],alto:2.2},
   regadera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/57daab7e-a92c-47e9-b46c-eef6440faf77.glb","assets/regadera.glb"],alto:.68},
 };
-const TEXTURAS={ pasto:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044206_56015de1-3c48-43e9-9021-c07e45f3e506.png", arena:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044212_e1b3d2d9-822e-455f-b1ce-b69403784a46.png", baldosa:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044218_3bd9745b-000f-4bc5-830a-6d01c95c1c5d.png" };
+const TEXTURAS={ cielo_dia:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_051833_39ae308d-751d-4bc6-bad2-0c7620f55cf6.png", cielo_atardecer:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_051840_82b0f4b2-6da4-4052-a3cc-2b5f6468eea6.png", pasto:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044206_56015de1-3c48-43e9-9021-c07e45f3e506.png", arena:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044212_e1b3d2d9-822e-455f-b1ce-b69403784a46.png", baldosa:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044218_3bd9745b-000f-4bc5-830a-6d01c95c1c5d.png" };
 const TEXCACHE={};
 function texturaReal(nombre,m){
   const url=TEXTURAS[nombre]; if(!url||url.indexOf("http")!==0) return;
   const ap=tx=>{ m.map=tx; m.needsUpdate=true; };
   if(TEXCACHE[nombre]) return ap(TEXCACHE[nombre]);
+  const esCielo=nombre.indexOf("cielo")===0;
   new T.TextureLoader().load(url,tx=>{
-    tx.wrapS=tx.wrapT=T.RepeatWrapping; tx.repeat.set(7,7);
+    if(!esCielo){ tx.wrapS=tx.wrapT=T.RepeatWrapping; tx.repeat.set(7,7); }
     tx.encoding=T.sRGBEncoding;
     TEXCACHE[nombre]=tx; ap(tx);
   });
@@ -969,21 +994,40 @@ function pino3(s=1,c=0x3E9A38){
   const copa=grp(at(cone(.95*s,1.3*s,c,10),0,1.4*s,0), at(cone(.75*s,1.1*s,c,10),0,2.1*s,0), at(cone(.52*s,.9*s,c,10),0,2.75*s,0));
   return grp(tronco,sway(copa,.025,1.1));
 }
-function arbusto3(s=1){ const g=grp(at(sph(.45*s,0x58C24B),0,.3*s,0),at(sph(.34*s,0x3E9A38),.4*s,.24*s,.1),at(sph(.34*s,0x4CAF50),-.4*s,.24*s,-.1));
+function arbusto3(s=1){
+  const g=instanciaGLB("arbusto");
+  if(g){ g.scale.multiplyScalar(s); return g; }
+  return arbusto3F(s);
+}
+function arbusto3F(s=1){ const g=grp(at(sph(.45*s,0x58C24B),0,.3*s,0),at(sph(.34*s,0x3E9A38),.4*s,.24*s,.1),at(sph(.34*s,0x4CAF50),-.4*s,.24*s,-.1));
   return sway(g,.02,1.4); }
-function flores3(){ const g=grp(); const cols=[0xFF5E5B,0xFFC93C,0x9B59B6,0xFF8AC2,0xFF8A3D];
+function flores3(){
+  const g=instanciaGLB("cantero"); if(g) return g;
+  return flores3F();
+}
+function flores3F(){ const g=grp(); const cols=[0xFF5E5B,0xFFC93C,0x9B59B6,0xFF8AC2,0xFF8A3D];
   for(let i=0;i<6;i++){ const x=(Math.random()-.5)*1.6, z=(Math.random()-.5)*1.6;
     const f=grp(at(cyl(.02,.02,.32,0x3E9A38,5),0,.16,0), at(sph(.085,cols[i%5],8,7),0,.36,0), at(sph(.035,0xFFF6B0,6,6),0,.36,.07));
     f.position.set(x,0,z); g.add(sway(f,.08,2+Math.random())); }
   return g; }
 function tronco3(largo=2.6,ry=0){
+  const g=instanciaGLB("roca");
+  if(g){ g.scale.set(largo*.62,.7,.85); g.rotation.y=ry; return g; }
+  return tronco3F(largo,ry);
+}
+function tronco3F(largo=2.6,ry=0){
   const c=cyl(.34,.38,largo,0x9A6B45,12); c.rotation.z=Math.PI/2; c.position.y=.36;
   const t1=new T.Mesh(new T.CircleGeometry(.34,12),mat(0xC59A6B)); t1.rotation.y=Math.PI/2; t1.position.set(largo/2+.01,.36,0);
   const t2=t1.clone(); t2.rotation.y=-Math.PI/2; t2.position.x=-largo/2-.01;
   const rama=cyl(.09,.12,.7,0x9A6B45,8); rama.rotation.z=.6; rama.position.set(.4,.75,0);
   const g=grp(c,t1,t2,rama); g.rotation.y=ry; return g;
 }
-function roca3(s=1){ const r=mesh(new T.IcosahedronGeometry(.4*s,0),mat(0xB8C2CC)); r.position.y=.25*s; r.scale.y=.7; return r; }
+function roca3(s=1){
+  const g=instanciaGLB("roca");
+  if(g){ g.scale.multiplyScalar(s); return g; }
+  return roca3F(s);
+}
+function roca3F(s=1){ const r=mesh(new T.IcosahedronGeometry(.4*s,0),mat(0xB8C2CC)); r.position.y=.25*s; r.scale.y=.7; return r; }
 function cerca3(len,ry=0){
   const g=grp(); const n=Math.max(2,Math.round(len/1.5));
   for(let i=0;i<=n;i++){ const p=box(.13,.85,.13,0xFFF1D8); p.position.set(-len/2+i*(len/n),.42,0);
@@ -1046,6 +1090,10 @@ function tobogan3F(){
   return g;
 }
 function banco3(){
+  const g=instanciaGLB("banco"); if(g) return g;
+  return banco3F();
+}
+function banco3F(){
   return grp(at(box(1.8,.1,.5,0xD2885A),0,.5,0),at(box(1.8,.5,.08,0xD2885A),0,.85,-.24),
     at(box(.1,.5,.45,0x9A6B45),-.78,.25,0),at(box(.1,.5,.45,0x9A6B45),.78,.25,0));
 }
@@ -1206,7 +1254,7 @@ const NIVELES=[
 
 const W=26;
 const LV3D=[
-{ tex:"pasto", cielo:["#7EC8F2","#BDE6F8","#EAF8E2"], sol:[30,38,-40], niebla:0xBDE6F8, suelo:["#cfe09a","#b8cc82","#a3bd6e"],
+{ tex:"pasto", cieloPano:"cielo_dia", cielo:["#7EC8F2","#BDE6F8","#EAF8E2"], sol:[30,38,-40], niebla:0xBDE6F8, suelo:["#cfe09a","#b8cc82","#a3bd6e"],
   build(s,col){
     const casa=at(casa3(),-13,0,-13,.5); s.add(casa); col.push({x:-13,z:-13,r:4.3});
     s.add(at(mesa3(),5,0,-7,.4)); col.push({x:5,z:-7,r:1.1});
@@ -1218,12 +1266,14 @@ const LV3D=[
     s.add(at(roca3(1.2),-19,0,-4));
     s.add(at(tronco3(2.8,.5),11,0,-2)); col.push({x:11,z:-2,r:1.4});
     s.add(at(roca3(1.1),-6,0,4)); col.push({x:-6,z:4,r:.8});
+    const pe=instanciaGLB("perro"); if(pe){ pe.rotation.y=.8; s.add(at(pe,-8,0,-6)); col.push({x:-8,z:-6,r:.7}); }
+    const pi=instanciaGLB("piscina"); if(pi){ s.add(at(pi,8,0,4)); col.push({x:8,z:4,r:1.7}); }
   },
   barro:[[-2,-2,2.2],[10,9,2.6]],
-  spawns:[["florero",4.6,-7.2],["vaso",5.6,-6.7],["balde",-9.5,-9],["regadera",-15.5,-8.5],["botella",2,3],
+  spawns:[["florero",3,-5],["vaso",6,-3.5],["balde",-9.5,-9],["regadera",-15.5,-8.5],["botella",2,3],
           ["maceta",-8.6,-8.8],["lata",17.5,15],["tacho",20,-16],["juguete",-4,12],["bebedero",-9.2,-17.8]] },
 
-{ tex:"pasto", cielo:["#6FC5EE","#B2E4F6","#E2F6D8"], sol:[-26,40,-36], niebla:0xB2E4F6, suelo:["#7ec96f","#67b35a","#8fdc80"],
+{ tex:"pasto", cieloPano:"cielo_dia", cielo:["#6FC5EE","#B2E4F6","#E2F6D8"], sol:[-26,40,-36], niebla:0xB2E4F6, suelo:["#7ec96f","#67b35a","#8fdc80"],
   build(s,col){
     [[-16,-14,1.5],[16,-16,1.2],[-19,8,1.1],[20,12,1.4],[2,-19,1.3]].forEach(([x,z,sc])=>{ s.add(at(arbol3(sc),x,0,z)); col.push({x,z,r:.75*sc}); });
     [[6,-8],[-8,4],[12,8],[-14,16],[18,-4],[0,14]].forEach(([x,z])=>s.add(at(arbusto3(1.1+Math.random()*.4),x,0,z)));
@@ -1238,7 +1288,7 @@ const LV3D=[
   spawns:[["cubierta",-15.5,-12.5],["carretilla",10,-14],["fuente",-2,-6],["maceta",7.5,-8.8],["balde",-19.5,9.5],
           ["botella",13,9],["charco",-9,9.5],["lona",4,18],["bidon",19,13.5],["lata",-13.5,17]] },
 
-{ tex:"baldosa", cielo:["#85CCF0","#C5EAF8","#F2EFE2"], sol:[34,40,-30], niebla:0xC5EAF8, suelo:["#d8d2c4","#c2bba9","#b5ad99"],
+{ tex:"baldosa", cieloPano:"cielo_dia", cielo:["#85CCF0","#C5EAF8","#F2EFE2"], sol:[34,40,-30], niebla:0xC5EAF8, suelo:["#d8d2c4","#c2bba9","#b5ad99"],
   build(s,col){
     s.add(at(escuela3(),0,0,-17));
     col.push({x:-5,z:-17,r:3.6},{x:0,z:-17,r:3.6},{x:5,z:-17,r:3.6});
@@ -1250,12 +1300,14 @@ const LV3D=[
     [[12,16],[-14,4]].forEach(([x,z])=>s.add(at(flores3(),x,0,z)));
     s.add(at(tronco3(2.4,.2),0,0,12)); col.push({x:0,z:12,r:1.3});
     s.add(at(roca3(1.2),-16,0,2)); col.push({x:-16,z:2,r:.9});
+    const ha=instanciaGLB("hamacas"); if(ha){ ha.rotation.y=.25; s.add(at(ha,-14,0,-2)); col.push({x:-14,z:-2,r:1.9}); }
+    const ar=instanciaGLB("arenero"); if(ar){ s.add(at(ar,12,0,6)); col.push({x:12,z:6,r:1.7}); }
   },
   barro:[[-4,3,2.4],[12,11,2.6]],
   spawns:[["canaleta",4.5,-13.2],["florero",-10.3,-6.8],["maceta",-3.5,-13.5],["balde",6.8,-13.6],["tacho",17,-16],
           ["charco",2,7],["pelota",-13,10],["botella",9.6,2.8],["juguete",-18,18],["vaso",8.6,1.4]] },
 
-{ tex:"pasto", cielo:["#6FC5EE","#AEE7F4","#DFF5D2"], sol:[-30,42,-28], niebla:0xAEE7F4, suelo:["#7ed66f","#69bd5b","#8fdc80"],
+{ tex:"pasto", cieloPano:"cielo_dia", cielo:["#6FC5EE","#AEE7F4","#DFF5D2"], sol:[-30,42,-28], niebla:0xAEE7F4, suelo:["#7ed66f","#69bd5b","#8fdc80"],
   build(s,col){
     const sendero=new T.Mesh(new T.PlaneGeometry(5,60),mat(0xF0E0B2));
     sendero.rotation.x=-Math.PI/2; sendero.rotation.z=.4; sendero.position.y=.012; sendero.receiveShadow=true; s.add(sendero);
@@ -1268,12 +1320,14 @@ const LV3D=[
     s.add(at(roca3(1.3),-15,0,-8), at(roca3(.9),6,0,18));
     s.add(at(tronco3(3,-.5),-14,0,5)); col.push({x:-14,z:5,r:1.5});
     s.add(at(roca3(1.2),10,0,-2)); col.push({x:10,z:-2,r:.9});
+    const ha2=instanciaGLB("hamacas"); if(ha2){ ha2.rotation.y=-.5; s.add(at(ha2,16,0,6)); col.push({x:16,z:6,r:1.9}); }
+    const ar2=instanciaGLB("arenero"); if(ar2){ s.add(at(ar2,-8,0,-14)); col.push({x:-8,z:-14,r:1.7}); }
   },
   barro:[[5,13,3],[-9,12,2.4],[-2,-9,2.2]],
   spawns:[["charco",-2,2],["botella",-12.5,2.8],["lata",11.5,4.6],["cubierta",17,-14],["bebedero",-5.2,-4.9],
           ["lona",-16,12],["balde",8.8,-8.6],["juguete",13.8,15],["fuente",-19,-10.5],["bidon",2,-16]] },
 
-{ tex:"arena", cielo:["#62BEEC","#9BDDF6","#FFF1D0"], sol:[28,36,-42], niebla:0x9BDDF6, suelo:["#fce9b8","#f2d795","#e8cc8c"],
+{ tex:"arena", cieloPano:"cielo_atardecer", cielo:["#62BEEC","#9BDDF6","#FFF1D0"], sol:[28,36,-42], niebla:0x9BDDF6, suelo:["#fce9b8","#f2d795","#e8cc8c"],
   build(s,col){
     const marGeo=new T.PlaneGeometry(W*2+12,20,28,8);
     const mar=new T.Mesh(marGeo,(()=>{const _m=new T.MeshPhongMaterial({color:0x2E9FD8,shininess:140,emissive:0x07314a,specular:0xcfeeff});_m.color.convertSRGBToLinear();_m.emissive.convertSRGBToLinear();return _m;})());
@@ -1284,10 +1338,13 @@ const LV3D=[
     s.add(at(sombrilla3(),5,0,-2)); col.push({x:5,z:-2,r:.5});
     s.add(at(sombrilla3(),-13,0,6,.8)); col.push({x:-13,z:6,r:.5});
     [[16,2,1.1],[-20,-2,1.3],[20,16,1.2],[-6,18,1]].forEach(([x,z,sc])=>{ s.add(at(palmera3(sc),x,0,z)); col.push({x,z,r:.5*sc}); });
-    [[0,8,1.4],[12,12,1.1],[-16,14,1.6],[8,-6,1]].forEach(([x,z,sc])=>s.add(at(duna3(sc),x,0,z)));
     s.add(at(roca3(1.4),22,0,-6), at(roca3(1),-22,0,12));
     s.add(at(tronco3(2.8,.9),1,0,2)); col.push({x:1,z:2,r:1.4});
+    const ca1=instanciaGLB("castillo"); if(ca1){ s.add(at(ca1,-2,0,12)); col.push({x:-2,z:12,r:1.0}); }
+    const ca2=instanciaGLB("castillo"); if(ca2){ ca2.rotation.y=2.1; ca2.scale.multiplyScalar(.8); s.add(at(ca2,16,0,4)); col.push({x:16,z:4,r:.85}); }
+    const ve=instanciaGLB("velero"); if(ve){ ve.rotation.y=.7; ve.position.set(9,.1,-26+8); s.add(ve); G._velero=ve; }
   },
+  velMul:.82,
   barro:[[-6,3,2.4],[9,9,2.2]],
   spawns:[["bote",-6,-9],["conservadora",6.5,-3.2],["balde",4,7.6],["pelota",-10,12],["botella",14.5,11.5],
           ["lata",-1.5,8.5],["cubierta",18.5,15],["charco",-17,-3],["lona",11,2.5],["vaso",-13.8,5.2]] },
@@ -1303,6 +1360,7 @@ let yaw=0,pitch=.42,camDist=CAM_BASE,fovBase=TOUCH?66:58;
 const keys={};
 const joy={ix:0,iy:0,activo:false};
 let items3=[],colliders=[],pickups=[],nubes=[],chispas=[],maris=[],pajaros=[],polvo=[],barros=[];
+const RAIN={activa:false,prox:0,fin:0,pts:null,gain:null};
 let vy=0,enSuelo=true,walkPhase=0,stepFlag=0;
 let escudo={mesh:null,hasta:0,cd:0};
 const dg={modo:"rondar",nextAtk:0,invuln:0,dest:null};
@@ -1406,6 +1464,7 @@ function construirNivel(i){
   colliders=[]; items3=[]; pickups=[]; nubes=[]; chispas=[]; maris=[]; pajaros=[]; polvo=[]; barros=[];
   sways.length=0; G._mar=null;
   nv.build(scene,colliders);
+  G._velMul=nv.velMul||1; G._noche=(i===4); RAIN.prox=0; if(RAIN.activa) pararLluvia(performance.now()*.001); if(RAIN.pts){ scene.add(RAIN.pts); RAIN.pts.visible=false; } G._velero=G._velero&&G._noche?G._velero:null;
   // zonas de barro / agua estancada que frenan
   if(nv.barro){ const esPlaya=(i===4);
     nv.barro.forEach(([bx,bz,br])=>{
@@ -1663,7 +1722,7 @@ function tick(){
     const dir=fw.multiplyScalar(iy).add(rt.multiplyScalar(ix)).normalize();
     let enBarro=false;
     for(const b of barros){ if(Math.hypot(player.position.x-b[0],player.position.z-b[1])<b[2]){ enBarro=true; break; } }
-    const vel=6.4*mag*(enBarro?.45:1);
+    const vel=6.4*mag*(enBarro?.45:1)*(G._velMul||1)*(RAIN.activa?.7:1);
     if(enBarro&&Math.random()<.15) puffPolvo("#8a6242");
     player.position.x+=dir.x*vel*dt;
     player.position.z+=dir.z*vel*dt;
@@ -1783,11 +1842,9 @@ function tick(){
       if(v.length()<1.5){ dg.modo="rondar"; dg.dest=null; ud.target=null; }
       else{ v.normalize().multiplyScalar(9*dt); denguin.position.add(v); }
     }
-    denguin.lookAt(player.position.x,1.2,player.position.z);
-    if(denguin.userData.esGLB){
-      denguin.rotation.z=Math.sin(t*(dg.modo==="ataque"?16:11))*.09;
-      denguin.rotation.x+=Math.sin(t*5)*.04;
-    }
+    const _dy=Math.atan2(player.position.x-denguin.position.x, player.position.z-denguin.position.z);
+    denguin.rotation.set(0,_dy,0);
+    denguin.rotation.z=Math.sin(t*(dg.modo==="ataque"?15:10))*.07;
     const flapSpd=dg.modo==="ataque"?52:38;
     const flap=Math.sin(t*flapSpd)*.9;
     ud.a1.rotation.z=.5+flap*.5; ud.a2.rotation.z=-.5-flap*.5;
@@ -1866,6 +1923,46 @@ function tick(){
     it.traverse(o=>{ if(o.userData&&o.userData.esAgua){
       const k=.9+Math.sin(t*2.5+it.userData.idx)*.08; o.scale.set(k,k,1); } }); }
 
+  // lluvia ocasional
+  if(G.jugando){
+    if(!RAIN.prox) RAIN.prox=t+16+Math.random()*14;
+    if(!RAIN.activa&&t>RAIN.prox) iniciarLluvia(t);
+    if(RAIN.activa&&t>RAIN.fin) pararLluvia(t);
+  }else if(RAIN.activa){ pararLluvia(t); }
+  if(RAIN.activa&&RAIN.pts){
+    RAIN.pts.position.set(player.position.x,0,player.position.z);
+    const pa=RAIN.pts.geometry.attributes.position;
+    for(let i=0;i<pa.count;i++){
+      let y=pa.getY(i)-dt*17;
+      if(y<0) y=14+Math.random()*2;
+      pa.setY(i,y);
+    }
+    pa.needsUpdate=true;
+  }
+  const lluviaK=RAIN.activa?.75:1;
+
+  // anochecer progresivo en la playa
+  if(G._luz){
+    const k=(G._noche&&G.jugando)?Math.max(0,Math.min(1,1-(G.tiempo/120))):0;
+    G._luz.intensity=(1.35-.95*k)*lluviaK;
+    G._hemi.intensity=(.75-.42*k)*lluviaK;
+    if(G._dome) G._dome.color.setRGB(1-.55*k,1-.5*k,1-.28*k);
+    if(G._estrellas) G._estrellas.material.opacity=k*.95;
+  }
+  if(G._velero){ G._velero.position.y=.1+Math.sin(t*.9)*.16; G._velero.rotation.z=Math.sin(t*.7)*.05; G._velero.rotation.x=Math.sin(t*1.1)*.04; }
+
+  // tinte rojo de peligro según cercanía de Denguín
+  const pel=$("#peligro");
+  if(pel){
+    let op=0;
+    if(G.jugando&&dg.modo==="ataque"){
+      const dPel=denguin.position.distanceTo(player.position);
+      op=Math.max(0,Math.min(1,(10-dPel)/10))*.55;
+      if(op>.12&&t>(G._latido||0)){ G._latido=t+.34+dPel*.06; beep(70,.09,"sine",.10); }
+    }
+    pel.style.opacity=op.toFixed(2);
+  }
+
   // barra de recuperación del escudo
   const eUI=$("#escudoUI");
   if(eUI){
@@ -1879,6 +1976,46 @@ function tick(){
   }
 
   renderer.render(scene,camera);
+}
+
+/* ---------- Lluvia ---------- */
+function crearLluvia(){
+  if(RAIN.pts) return;
+  const g=new T.BufferGeometry(), p=[];
+  for(let i=0;i<420;i++) p.push(-20+Math.random()*40, Math.random()*15, -20+Math.random()*40);
+  g.setAttribute("position",new T.Float32BufferAttribute(p,3));
+  const m=new T.PointsMaterial({color:0xBFE3F5,size:.13,transparent:true,opacity:.75,fog:true,depthWrite:false});
+  RAIN.pts=new T.Points(g,m); RAIN.pts.frustumCulled=false; scene.add(RAIN.pts);
+}
+function sonidoLluvia(on){
+  if(!AC) return;
+  if(on&&!RAIN.gain){
+    const dur=2, buf=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const srcN=AC.createBufferSource(); srcN.buffer=buf; srcN.loop=true;
+    const f=AC.createBiquadFilter(); f.type="lowpass"; f.frequency.value=900;
+    const gn=AC.createGain(); gn.gain.value=0;
+    srcN.connect(f); f.connect(gn); gn.connect(AC.destination); srcN.start();
+    gn.gain.linearRampToValueAtTime(G.mute?0:.045,AC.currentTime+1.2);
+    RAIN.gain=gn; RAIN.src=srcN;
+  }else if(!on&&RAIN.gain){
+    const gn=RAIN.gain, sN=RAIN.src;
+    gn.gain.linearRampToValueAtTime(0,AC.currentTime+1.2);
+    setTimeout(()=>{ try{sN.stop()}catch(e){} },1400);
+    RAIN.gain=null; RAIN.src=null;
+  }
+}
+function iniciarLluvia(t){
+  RAIN.activa=true; RAIN.fin=t+14+Math.random()*8;
+  crearLluvia(); RAIN.pts.visible=true;
+  $("#lluviaVelo").classList.add("show");
+  sonidoLluvia(true);
+}
+function pararLluvia(t){
+  RAIN.activa=false; RAIN.prox=t+25+Math.random()*20;
+  if(RAIN.pts) RAIN.pts.visible=false;
+  $("#lluviaVelo").classList.remove("show");
+  sonidoLluvia(false);
 }
 
 /* ---------- Agarrar (con combo) ---------- */
