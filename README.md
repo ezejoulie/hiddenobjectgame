@@ -18,6 +18,10 @@ Juego 3D educativo hecho con [three.js](https://threejs.org/): recorré el mundo
 
 En celulares y tablets el juego se juega **en horizontal**: si el dispositivo está en vertical aparece un aviso para girarlo y la partida queda pausada hasta volver a horizontal. Al empezar a jugar se intenta pasar a pantalla completa y bloquear la orientación apaisada (en los navegadores que lo permiten).
 
+### Pantalla completa en iPhone/iPad
+
+Safari de iOS no permite forzar pantalla completa desde la web. El juego es una **PWA instalable**: tocá **Compartir → Agregar a pantalla de inicio** y abrilo desde el ícono; se ve a pantalla completa real, sin barras del navegador. (El propio juego muestra este tip en la pantalla de inicio cuando detecta un iPhone sin instalar.)
+
 ## Stack
 
 - HTML/CSS/JS en un solo archivo (`index.html`), sin build.

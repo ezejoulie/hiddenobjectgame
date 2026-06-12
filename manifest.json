@@ -1,0 +1,19 @@
+{
+  "name": "Patrulla Anti-Dengue 3D",
+  "short_name": "Anti-Dengue",
+  "description": "Juego 3D educativo: encontrá los cacharros que juntan agua y frená al mosquito del dengue.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#9BDDF6",
+  "theme_color": "#27AAE1",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
