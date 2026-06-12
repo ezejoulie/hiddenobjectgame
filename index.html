@@ -234,6 +234,13 @@ body.touch #tip.show{transform:translateX(-50%) translateY(0)}
   color:#4A3203;border-radius:13px;padding:9px 16px;display:inline-flex;align-items:center;gap:8px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 4px 10px rgba(13,34,52,.18);font-size:.92rem}
 .intro-chip svg{width:17px;height:17px}
+/* explicativo de controles en la intro */
+#introControles{margin-top:12px;display:flex;flex-direction:column;gap:7px;align-items:center}
+#introControles .ctrl{display:flex;align-items:center;gap:7px;font-weight:700;font-size:.92rem;flex-wrap:wrap;justify-content:center}
+#introControles .ctrl b{color:var(--tinta)}
+#introControles kbd{font-family:'Baloo 2';font-weight:800;font-size:.8rem;background:#fff;color:var(--tinta);
+  border:1px solid rgba(21,50,75,.35);border-bottom-width:3px;border-radius:7px;padding:2px 8px;
+  box-shadow:0 1px 3px rgba(13,34,52,.15)}
 #certWrap{margin:14px auto;max-width:520px}
 #certWrap svg{width:100%;height:auto;border-radius:14px;box-shadow:0 10px 26px rgba(13,34,52,.2)}
 
@@ -361,6 +368,9 @@ body.touch #btnJump{display:flex}
   .modal h2{font-size:1.4rem}
   .intro-ic svg{width:42px;height:42px}
   .intro-chip{font-size:.78rem;padding:7px 12px}
+  #introControles{gap:4px;margin-top:8px}
+  #introControles .ctrl{font-size:.76rem}
+  #introControles kbd{font-size:.68rem;padding:1px 6px}
 
   /* --- HUD compacto: que el juego ocupe la mayor altura posible --- */
   #hud{padding:4px 10px;gap:8px}
@@ -490,6 +500,7 @@ body.touch #btnJump{display:flex}
     <div class="intro-ic" id="introEmoji"></div>
     <h2 id="introTitulo"></h2>
     <p style="font-weight:700;margin-top:6px" id="introDesc"></p>
+    <div id="introControles"></div>
     <p class="intro-chip"><span class="chip-reloj"></span>2 minutos · <span class="chip-lupa"></span>10 cacharros · acercate y los agarrás</p>
     <div class="row"><button class="btn" id="btnEmpezar">Empezar</button></div>
   </div>
@@ -820,6 +831,20 @@ const ASSETS={
   castillo:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/41c888c9-1607-4773-b995-f7f5ca2b5dd8.glb","assets/castillo.glb"],alto:.8},
   velero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/a8e12138-0b6a-4cfe-8f29-34a30d452fa5.glb","assets/velero.glb"],alto:2.2},
   regadera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/57daab7e-a92c-47e9-b46c-eef6440faf77.glb","assets/regadera.glb"],alto:.68},
+  botella:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/ae6965fa-c4cb-4082-b762-56650d036f7a.glb","assets/botella.glb"],alto:.5},
+  lata:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/55a338ec-6a86-4834-9cc8-d3558e9f2cdb.glb","assets/lata.glb"],alto:.38},
+  vaso:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/66c29bb0-14bf-4b5c-a632-aeac3de52b7c.glb","assets/vaso.glb"],alto:.32},
+  florero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/3d81b496-7836-4c4a-ae93-0d0bc617eb4a.glb","assets/florero.glb"],alto:.58},
+  maceta:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/4b328b48-3966-465c-b5b5-3b480f21fad9.glb","assets/maceta.glb"],alto:.48},
+  lona:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/85fab4e4-4ae3-4d97-a39b-b01661b088eb.glb","assets/lona.glb"],alto:.35},
+  pelota:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/5c48f0b4-1c78-4d8d-b125-b0c0f930d840.glb","assets/pelota.glb"],alto:.45},
+  juguete:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/02d87abb-5610-40f2-b1c9-a6f38148ae8b.glb","assets/juguete.glb"],alto:.42},
+  bebedero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/3ee4d0fc-5561-48c2-a5a8-aeaa060a131c.glb","assets/bebedero.glb"],alto:.4},
+  bidon:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/590439a9-f32c-4a13-9727-8d81c8a1f5a0.glb","assets/bidon.glb"],alto:.62},
+  canaleta:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/a2d008bf-7e97-4882-a13a-8657b27a36a8.glb","assets/canaleta.glb"],alto:.45},
+  pino:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/c0d739d4-6e52-44b7-8104-c54bbeece589.glb","assets/pino.glb"],alto:3.8},
+  mesa:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/2c65a0e4-4b9e-409a-bcd0-775b4c06f796.glb","assets/mesa.glb"],alto:1.1},
+  mastil:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/70a8aa94-2c64-4af1-9a8e-c5c8caf002a4.glb","assets/mastil.glb"],alto:4.5},
 };
 const TEXTURAS={ cielo_dia:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_051833_39ae308d-751d-4bc6-bad2-0c7620f55cf6.png", cielo_atardecer:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_051840_82b0f4b2-6da4-4052-a3cc-2b5f6468eea6.png", pasto:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044206_56015de1-3c48-43e9-9021-c07e45f3e506.png", arena:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044212_e1b3d2d9-822e-455f-b1ce-b69403784a46.png", baldosa:"https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044218_3bd9745b-000f-4bc5-830a-6d01c95c1c5d.png" };
 const TEXCACHE={};
@@ -845,7 +870,9 @@ function cargarGLB(nombre){
     const def=ASSETS[nombre]; let i=0;
     const intento=()=>{
       if(i>=def.urls.length){ GLB[nombre]=null; return res(null); }
-      gltfLoader.load(def.urls[i++],g=>{
+      const u=def.urls[i++];
+      if(u.indexOf("__")===0) return intento();
+      gltfLoader.load(u,g=>{
         try{
           const obj=g.scene;
           const box=new T.Box3().setFromObject(obj);
@@ -876,16 +903,19 @@ const OBJ3D = {
     const borde=at(tor(.45,.045,0x1b7fb2),0,.72,0); borde.rotation.x=Math.PI/2;
     const asa=at(tor(.42,.04,0x15324B,Math.PI),0,.72,0);
     return grp(cuerpo,fondo,borde,asa,at(aguaDisc(.4),0,.6,0)); },
-  florero(){ const v=grp(cyl(.16,.26,.5,0x9B59B6),cyl(.2,.16,.18,0x9B59B6));
+  florero(){ const _g=instanciaGLB("florero"); if(_g) return _g;
+    const v=grp(cyl(.16,.26,.5,0x9B59B6),cyl(.2,.16,.18,0x9B59B6));
     v.children[0].position.y=.25; v.children[1].position.y=.56;
     const t1=at(cyl(.025,.025,.5,0x3E9A38),-.07,.85,0,0); t1.rotation.z=.25;
     const t2=at(cyl(.025,.025,.44,0x3E9A38),.08,.82,0); t2.rotation.z=-.3;
     return grp(v,t1,t2,at(sph(.11,0xFF5E5B),-.16,1.06,0),at(sph(.1,0xFFC93C),.2,1,0),at(aguaDisc(.13),0,.62,0)); },
-  botella(){ const g=grp(); const cuerpo=cyl(.15,.15,.62,0xBDE9FF); cuerpo.rotation.z=Math.PI/2; cuerpo.position.set(0,.15,0);
+  botella(){ const _g=instanciaGLB("botella"); if(_g) return _g;
+    const g=grp(); const cuerpo=cyl(.15,.15,.62,0xBDE9FF); cuerpo.rotation.z=Math.PI/2; cuerpo.position.set(0,.15,0);
     const cuello=cyl(.07,.11,.16,0xBDE9FF); cuello.rotation.z=Math.PI/2; cuello.position.set(.39,.15,0);
     const tapa=cyl(.075,.075,.09,0xFF5E5B); tapa.rotation.z=Math.PI/2; tapa.position.set(.5,.15,0);
     g.add(cuerpo,cuello,tapa); g.rotation.y=.6; return g; },
-  maceta(){ const plato=cyl(.46,.52,.07,0xE8884A); plato.position.y=.035;
+  maceta(){ const _g=instanciaGLB("maceta"); if(_g) return _g;
+    const plato=cyl(.46,.52,.07,0xE8884A); plato.position.y=.035;
     const pot=cyl(.3,.22,.42,0xD2691E); pot.position.y=.28;
     const tierra=at(new T.Mesh(new T.CircleGeometry(.27,16),mat(0x6b4226)),0,.495,0); tierra.rotation.x=-Math.PI/2;
     const h1=at(cone(.14,.5,0x58C24B,7),0,.72,0), h2=at(cone(.11,.4,0x3E9A38,7),-.16,.62,0), h3=at(cone(.11,.42,0x3E9A38,7),.15,.64,0);
@@ -896,7 +926,8 @@ const OBJ3D = {
     const flor=at(sph(.1,0x3E9A38,10,8),-.68,.56,0);
     const asa=at(tor(.2,.035,0x3E9A38,Math.PI),0,.52,0);
     return grp(cuerpo,pico,flor,asa,at(aguaDisc(.3),0,.53,0)); },
-  lata(){ const c=cyl(.18,.18,.36,0xC8CDD2,16,true); c.position.y=.18;
+  lata(){ const _g=instanciaGLB("lata"); if(_g) return _g;
+    const c=cyl(.18,.18,.36,0xC8CDD2,16,true); c.position.y=.18;
     const fondo=at(new T.Mesh(new T.CircleGeometry(.18,16),mat(0x9aa7b2)),0,.012,0); fondo.rotation.x=-Math.PI/2;
     const banda=cyl(.185,.185,.14,0xFF5E5B,16,true); banda.position.y=.18;
     return grp(c,fondo,banda,at(aguaDisc(.155),0,.3,0)); },
@@ -909,12 +940,14 @@ const OBJ3D = {
     const b=new T.Mesh(new T.CircleGeometry(.4,16),matAgua());
     b.rotation.x=-Math.PI/2; b.position.set(1.1,.025,.45); b.material.polygonOffset=true; b.material.polygonOffsetFactor=-2; b.userData.esAgua=true;
     return grp(a,b); },
-  canaleta(){ const g=grp(box(1.7,.06,.4,0x8E9AA5),at(box(1.7,.26,.06,0x8E9AA5),0,.13,.2),at(box(1.7,.26,.06,0x8E9AA5),0,.13,-.2));
+  canaleta(){ const _g=instanciaGLB("canaleta"); if(_g) return _g;
+    const g=grp(box(1.7,.06,.4,0x8E9AA5),at(box(1.7,.26,.06,0x8E9AA5),0,.13,.2),at(box(1.7,.26,.06,0x8E9AA5),0,.13,-.2));
     g.children[0].position.y=.03;
     const agua=at(box(1.6,.1,.3,0x35bdf2),0,.1,0); agua.material=matAgua();
     const h=(x,z,r)=>{ const e=sph(.11,0x58C24B,10,7); e.scale.set(1.3,.45,1); return at(e,x,.2,z,r); };
     g.add(agua,h(-.5,.05,.4),h(.2,-.04,1.2),h(.62,.06,.8)); g.rotation.y=.4; return g; },
-  bidon(){ const c=box(.62,.82,.42,0xFFC93C); c.position.y=.41;
+  bidon(){ const _g=instanciaGLB("bidon"); if(_g) return _g;
+    const c=box(.62,.82,.42,0xFFC93C); c.position.y=.41;
     const tapa=at(cyl(.09,.09,.12,0xFF8A3D,12),-.2,.88,0);
     const manija=at(box(.26,.09,.1,0xE8A93C),.1,.7,0);
     return grp(c,tapa,manija); },
@@ -923,19 +956,23 @@ const OBJ3D = {
     const fondo=at(new T.Mesh(new T.CircleGeometry(.36,18),mat(0x5b6770)),0,.012,0); fondo.rotation.x=-Math.PI/2;
     const tapa=cyl(.46,.46,.06,0x5B6770,18); tapa.position.set(.75,.25,.1); tapa.rotation.z=1.25;
     return grp(c,fondo,tapa,at(aguaDisc(.38),0,.8,0)); },
-  juguete(){ const caja=box(.6,.26,.4,0xFF5E5B); caja.position.set(-.12,.3,0);
+  juguete(){ const _g=instanciaGLB("juguete"); if(_g) return _g;
+    const caja=box(.6,.26,.4,0xFF5E5B); caja.position.set(-.12,.3,0);
     const cabina=box(.3,.3,.38,0xFFC93C); cabina.position.set(.32,.32,0);
     const techo=box(.26,.06,.34,0xFF8A3D); techo.position.set(.32,.5,0);
     const r=(x,z)=>{ const w=cyl(.11,.11,.08,0x3A3F44,12); w.rotation.x=Math.PI/2; return at(w,x,.11,z); };
     const agua=at(box(.5,.06,.3,0x35bdf2),-.12,.4,0); agua.material=matAgua();
     return grp(caja,cabina,techo,agua,r(-.25,.22),r(.25,.22),r(-.25,-.22),r(.25,-.22)); },
-  vaso(){ const c=cyl(.16,.12,.32,0xFFD9E8,14,true); c.position.y=.16;
+  vaso(){ const _g=instanciaGLB("vaso"); if(_g) return _g;
+    const c=cyl(.16,.12,.32,0xFFD9E8,14,true); c.position.y=.16;
     const fondo=at(new T.Mesh(new T.CircleGeometry(.12,14),mat(0xe8b8cc)),0,.012,0); fondo.rotation.x=-Math.PI/2;
     return grp(c,fondo,at(aguaDisc(.135),0,.26,0)); },
-  pelota(){ const p=sph(.42,0xFF8A3D,18,14); p.scale.y=.6; p.position.y=.26;
+  pelota(){ const _g=instanciaGLB("pelota"); if(_g) return _g;
+    const p=sph(.42,0xFF8A3D,18,14); p.scale.y=.6; p.position.y=.26;
     const franja=cyl(.425,.425,.1,0xE8884A,18,true); franja.position.y=.26; franja.scale.y=.6;
     return grp(p,franja,at(aguaDisc(.17),0,.52,0)); },
-  lona(){ const l=sph(.85,0x58C24B,14,9); l.scale.set(1.45,.16,1); l.position.y=.13;
+  lona(){ const _g=instanciaGLB("lona"); if(_g) return _g;
+    const l=sph(.85,0x58C24B,14,9); l.scale.set(1.45,.16,1); l.position.y=.13;
     const p2=sph(.5,0x3E9A38,12,8); p2.scale.set(1.2,.2,1); p2.position.set(.7,.1,.4);
     return grp(l,p2,at(aguaDisc(.3),-.1,.27,0)); },
   conservadora(){ const _g=instanciaGLB("conservadora"); if(_g) return _g;
@@ -953,7 +990,8 @@ const OBJ3D = {
     const banco=at(box(.16,.06,.55,0xD2691E),0,.5,0);
     const agua=at(box(1.5,.08,.5,0x35bdf2),0,.4,0); agua.material=matAgua();
     g.add(p1,p2,banco,agua); g.rotation.y=.5; return g; },
-  bebedero(){ const c=cyl(.4,.32,.18,0xFF5E5B,18,true); c.position.y=.09;
+  bebedero(){ const _g=instanciaGLB("bebedero"); if(_g) return _g;
+    const c=cyl(.4,.32,.18,0xFF5E5B,18,true); c.position.y=.09;
     const fondo=at(new T.Mesh(new T.CircleGeometry(.32,18),mat(0xd84845)),0,.012,0); fondo.rotation.x=-Math.PI/2;
     return grp(c,fondo,at(aguaDisc(.34),0,.14,0)); },
   carretilla(){ const _g=instanciaGLB("carretilla"); if(_g) return _g;
@@ -989,6 +1027,11 @@ function arbol3F(s=1,c=0x58C24B){
   return g;
 }
 function pino3(s=1,c=0x3E9A38){
+  const g=instanciaGLB("pino");
+  if(g){ g.scale.multiplyScalar(s); return g; }
+  return pino3F(s,c);
+}
+function pino3F(s=1,c=0x3E9A38){
   const tronco=cyl(.12*s,.18*s,.9*s,0x9A6B45,8); tronco.position.y=.45*s;
   const copa=grp(at(cone(.95*s,1.3*s,c,10),0,1.4*s,0), at(cone(.75*s,1.1*s,c,10),0,2.1*s,0), at(cone(.52*s,.9*s,c,10),0,2.75*s,0));
   return grp(tronco,sway(copa,.025,1.1));
@@ -1085,6 +1128,10 @@ function escuela3F(){
   return g;
 }
 function mastil3(){
+  const g=instanciaGLB("mastil"); if(g) return g;
+  return mastil3F();
+}
+function mastil3F(){
   const palo=cyl(.07,.09,5,0xC8CDD2,10); palo.position.y=2.5;
   const bandera=grp(at(box(1.5,.5,.05,0x7FD4F5),.78,4.55,0),at(box(1.5,.18,.05,0xFFFFFF),.78,4.2,0),at(sph(.16,0xFFC93C,10,8),.78,4.42,.06));
   return grp(palo,sway(bandera,.06,2.4),at(sph(.12,0xFFC93C,10,8),0,5.05,0));
@@ -1115,6 +1162,10 @@ function banco3F(){
     at(box(.1,.5,.45,0x9A6B45),-.78,.25,0),at(box(.1,.5,.45,0x9A6B45),.78,.25,0));
 }
 function mesa3(){
+  const g=instanciaGLB("mesa"); if(g) return g;
+  return mesa3F();
+}
+function mesa3F(){
   const g=grp(at(box(1.6,.1,1,0xD2885A),0,.78,0));
   [[-.7,-.4],[.7,-.4],[-.7,.4],[.7,.4]].forEach(([x,z])=>g.add(at(box(.1,.78,.1,0x9A6B45),x,.39,z)));
   return g;
@@ -1581,7 +1632,9 @@ function initControles(){
     if(e.target.closest("#joy,#btnJump,#escudoUI,#tip,#radar,#alerta")) return;
     drag={x:e.clientX,y:e.clientY,id:e.pointerId}; cv.setPointerCapture(e.pointerId); });
   cv.addEventListener("pointermove",e=>{ if(!drag||e.pointerId!==drag.id)return;
-    yaw-=(e.clientX-drag.x)*.0052; pitch=Math.min(1.05,Math.max(.14,pitch+(e.clientY-drag.y)*.004));
+    // con mouse la cámara gira más sensible que con el dedo
+    const sens=e.pointerType==="mouse"?1.6:1;
+    yaw-=(e.clientX-drag.x)*.0052*sens; pitch=Math.min(1.05,Math.max(.14,pitch+(e.clientY-drag.y)*.004*sens));
     drag.x=e.clientX; drag.y=e.clientY; });
   cv.addEventListener("pointerup",e=>{ if(drag&&e.pointerId===drag.id)drag=null; });
   cv.addEventListener("pointercancel",()=>drag=null);
@@ -2099,6 +2152,14 @@ $("#radar .ric").innerHTML=IC.gota;
 $("#tip .ic").innerHTML=IC.gota;
 $(".chip-reloj").innerHTML=IC.reloj;
 $(".chip-lupa").innerHTML=IC.lupa;
+/* explicativo de controles según dispositivo */
+$("#introControles").innerHTML = TOUCH
+  ? `<div class="ctrl">🕹️ <b>Moverte:</b> joystick de la izquierda</div>
+     <div class="ctrl">🛡️ <b>Protegerte:</b> botón DEFENDERSE de la derecha</div>
+     <div class="ctrl">👆 <b>Girar la cámara:</b> arrastrá el dedo por la pantalla</div>`
+  : `<div class="ctrl">🚶 <b>Moverte:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o las flechas</div>
+     <div class="ctrl">🛡️ <b>Protegerte:</b> <kbd>ESPACIO</kbd></div>
+     <div class="ctrl">🖱️ <b>Girar la cámara:</b> mantené apretado el botón izquierdo del mouse y arrastrá</div>`;
 /* mundo 3D girando de fondo en la home */
 function iniciarDemo(){
   const posDemo=()=>{ player.position.set(2.5,0,5); player.rotation.y=2.6; camDist=12.5; pitch=.34; };
