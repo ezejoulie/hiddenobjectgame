@@ -1029,6 +1029,24 @@ function roca3(s=1){
 }
 function roca3F(s=1){ const r=mesh(new T.IcosahedronGeometry(.4*s,0),mat(0xB8C2CC)); r.position.y=.25*s; r.scale.y=.7; return r; }
 function cerca3(len,ry=0){
+  // si está el modelo GLB, armamos la cerca repitiendo el segmento a lo largo
+  const seg=GLB["cerca"];
+  if(seg){
+    const g=grp();
+    const bb=new T.Box3().setFromObject(seg);
+    const sz=new T.Vector3(); bb.getSize(sz);
+    const w=Math.max(.8,sz.x), n=Math.max(1,Math.round(len/w)), paso=len/n;
+    for(let i=0;i<n;i++){
+      const p=seg.clone();
+      p.scale.x*=paso/sz.x;
+      p.position.x=-len/2+paso*(i+.5);
+      g.add(p);
+    }
+    g.rotation.y=ry; return g;
+  }
+  return cerca3F(len,ry);
+}
+function cerca3F(len,ry=0){
   const g=grp(); const n=Math.max(2,Math.round(len/1.5));
   for(let i=0;i<=n;i++){ const p=box(.13,.85,.13,0xFFF1D8); p.position.set(-len/2+i*(len/n),.42,0);
     const tapa=sph(.09,0xFFF1D8,8,6); tapa.position.set(p.position.x,.88,0); g.add(p,tapa); }
@@ -1442,7 +1460,10 @@ function construirNivel(i){
   const nv=LV3D[i];
   scene.fog=new T.Fog(nv.niebla, 34, 95); scene.fog.color.convertSRGBToLinear();
 
-  scene.add(cieloDome(...nv.cielo));
+  // domo de cielo: degradé de base + panorámica real si el nivel la define
+  const dome=cieloDome(...nv.cielo); scene.add(dome);
+  G._dome=dome.material;
+  if(nv.cieloPano) texturaReal(nv.cieloPano, dome.material);
   const sol=solSprite(); sol.position.set(...nv.sol); scene.add(sol);
 
   const hemi=new T.HemisphereLight(0xfdf6e8,0x86a86a,.75); hemi.color.convertSRGBToLinear(); hemi.groundColor.convertSRGBToLinear(); scene.add(hemi);
@@ -1453,6 +1474,17 @@ function construirNivel(i){
   luz.shadow.camera.top=32; luz.shadow.camera.bottom=-32;
   luz.shadow.camera.far=90; luz.shadow.bias=-0.0008;
   scene.add(luz);
+  G._luz=luz; G._hemi=hemi;
+  // estrellas para el anochecer de la playa (aparecen con opacity en el tick)
+  G._estrellas=null;
+  if(i===4){
+    const pos=[];
+    for(let k=0;k<140;k++){ const a=Math.random()*6.28, e=.12+Math.random()*1.25, r=80;
+      pos.push(r*Math.cos(e)*Math.cos(a), r*Math.sin(e), r*Math.cos(e)*Math.sin(a)); }
+    const ge=new T.BufferGeometry(); ge.setAttribute("position",new T.Float32BufferAttribute(pos,3));
+    const me=new T.PointsMaterial({color:0xFFF6D8,size:1.1,transparent:true,opacity:0,fog:false,depthWrite:false});
+    G._estrellas=new T.Points(ge,me); G._estrellas.frustumCulled=false; scene.add(G._estrellas);
+  }
   const relleno=new T.DirectionalLight(0xbfe2ff,.35); relleno.color.convertSRGBToLinear();
   relleno.position.set(-nv.sol[0],14,-nv.sol[2]); scene.add(relleno);
 
