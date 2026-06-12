@@ -2,9 +2,16 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Patrulla Anti-Dengue 3D · ¡A descacharrar!</title>
 <meta name="description" content="Juego 3D educativo: recorré el mundo, encontrá los cacharros que juntan agua y frená al mosquito del dengue.">
+<meta name="theme-color" content="#27AAE1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Anti-Dengue">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
@@ -34,7 +41,10 @@ h1,h2,h3,.display{font-family:'Baloo 2',cursive}
 button{font-family:'Baloo 2',cursive;cursor:pointer;border:none}
 
 /* ===== Pantallas ===== */
-.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.screen{position:fixed;top:0;left:0;width:100%;height:100vh;height:100dvh;display:none;flex-direction:column;align-items:center;padding:16px;overflow:auto}
+/* centrado "seguro": si el contenido es más alto que la pantalla, se puede scrollear sin recortar arriba */
+.screen::before{content:"";margin-top:auto}
+.screen::after{content:"";margin-bottom:auto}
 .screen.active{display:flex}
 .card{background:var(--crema);border:4px solid var(--tinta);border-radius:28px;box-shadow:var(--sombra);padding:24px;max-width:560px;width:100%}
 
@@ -114,7 +124,7 @@ button{font-family:'Baloo 2',cursive;cursor:pointer;border:none}
 #radar.show{display:flex}
 
 /* joystick móvil */
-#joy{position:absolute;left:22px;bottom:22px;width:120px;height:120px;border-radius:50%;
+#joy{position:absolute;left:max(22px,env(safe-area-inset-left));bottom:22px;width:120px;height:120px;border-radius:50%;
   background:rgba(255,255,255,.35);border:3px solid rgba(21,50,75,.5);z-index:7;display:none;touch-action:none}
 #joyStick{position:absolute;left:50%;top:50%;width:54px;height:54px;border-radius:50%;
   background:var(--amarillo);border:3px solid var(--tinta);transform:translate(-50%,-50%);box-shadow:0 3px 0 var(--tinta)}
@@ -148,8 +158,9 @@ body.touch #hint{left:auto;right:14px;transform:none;max-width:46vw;white-space:
 #tip .tx b{color:var(--verdeOsc)}
 
 /* Modales */
-.modal{position:fixed;inset:0;background:rgba(21,50,75,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+.modal{position:fixed;inset:0;background:rgba(21,50,75,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:20;overflow:auto}
 .modal.active{display:flex}
+.modal .card{margin:auto}
 .modal .card{text-align:center;animation:pop .35s cubic-bezier(.34,1.56,.64,1)}
 @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 .stars-big{font-size:2.6rem;letter-spacing:6px;margin:8px 0}
@@ -163,10 +174,11 @@ body.touch #hint{left:auto;right:14px;transform:none;max-width:46vw;white-space:
 @keyframes caer{to{transform:translateY(110vh) rotate(720deg)}}
 
 
-/* botón saltar (táctil) */
-#btnJump{position:absolute;right:22px;bottom:26px;width:84px;height:84px;border-radius:50%;
+/* botón DEFENDERSE (táctil) */
+#btnJump{position:absolute;right:max(22px,env(safe-area-inset-right));bottom:26px;width:104px;height:104px;border-radius:50%;
   background:var(--amarillo);border:4px solid var(--tinta);box-shadow:0 5px 0 var(--tinta);
-  font-size:2rem;z-index:7;display:none;align-items:center;justify-content:center;touch-action:none}
+  font-size:2.1rem;z-index:7;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1px;touch-action:none}
+#btnJump small{font-size:.62rem;font-weight:800;letter-spacing:.4px;color:var(--tinta);font-family:'Baloo 2'}
 #btnJump:active{transform:translateY(4px);box-shadow:0 1px 0 var(--tinta)}
 body.touch #btnJump{display:flex}
 
@@ -210,10 +222,36 @@ body.touch #btnJump{display:flex}
 
 #btnJump.cd{opacity:.35;pointer-events:none}
 
+/* ===== Aviso "girá tu celu" (solo táctil en vertical) ===== */
+#rotar{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;background:linear-gradient(180deg,var(--cielo) 0%,var(--cielo2) 70%,#EAF9E6 100%);text-align:center;padding:24px}
+#rotar .tel{font-size:4.2rem;animation:girarTel 1.8s ease-in-out infinite}
+@keyframes girarTel{0%,15%{transform:rotate(0)}55%,100%{transform:rotate(90deg)}}
+#rotar h2{font-size:1.9rem;color:#fff;text-shadow:0 3px 0 var(--tinta)}
+#rotar p{font-weight:800;background:#fff;border:3px solid var(--tinta);border-radius:999px;padding:8px 18px;box-shadow:var(--sombra)}
+@media (orientation:portrait){ body.touch #rotar{display:flex} }
+
+/* aviso instalar en iPhone (pantalla completa real) */
+#iosTip{display:none;margin-top:14px;font-weight:700;font-size:.82rem;background:#fff;border:3px solid var(--tinta);
+  border-radius:16px;padding:8px 14px;max-width:420px;box-shadow:var(--sombra)}
+#iosTip.show{display:block}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:560px){
   #hudNivel small{display:none} #hudNivel{font-size:.9rem} #timerTxt{font-size:1.2rem}
   .btn{font-size:1.15rem;padding:12px 24px}
+}
+/* celulares apaisados: poca altura → todo más compacto */
+@media (max-height:520px){
+  .logo{font-size:clamp(1.5rem,7vh,2.4rem)}
+  #mosqHome{width:min(110px,22vh);margin:2px auto}
+  .tagline{font-size:.85rem;margin:6px 0 12px;padding:6px 14px}
+  .btn{font-size:1.1rem;padding:10px 26px}
+  .card{padding:14px 18px}
+  .avatar-preview svg{width:110px;height:138px}
+  .modal h2{font-size:1.4rem}
+  #scr-home p:last-of-type{margin-top:8px!important;font-size:.75rem!important}
+  #iosTip{font-size:.74rem;margin-top:8px}
 }
 </style>
 </head>
@@ -226,6 +264,7 @@ body.touch #btnJump{display:flex}
   <p class="tagline">🚶 Recorré el mundo y agarrá los cacharros que juntan agua 🦟</p>
   <button class="btn" id="btnJugar">▶ ¡Jugar!</button>
   <p style="margin-top:14px;font-weight:700;font-size:.85rem;opacity:.75">Sin agua acumulada, no hay mosquito. Sin mosquito, no hay dengue.</p>
+  <p id="iosTip">📲 Para jugar a <b>pantalla completa</b>: tocá <b>Compartir</b> <span style="font-size:1.1em">⎋</span> y elegí <b>“Agregar a pantalla de inicio”</b>. Después abrí el juego desde el ícono.</p>
 </div>
 
 <!-- AVATAR -->
@@ -277,13 +316,20 @@ body.touch #btnJump{display:flex}
     <div id="tip"><span class="ic">💧</span><span class="tx"></span></div>
     <div id="combo"></div>
     <div id="joy"><div id="joyStick"></div></div>
-    <button id="btnJump" title="Escudo">🛡️</button>
+    <button id="btnJump" title="Defenderse">🛡️<small>DEFENDERSE</small></button>
     <div id="alerta">🦟 ¡Denguín quiere picarte! ¡Escudo!</div>
     <div id="defensaTxt">⚡ ¡DOBLE DEFENSA! ⚡</div>
     <div id="flash"></div>
     <div id="hint">⌨️ WASD para caminar · ESPACIO = escudo 🛡️ · 🖱️ Arrastrá para mirar</div>
   </div>
   <div id="tray"></div>
+</div>
+
+<!-- AVISO ROTAR (táctil en vertical) -->
+<div id="rotar">
+  <div class="tel">📱</div>
+  <h2>¡Girá tu celu!</h2>
+  <p>Este juego se juega en horizontal 🔄</p>
 </div>
 
 <!-- MODAL INTRO -->
@@ -550,7 +596,8 @@ const OBJ = {
    ===================================================== */
 const T=THREE;
 const hx=s=>parseInt(s.slice(1),16);
-const TOUCH="ontouchstart" in window;
+const TOUCH=("ontouchstart" in window)||navigator.maxTouchPoints>0||(window.matchMedia&&matchMedia("(pointer:coarse)").matches);
+if(TOUCH) document.body.classList.add("touch");
 function mat(c){ const m=new T.MeshLambertMaterial({color:c}); m.color.convertSRGBToLinear(); return m; }
 function matAgua(){ const m=new T.MeshPhongMaterial({color:0x35bdf2, shininess:120, emissive:0x0a4a6e, specular:0xdff4ff}); m.color.convertSRGBToLinear(); m.emissive.convertSRGBToLinear(); return m; }
 function mesh(geo,m){ const o=new T.Mesh(geo,m); o.castShadow=true; o.receiveShadow=true; return o; }
@@ -1152,7 +1199,7 @@ function initControles(){
   $("#btnJump").addEventListener("pointerdown",e=>{ e.preventDefault(); defensa(); });
 
   if(TOUCH){ document.body.classList.add("touch");
-    $("#hint").textContent="🕹️ Joystick para caminar · 👆 Arrastrá para mirar · 🛡️ ¡Escudo!"; }
+    $("#hint").textContent="🕹️ Joystick para caminar · 👆 Arrastrá para mirar · 🛡️ Botón para defenderte"; }
 }
 /* ---------- Escudo DOBLE DEFENSA ---------- */
 function defensa(){
@@ -1535,8 +1582,42 @@ function agarrar(it){
 function showScreen(id){ $$(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); }
 function showModal(id,on=true){ $(id).classList.toggle("active",on); }
 
+/* ---------- Orientación: forzar horizontal en táctil ---------- */
+async function bloquearHorizontal(){
+  if(!TOUCH) return;
+  try{
+    if(!document.fullscreenElement && document.documentElement.requestFullscreen)
+      await document.documentElement.requestFullscreen({navigationUI:"hide"});
+  }catch(e){}
+  try{
+    if(screen.orientation&&screen.orientation.lock)
+      await screen.orientation.lock("landscape");
+  }catch(e){}
+}
+/* En iPhone/iPad Safari no existe API de pantalla completa: la única vía es
+   instalar el juego como app web (Agregar a pantalla de inicio). Mostramos el tip. */
+const esIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const esStandalone=navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode:fullscreen),(display-mode:standalone)").matches);
+if(TOUCH&&esIOS&&!esStandalone) $("#iosTip").classList.add("show");
+
+const mqPortrait=window.matchMedia?matchMedia("(orientation:portrait)"):null;
+function chequearOrientacion(){
+  if(!TOUCH||!mqPortrait) return;
+  if(mqPortrait.matches){
+    // en vertical: el overlay tapa todo; pausamos la partida en curso
+    if(G.jugando){ G.pausaRot=true; G.jugando=false; clearInterval(G.timerId); buzzOff(); }
+  }else{
+    if(G.pausaRot){ G.pausaRot=false; empezarTimer(); }
+    if(renderer) setTimeout(resize3D,150);
+  }
+}
+if(mqPortrait){
+  if(mqPortrait.addEventListener) mqPortrait.addEventListener("change",chequearOrientacion);
+  else mqPortrait.addListener(chequearOrientacion);
+}
+
 $("#mosqHome").innerHTML = mosquitoSVG("feliz");
-$("#btnJugar").addEventListener("click",()=>{ audio(); startMusic(); sndOk(); showScreen("#scr-avatar"); renderAvatarBuilder(); });
+$("#btnJugar").addEventListener("click",()=>{ audio(); startMusic(); sndOk(); bloquearHorizontal(); showScreen("#scr-avatar"); renderAvatarBuilder(); });
 
 function renderAvatarBuilder(){
   const mk=(cont,arr,key,emoji)=>{
@@ -1616,6 +1697,7 @@ function iniciarNivel(i){
   sndTic();
 }
 $("#btnEmpezar").addEventListener("click",()=>{
+  bloquearHorizontal();
   showModal("#mod-intro",false);
   empezarTimer();
   $("#hint").style.opacity="1";
@@ -1624,10 +1706,12 @@ $("#btnEmpezar").addEventListener("click",()=>{
 
 function empezarTimer(){
   G.jugando=true;
-  const t0=Date.now(), dur=120;
+  const dur=120, restante=(G.tiempo>0&&G.tiempo<dur)?G.tiempo:dur;
+  const t0=Date.now();
   G._lastTic=-1;
+  clearInterval(G.timerId);
   G.timerId=setInterval(()=>{
-    G.tiempo=Math.max(0,dur-(Date.now()-t0)/1000);
+    G.tiempo=Math.max(0,restante-(Date.now()-t0)/1000);
     const m=Math.floor(G.tiempo/60), s=Math.floor(G.tiempo%60);
     $("#timerTxt").textContent=`${m}:${String(s).padStart(2,"0")}`;
     $("#timerFill").style.width=(G.tiempo/dur*100)+"%";
