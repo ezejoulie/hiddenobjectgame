@@ -82,9 +82,8 @@ button{font-family:'Baloo 2',cursive;cursor:pointer;border:none}
 .btn-ic svg{display:block}
 
 /* ===== Home ===== */
-#scr-home{justify-content:center}
-#scr-home::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 110%,rgba(13,34,52,.42),rgba(13,34,52,0) 55%)}
+/* el viñeteado va de fondo del propio screen: un ::after acá pisaría el espaciador flex de .screen::after y descentra el contenido */
+#scr-home{justify-content:center;background:radial-gradient(ellipse at 50% 110%,rgba(13,34,52,.42),rgba(13,34,52,0) 55%)}
 .home-inner{text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;
   animation:homeIn .8s cubic-bezier(.2,.9,.3,1)}
 @keyframes homeIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
@@ -866,7 +865,7 @@ function cargarGLB(nombre){
     intento();
   });
 }
-function precargarAssets(){ Object.keys(ASSETS).forEach(n=>cargarGLB(n)); }
+function precargarAssets(){ return Promise.all(Object.keys(ASSETS).map(n=>cargarGLB(n))); }
 function instanciaGLB(nombre){ return GLB[nombre] ? GLB[nombre].clone() : null; }
 
 /* ---------- Cacharros 3D (idénticos en tipos; origen en el piso) ---------- */
@@ -2102,8 +2101,11 @@ $(".chip-reloj").innerHTML=IC.reloj;
 $(".chip-lupa").innerHTML=IC.lupa;
 /* mundo 3D girando de fondo en la home */
 function iniciarDemo(){
-  try{ demo=true; initGL(); precargarAssets(); construirNivel(0);
-    player.position.set(2.5,0,5); player.rotation.y=2.6; camDist=12.5; pitch=.34;
+  const posDemo=()=>{ player.position.set(2.5,0,5); player.rotation.y=2.6; camDist=12.5; pitch=.34; };
+  try{ demo=true; initGL();
+    // arranca ya con los modelos procedurales y se reconstruye cuando terminan de bajar los GLB
+    precargarAssets().then(()=>{ if(demo){ construirNivel(0); posDemo(); } });
+    construirNivel(0); posDemo();
   }catch(e){}
 }
 window.addEventListener("load",iniciarDemo);
