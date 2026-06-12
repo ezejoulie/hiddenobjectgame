@@ -194,10 +194,10 @@ body.touch #hint{left:auto;right:14px;transform:none;max-width:46vw;white-space:
   border-top:1px solid rgba(21,50,75,.14);box-shadow:0 -4px 16px rgba(13,34,52,.12);
   display:flex;gap:8px;padding:8px 10px;overflow-x:auto;z-index:5}
 #tray::-webkit-scrollbar{height:6px}
-.tray-it{flex:0 0 auto;width:64px;text-align:center;background:#fff;border:1px solid rgba(21,50,75,.14);
+.tray-it{flex:0 0 auto;width:76px;text-align:center;background:#fff;border:1px solid rgba(21,50,75,.14);
   border-radius:13px;padding:5px 2px;position:relative;box-shadow:0 3px 8px rgba(13,34,52,.12)}
-.tray-it svg{width:38px;height:38px;display:block;margin:0 auto}
-.tray-it .tn{font-size:.58rem;font-weight:800;display:block;line-height:1;margin-top:2px}
+.tray-it svg,.tray-it img{width:52px;height:52px;display:block;margin:0 auto}
+.tray-it .tn{font-size:.6rem;font-weight:800;display:block;line-height:1;margin-top:2px}
 .tray-it.done{background:#E4F6DF;border-color:rgba(47,140,38,.5)}
 .tray-it.done::after{content:"";position:absolute;inset:0;border-radius:12px;background:rgba(228,246,223,.55)
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%232F8C26' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round' d='M4.5 12.5l5 5 10-11'/%3E%3C/svg%3E") center/26px no-repeat}
@@ -371,11 +371,11 @@ body.touch #btnJump{display:flex}
   #btnMute,#btnSalir{width:34px;height:34px}
   #btnMute svg,#btnSalir svg{width:16px;height:16px}
 
-  /* --- bandeja chica: solo íconos, el nombre aparece al agarrar --- */
-  #tray{padding:4px 8px;gap:5px}
-  .tray-it{width:44px;border-radius:10px;padding:3px 2px}
-  .tray-it svg{width:30px;height:30px}
-  .tray-it .tn{display:none}
+  /* --- bandeja: miniaturas grandes con su nombre --- */
+  #tray{padding:5px 8px;gap:6px}
+  .tray-it{width:60px;border-radius:10px;padding:3px 2px}
+  .tray-it svg,.tray-it img{width:38px;height:38px}
+  .tray-it .tn{font-size:.5rem}
 
   /* --- avisos discretos que no tapan la acción --- */
   #radar{font-size:.72rem;padding:3px 12px;top:6px}
@@ -2200,6 +2200,44 @@ function renderMapa(){
 
 function miniSVG(t){ return `<svg viewBox="-50 -55 100 110">${OBJ[t].d}</svg>`; }
 
+/* ---------- Miniaturas 3D para la bandeja ----------
+   Renderizan el MISMO objeto que aparece en el mundo (GLB o procedural),
+   así lo que se busca y lo que se marca se ven idénticos. */
+let thumbR=null,thumbCam=null;
+const THUMBS={};
+function miniatura3D(tipo){
+  try{
+    const key=tipo+(GLB[tipo]?"g":"p");
+    if(THUMBS[key]) return THUMBS[key];
+    if(!OBJ3D[tipo]) return null;
+    if(!thumbR){
+      thumbR=new T.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+      thumbR.setSize(128,128);
+      thumbR.setPixelRatio(1);
+      thumbR.outputEncoding=T.sRGBEncoding;
+      thumbR.toneMapping=T.ACESFilmicToneMapping;
+      thumbR.toneMappingExposure=1.05;
+      thumbCam=new T.PerspectiveCamera(32,1,.05,60);
+    }
+    const sc=new T.Scene();
+    const h=new T.HemisphereLight(0xffffff,0x9fb4c4,1.05); h.color.convertSRGBToLinear(); h.groundColor.convertSRGBToLinear();
+    const dl=new T.DirectionalLight(0xfff4dd,1.2); dl.color.convertSRGBToLinear(); dl.position.set(2.5,4,3);
+    sc.add(h,dl);
+    const o=OBJ3D[tipo]();
+    sc.add(o);
+    const bb=new T.Box3().setFromObject(o);
+    const sz=new T.Vector3(), ce=new T.Vector3();
+    bb.getSize(sz); bb.getCenter(ce);
+    const r=Math.max(sz.x,sz.y,sz.z)||1;
+    thumbCam.position.set(ce.x+r*1.35, ce.y+r*.95, ce.z+r*1.35);
+    thumbCam.lookAt(ce);
+    thumbR.render(sc,thumbCam);
+    const url=thumbR.domElement.toDataURL();
+    THUMBS[key]=url;
+    return url;
+  }catch(e){ return null; }
+}
+
 function iniciarNivel(i){
   G.nivelActual=i;
   G.encontrados=new Set(); G.tiempo=120; G.jugando=false;
@@ -2220,7 +2258,8 @@ function iniciarNivel(i){
   nv.items.forEach((it,idx)=>{
     const d=document.createElement("div");
     d.className="tray-it"; d.id="tray-"+idx;
-    d.innerHTML=`${miniSVG(it.t)}<span class="tn">${OBJ[it.t].n}</span>`;
+    const th=miniatura3D(it.t);
+    d.innerHTML=`${th?`<img src="${th}" alt="">`:miniSVG(it.t)}<span class="tn">${OBJ[it.t].n}</span>`;
     tray.appendChild(d);
   });
   demo=false; camDist=CAM_BASE;
