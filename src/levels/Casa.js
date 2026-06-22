@@ -33,6 +33,41 @@ export class Casa extends Level {
     return m;
   }
 
+  /** Cuadro colgado: marco + obra, apoyado en una pared. `ry` orienta la pared. */
+  _frame(x, y, z, ry, w, h, artColor) {
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, h + 0.08, 0.04), mat(0x3a2a1a, 0.6));
+    frame.position.set(x, y, z);
+    frame.rotation.y = ry;
+    frame.receiveShadow = true;
+    this.add(frame);
+    const art = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat(artColor, 0.75));
+    art.rotation.y = ry;
+    // empujar la obra apenas por delante del marco (evita z-fighting)
+    const n = new THREE.Vector3(Math.sin(ry), 0, Math.cos(ry));
+    art.position.set(x, y, z).addScaledVector(n, 0.03);
+    this.add(art);
+  }
+
+  /** Planta en maceta sobre el piso, con clumps de follaje hasta altura `h`. */
+  _plant(x, z, { h = 1.1, potColor = 0xb5651d } = {}) {
+    const potH = 0.4;
+    this._box(0.4, potH, 0.4, potColor, x, potH / 2, z, { collide: true, rough: 0.8 });
+    const f1 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 1), mat(0x3f8e58, 0.9));
+    f1.position.set(x, potH + h * 0.45, z);
+    f1.castShadow = true;
+    this.add(f1);
+    const f2 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.32, 1), mat(0x4faa6a, 0.9));
+    f2.position.set(x + 0.18, potH + h * 0.75, z - 0.1);
+    f2.castShadow = true;
+    this.add(f2);
+    if (h > 1.05) {
+      const f3 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), mat(0x57b676, 0.9));
+      f3.position.set(x - 0.14, potH + h * 0.95, z + 0.05);
+      f3.castShadow = true;
+      this.add(f3);
+    }
+  }
+
   _build() {
     const { width: W, depth: D, height: H } = this.cfg.room;
     const P = this.cfg.paleta;
@@ -191,5 +226,26 @@ export class Casa extends Level {
     );
     art.position.set(1.6, 1.8, -hz + t / 2 + 0.06);
     this.add(art);
+
+    // ---- Galería de cuadros extra ----
+    // pared izquierda (mira a +X)
+    this._frame(-hx + t / 2 + 0.03, 1.95, -1.4, Math.PI / 2, 0.5, 0.62, 0x4f86c8);
+    this._frame(-hx + t / 2 + 0.03, 1.55, -0.3, Math.PI / 2, 0.42, 0.42, 0xe0703a);
+    this._frame(-hx + t / 2 + 0.03, 1.88, 0.95, Math.PI / 2, 0.6, 0.4, 0x57a86a);
+    // pared del fondo (otra obra)
+    this._frame(3.0, 2.0, -hz + t / 2 + 0.03, 0, 0.5, 0.5, 0x8a5fb0);
+    // pared del frente, a la derecha de la puerta
+    this._frame(2.7, 1.85, hz - t / 2 - 0.03, Math.PI, 0.56, 0.42, 0xe8b84a);
+
+    // ---- Plantas extra ----
+    this._plant(-hx + 0.65, hz - 0.8, { h: 1.45 }); // rincón frente-izq (alta)
+    this._plant(hx - 0.7, hz - 0.85, { h: 1.0, potColor: 0xc77b3a }); // rincón frente-der
+
+    // plantita sobre la mesa ratona
+    this._box(0.2, 0.2, 0.2, 0x9b59b6, 0.45, 0.56, mtZ, { rough: 0.7 });
+    const miniLeaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 1), mat(0x4faa6a, 0.9));
+    miniLeaf.position.set(0.45, 0.78, mtZ);
+    miniLeaf.castShadow = true;
+    this.add(miniLeaf);
   }
 }
