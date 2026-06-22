@@ -13,12 +13,58 @@ const mat = (color, roughness = 0.85, metalness = 0.0) =>
   new THREE.MeshStandardMaterial({ color, roughness, metalness });
 
 export class Casa extends Level {
-  constructor() {
+  /** @param {{models?: Record<string, THREE.Object3D>}} opts modelos GLB ya cargados */
+  constructor(opts = {}) {
     super();
     this.cfg = CASA_LIVING;
     this.spawn.set(this.cfg.spawn.x, 0, this.cfg.spawn.z);
     this.lights = [];
+    this.models = opts.models || {};
     this._build();
+  }
+
+  /**
+   * Coloca un modelo GLB normalizado: lo escala a un `footprint` (mayor lado en
+   * XZ), lo centra, lo apoya en el piso, lo orienta y le arma un collider de su
+   * caja. Devuelve el grupo. Esto hace que los GLB del pack sean drop-in sin
+   * importar en qué unidades vengan.
+   */
+  _placeModel(model, { footprint = 1, x = 0, z = 0, ry = 0, collide = true, colliderPad = 0.06 } = {}) {
+    const inner = model;
+    const box = new THREE.Box3().setFromObject(inner);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxXZ = Math.max(size.x, size.z) || 1;
+    inner.scale.multiplyScalar(footprint / maxXZ);
+
+    const box2 = new THREE.Box3().setFromObject(inner);
+    const c = new THREE.Vector3();
+    box2.getCenter(c);
+    inner.position.x -= c.x;
+    inner.position.z -= c.z;
+    inner.position.y -= box2.min.y;
+
+    const wrap = new THREE.Group();
+    wrap.add(inner);
+    wrap.position.set(x, 0, z);
+    wrap.rotation.y = ry;
+    wrap.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = true;
+        o.receiveShadow = true;
+      }
+    });
+    this.add(wrap);
+
+    if (collide) {
+      const fb = new THREE.Box3().setFromObject(wrap);
+      this.colliders.push({
+        type: 'box',
+        min: { x: fb.min.x - colliderPad, z: fb.min.z - colliderPad },
+        max: { x: fb.max.x + colliderPad, z: fb.max.z + colliderPad },
+      });
+    }
+    return wrap;
   }
 
   /** Caja con material PBR; opcionalmente registra collider y/o pared. */
@@ -146,14 +192,23 @@ export class Casa extends Level {
 
     // ---- Sofá contra la pared del fondo, mirando a +Z ----
     const sofaZ = -hz + 0.8;
-    const sofaColor = 0x4a7ea8;
-    this._box(3.2, 0.5, 1.0, sofaColor, 0, 0.3, sofaZ, { collide: true, pad: 0.05 }); // base
-    this._box(3.2, 0.7, 0.25, sofaColor, 0, 0.65, sofaZ - 0.42, {}); // respaldo
-    this._box(0.28, 0.6, 1.0, sofaColor, -1.6, 0.6, sofaZ, {}); // apoyabrazos L
-    this._box(0.28, 0.6, 1.0, sofaColor, 1.6, 0.6, sofaZ, {}); // apoyabrazos R
-    // almohadones
-    this._box(1.4, 0.18, 0.8, 0x6fa0c8, -0.78, 0.62, sofaZ + 0.05, { rough: 0.9 });
-    this._box(1.4, 0.18, 0.8, 0x6fa0c8, 0.78, 0.62, sofaZ + 0.05, { rough: 0.9 });
+    if (this.models.sofa) {
+      // GLB real del pack (Khronos GlamVelvetSofa). faceFix por si viene rotado.
+      this._placeModel(this.models.sofa.clone(true), { footprint: 2.8, x: 0, z: sofaZ, ry: 0 });
+    } else {
+      const sofaColor = 0x4a7ea8;
+      this._box(3.2, 0.5, 1.0, sofaColor, 0, 0.3, sofaZ, { collide: true, pad: 0.05 }); // base
+      this._box(3.2, 0.7, 0.25, sofaColor, 0, 0.65, sofaZ - 0.42, {}); // respaldo
+      this._box(0.28, 0.6, 1.0, sofaColor, -1.6, 0.6, sofaZ, {}); // apoyabrazos L
+      this._box(0.28, 0.6, 1.0, sofaColor, 1.6, 0.6, sofaZ, {}); // apoyabrazos R
+      this._box(1.4, 0.18, 0.8, 0x6fa0c8, -0.78, 0.62, sofaZ + 0.05, { rough: 0.9 });
+      this._box(1.4, 0.18, 0.8, 0x6fa0c8, 0.78, 0.62, sofaZ + 0.05, { rough: 0.9 });
+    }
+
+    // ---- Sillón de acento (GLB real, Khronos SheenChair) ----
+    if (this.models.armchair) {
+      this._placeModel(this.models.armchair.clone(true), { footprint: 1.1, x: 2.3, z: -0.4, ry: -0.9 });
+    }
 
     // ---- Mesa ratona ----
     const mtZ = -1.4;
