@@ -98,7 +98,9 @@ async function boot() {
   casa.addTo(scene);
 
   // ---------- Jugador ----------
-  const player = new Player({ gltf: charGltf });
+  // targetHeight mide la extensión del esqueleto; el robot completo queda algo
+  // más alto, así que un valor ~1.2 lo deja a escala de chico en la sala.
+  const player = new Player({ gltf: charGltf, targetHeight: 1.2 });
   player.setPosition(casa.spawn.x, 0, casa.spawn.z);
   scene.add(player.mesh);
 
