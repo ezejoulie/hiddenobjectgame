@@ -1,45 +1,52 @@
-# Patrulla Anti-Dengue 3D · ¡A descacharrar!
+# Patrulla Anti-Dengue · 3D
 
-Juego 3D educativo hecho con [three.js](https://threejs.org/): recorré el mundo, encontrá los cacharros que juntan agua y frená al mosquito del dengue.
+Juego educativo web 3D para chicos de primaria sobre **eliminación de criaderos de mosquitos** (descacharrado). Reconstrucción con **Three.js + Vite** siguiendo [`PLAN.md`](./PLAN.md).
 
-## Cómo jugar
+> Estado: **Sprint 0 — "look dev"**. Pipeline visual montado (PBR · IBL · ACES · sombras suaves · GTAO · bloom) y probado con una escena de cubo + esfera. El contenido del juego viene en los próximos sprints.
 
-- **Objetivo:** encontrar los 10 cacharros con agua de cada nivel antes de que se acabe el tiempo (2 minutos).
-- **5 niveles:** La Casa, El Jardín, La Escuela, El Parque y La Playa.
-- **Cuidado con Denguín:** el mosquito villano te persigue; activá el escudo para defenderte. Si te pica, ¡los cacharros se dispersan!
-
-### Controles
-
-| Acción | Teclado (desktop) | Táctil (mobile) |
-|---|---|---|
-| Caminar | WASD / flechas | Joystick (abajo a la izquierda) |
-| Mirar | Arrastrar con el mouse | Arrastrar sobre la escena |
-| Defenderse | Espacio | Botón 🛡️ DEFENDERSE (abajo a la derecha) |
-
-En celulares y tablets el juego se juega **en horizontal**: si el dispositivo está en vertical aparece un aviso para girarlo y la partida queda pausada hasta volver a horizontal. Al empezar a jugar se intenta pasar a pantalla completa y bloquear la orientación apaisada (en los navegadores que lo permiten).
-
-### Pantalla completa en iPhone/iPad
-
-Safari de iOS no permite forzar pantalla completa desde la web. El juego es una **PWA instalable**: tocá **Compartir → Agregar a pantalla de inicio** y abrilo desde el ícono; se ve a pantalla completa real, sin barras del navegador. (El propio juego muestra este tip en la pantalla de inicio cuando detecta un iPhone sin instalar.)
-
-## Stack
-
-- HTML/CSS/JS en un solo archivo (`index.html`), sin build.
-- three.js r128 desde CDN.
-- Sonido y música generados con WebAudio (sin archivos de audio).
-
-## Desarrollo local
+## Desarrollo
 
 ```bash
-npx serve .
+npm install
+npm run dev      # servidor con hot reload en http://localhost:5173
+npm run build    # build de producción a dist/
+npm run preview  # sirve el build
 ```
 
-y abrir http://localhost:3000
+## Estructura
 
-## Deploy
+```
+├── index.html              # shell mínimo (canvas + módulo)
+├── vite.config.js
+├── public/assets/          # models (base/heroes), textures, hdri
+├── src/
+│   ├── main.js             # bootstrap + escena de prueba del Sprint 0
+│   ├── core/
+│   │   ├── Renderer.js     # WebGLRenderer + ACES tone mapping + sombras
+│   │   ├── Lighting.js     # IBL (RoomEnvironment) + key/fill/rim
+│   │   ├── PostFX.js       # EffectComposer: GTAO + bloom + OutputPass
+│   │   └── AssetLoader.js  # carga glTF con caché + progreso (DRACO)
+│   ├── entities/  levels/  systems/  ui/  data/   # se llenan en sprints 1-4
+│   └── ui/styles.css
+└── prototipo-viejo/        # monolito anterior (solo para portar lógica de juego)
+```
 
-Sitio estático: cualquier hosting sirve. Está conectado a Vercel, que detecta el `index.html` en la raíz sin configuración extra.
+## Pipeline visual (Sprint 0)
 
----
+El orden de impacto del PLAN, ya montado:
 
-*Sin agua acumulada, no hay mosquito. Sin mosquito, no hay dengue.* 🦟
+1. **Materiales PBR** — `MeshStandard` / `MeshPhysical` (no más Lambert plano).
+2. **IBL / environment** — `RoomEnvironment` vía PMREM en `scene.environment` (reflejos y ambiente ricos). Se podrá cambiar por HDRI por nivel.
+3. **Tone mapping** — `ACESFilmicToneMapping` aplicado por el `OutputPass`.
+4. **Sombras suaves** — `PCFSoftShadowMap` con bias/normalBias seteados.
+5. **Ambient Occlusion** — `GTAOPass` (contacto/peso de los objetos).
+6. **Bloom sutil** — `UnrealBloomPass` de baja intensidad.
+
+> Criterio de aceptación del PLAN: la luz se valida primero. Si la escena de prueba no se ve hermosa, se ajusta antes de pasar al contenido.
+
+## Prototipo anterior
+
+El juego monolítico previo (un solo `index.html` de ~2.800 líneas) quedó en
+`prototipo-viejo/`. Se usa **solo** para portar la lógica de juego (spawns,
+timer, escudo, Denguín, HUD) cuando lleguemos a ese sprint; la parte visual se
+rehace de cero.
