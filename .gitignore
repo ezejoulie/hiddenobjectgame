@@ -1,1 +1,6 @@
-index.html.orig
+node_modules/
+dist/
+*.local
+.DS_Store
+*.orig
+*.rej
