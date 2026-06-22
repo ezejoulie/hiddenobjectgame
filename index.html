@@ -17,6 +17,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<!-- Postprocesado para la calidad "Increíble" (bloom + grado de color). Si fallan, el juego cae a render directo. -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <style>
 :root{
   --tinta:#15324B; --tinta2:#2A4A66;
@@ -101,6 +108,21 @@ button{font-family:'Baloo 2',cursive;cursor:pointer;border:none}
   border-radius:16px;padding:12px 22px}
 .home-foot{font-weight:700;font-size:.82rem;color:rgba(255,255,255,.92);
   text-shadow:0 1px 3px rgba(13,34,52,.6);letter-spacing:.3px}
+
+/* ===== Selector de calidad gráfica ===== */
+.cal-wrap{display:flex;flex-direction:column;align-items:center;gap:7px;margin:4px 0 2px}
+.cal-lbl{font-family:'Baloo 2';font-weight:700;font-size:.72rem;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(13,34,52,.6)}
+.cal-sel{display:flex;gap:4px;padding:4px;border-radius:999px;
+  background:rgba(13,34,52,.42);border:1px solid rgba(255,255,255,.3);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.cal-sel button{font-family:'Baloo 2';font-weight:800;font-size:.82rem;color:rgba(255,255,255,.92);
+  background:transparent;border:none;border-radius:999px;padding:7px 15px;cursor:pointer;
+  transition:background .15s,color .15s,transform .08s}
+.cal-sel button:active{transform:translateY(1px)}
+.cal-sel button.on{background:linear-gradient(180deg,#FFD968,#F4B72E);color:#4A3203;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 3px 8px rgba(13,34,52,.25)}
+.cal-sel button[data-q="increible"].on{background:linear-gradient(180deg,#6FD962,#379A2C);color:#fff}
 
 /* ===== Avatar builder ===== */
 #scr-avatar .card{max-width:640px}
@@ -371,6 +393,9 @@ body.touch #btnJump{display:flex}
   #introControles{gap:4px;margin-top:8px}
   #introControles .ctrl{font-size:.76rem}
   #introControles kbd{font-size:.68rem;padding:1px 6px}
+  .cal-wrap{gap:3px;margin:0}
+  .cal-lbl{font-size:.6rem;letter-spacing:1.5px}
+  .cal-sel button{font-size:.72rem;padding:5px 11px}
 
   /* --- HUD compacto: que el juego ocupe la mayor altura posible --- */
   #hud{padding:4px 10px;gap:8px}
@@ -422,6 +447,14 @@ body.touch #btnJump{display:flex}
     <h1 class="logo">PATRULLA<br>ANTI-DENGUE<span class="sub">A DESCACHARRAR</span></h1>
     <p class="tagline">Recorré el mundo y eliminá los recipientes con agua antes de que el mosquito haga nido</p>
     <button class="btn grande" id="btnJugar"><span class="btn-ic"></span>Jugar</button>
+    <div class="cal-wrap">
+      <span class="cal-lbl">Calidad gráfica</span>
+      <div id="calSel" class="cal-sel">
+        <button data-q="baja">Baja</button>
+        <button data-q="intensa">Intensa</button>
+        <button data-q="increible">Increíble</button>
+      </div>
+    </div>
     <p class="home-foot">Sin agua acumulada no hay mosquito. Sin mosquito no hay dengue.</p>
     <p id="iosTip">📲 Para jugar a <b>pantalla completa</b>: tocá <b>Compartir</b> y elegí <b>“Agregar a pantalla de inicio”</b>. Después abrí el juego desde el ícono.</p>
   </div>
@@ -1036,6 +1069,19 @@ function pino3F(s=1,c=0x3E9A38){
   const copa=grp(at(cone(.95*s,1.3*s,c,10),0,1.4*s,0), at(cone(.75*s,1.1*s,c,10),0,2.1*s,0), at(cone(.52*s,.9*s,c,10),0,2.75*s,0));
   return grp(tronco,sway(copa,.025,1.1));
 }
+function matita3(s=1){
+  const g=new T.Group();
+  const cols=[0x5FB84A,0x4CAF50,0x6FC95A];
+  const n=4+Math.floor(Math.random()*4);
+  for(let k=0;k<n;k++){
+    const h=(.28+Math.random()*.34)*s;
+    const hoja=cyl(.012,.05,h,cols[k%3],4);
+    hoja.position.set((Math.random()-.5)*.34*s, h/2, (Math.random()-.5)*.34*s);
+    hoja.rotation.z=(Math.random()-.5)*.5; hoja.rotation.x=(Math.random()-.5)*.5;
+    g.add(hoja);
+  }
+  return g;
+}
 function arbusto3(s=1){
   const g=instanciaGLB("arbusto");
   if(g){ g.scale.multiplyScalar(s); return g; }
@@ -1434,18 +1480,103 @@ let escudo={mesh:null,hasta:0,cd:0};
 const dg={modo:"rondar",nextAtk:0,invuln:0,dest:null};
 let buzz=null;
 
+/* =====================================================
+   CALIDAD GRÁFICA · Baja · Intensa · Increíble
+   Detección automática + override manual. composer = postprocesado.
+   ===================================================== */
+let composer=null, bloomPass=null, colorPass=null, CALIDAD="intensa", composerOK=false;
+const QPRESETS={
+  baja:    { px:1.0, sombras:false, shadowSize:0,    bloom:0,    densidad:.45, antialias:false, fog:.9  },
+  intensa: { px:1.0, sombras:true,  shadowSize:1024, bloom:.35,  densidad:.8,  antialias:true,  fog:1   },
+  increible:{px:1.0, sombras:true,  shadowSize:2048, bloom:.85,  densidad:1,   antialias:true,  fog:1.08 },
+};
+function detectarCalidad(){
+  // heurística: memoria, núcleos, touch y resolución
+  const mem=navigator.deviceMemory||4;
+  const cores=navigator.hardwareConcurrency||4;
+  const px=Math.min(devicePixelRatio||1,2);
+  const area=(screen.width*screen.height)||(1280*720);
+  let score=0;
+  score+=mem>=8?2:(mem>=4?1:0);
+  score+=cores>=8?2:(cores>=4?1:0);
+  score+=TOUCH?0:1;
+  score+=area>2200000?1:0;   // >~1080p
+  if(score>=5) return "increible";
+  if(score>=2) return "intensa";
+  return "baja";
+}
+function qGet(){ return QPRESETS[CALIDAD]||QPRESETS.intensa; }
+function initComposer(){
+  // requiere TODOS los módulos de postprocesado cargados, si no, render directo
+  const okModulos = typeof THREE!=="undefined" && THREE.EffectComposer && THREE.RenderPass
+    && THREE.ShaderPass && THREE.UnrealBloomPass && THREE.CopyShader && THREE.LuminosityHighPassShader;
+  if(!okModulos){ composer=null; composerOK=false; console.warn("postprocesado no disponible: render directo"); return; }
+  try{
+    composer=new T.EffectComposer(renderer);
+    composer.addPass(new T.RenderPass(scene,camera));
+    bloomPass=new T.UnrealBloomPass(new T.Vector2(innerWidth,innerHeight), .35, .85, .82);
+    composer.addPass(bloomPass);
+  // grado de color cálido + viñeta sutil (shader propio)
+  const gradeShader={
+    uniforms:{ tDiffuse:{value:null}, calidez:{value:.06}, vigneta:{value:.28}, satur:{value:1.12} },
+    vertexShader:"varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+    fragmentShader:`
+      varying vec2 vUv; uniform sampler2D tDiffuse;
+      uniform float calidez; uniform float vigneta; uniform float satur;
+      void main(){
+        vec4 c=texture2D(tDiffuse,vUv);
+        c.r+=calidez*0.9; c.b-=calidez*0.5;                       // calidez
+        float l=dot(c.rgb,vec3(.299,.587,.114));
+        c.rgb=mix(vec3(l),c.rgb,satur);                            // saturación
+        float d=distance(vUv,vec2(.5));
+        c.rgb*=smoothstep(.85,.35,d*vigneta+.0)*0.35+0.65;         // viñeta suave
+        gl_FragColor=c;
+      }`,
+  };
+  colorPass=new T.ShaderPass(gradeShader); colorPass.renderToScreen=true;
+  composer.addPass(colorPass);
+  composer.setSize(innerWidth,innerHeight);
+  composer.setPixelRatio(Math.min(devicePixelRatio,2));
+  composerOK=true;
+  }catch(e){ console.warn("error creando postprocesado, render directo:",e); composer=null; composerOK=false; }
+}
+function aplicarCalidad(q){
+  if(!QPRESETS[q]) q="intensa"; CALIDAD=q;
+  try{ localStorage.setItem("dengue_calidad",q); }catch(e){}
+  const p=qGet();
+  if(renderer){
+    renderer.shadowMap.enabled=p.sombras;
+    renderer.setPixelRatio(Math.min(devicePixelRatio, p.px*(TOUCH?1.6:2)));
+  }
+  if(bloomPass) bloomPass.strength=p.bloom;
+  // exposición un toque mayor en calidad alta = sensación de glow cálido sin postprocesado
+  if(renderer) renderer.toneMappingExposure = q==="increible" ? 1.18 : (q==="intensa" ? 1.08 : 1.0);
+  // las sombras por-objeto se respetan según preset
+  if(typeof G!=="undefined"){ G._densidad=p.densidad; }
+  // refrescar sombras de la luz principal si existe
+  if(G._luz){ G._luz.castShadow=p.sombras; if(p.sombras&&p.shadowSize) G._luz.shadow.mapSize.set(p.shadowSize,p.shadowSize); }
+  const sel=document.getElementById("calSel");
+  if(sel) [...sel.children].forEach(b=>b.classList.toggle("on", b.dataset.q===q));
+}
+
 function initGL(){
   if(renderer) return;
   const cv=$("#cv3d");
-  renderer=new T.WebGLRenderer({canvas:cv,antialias:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,TOUCH?1.8:2));
-  renderer.shadowMap.enabled=true;
+  // calidad: guardada > detectada
+  let guardada=null; try{ guardada=localStorage.getItem("dengue_calidad"); }catch(e){}
+  CALIDAD=guardada||detectarCalidad();
+  const p=qGet();
+  renderer=new T.WebGLRenderer({canvas:cv,antialias:p.antialias});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,(TOUCH?1.6:2)*p.px));
+  renderer.shadowMap.enabled=p.sombras;
   renderer.shadowMap.type=T.PCFSoftShadowMap;
   renderer.toneMapping=T.ACESFilmicToneMapping;
   renderer.toneMappingExposure=1.05;
   renderer.outputEncoding=T.sRGBEncoding;
   camera=new T.PerspectiveCamera(fovBase,1,.1,260);
   clock=new T.Clock();
+  initComposer();
+  aplicarCalidad(CALIDAD);
   resize3D();
   window.addEventListener("resize",resize3D);
   initControles();
@@ -1455,6 +1586,7 @@ function resize3D(){
   const w=innerWidth, h=innerHeight;
   renderer.setSize(w,h,false);
   camera.aspect=w/h; camera.updateProjectionMatrix();
+  if(composer){ composer.setSize(w,h); if(bloomPass&&bloomPass.setSize) bloomPass.setSize(w,h); }
 }
 
 /* ---------- Personaje (proporciones juguete) ---------- */
@@ -1518,8 +1650,10 @@ function construirNivel(i){
 
   const hemi=new T.HemisphereLight(0xfdf6e8,0x86a86a,.75); hemi.color.convertSRGBToLinear(); hemi.groundColor.convertSRGBToLinear(); scene.add(hemi);
   const luz=new T.DirectionalLight(0xfff0d2,1.35); luz.color.convertSRGBToLinear();
-  luz.position.set(nv.sol[0]*.6,24,nv.sol[2]*.5); luz.castShadow=true;
-  luz.shadow.mapSize.set(TOUCH?1024:2048,TOUCH?1024:2048);
+  const _qp=(typeof qGet==="function")?qGet():{sombras:true,shadowSize:2048};
+  luz.position.set(nv.sol[0]*.6,24,nv.sol[2]*.5); luz.castShadow=_qp.sombras;
+  const _ss=_qp.shadowSize||(TOUCH?1024:2048);
+  luz.shadow.mapSize.set(_ss,_ss);
   luz.shadow.camera.left=-32; luz.shadow.camera.right=32;
   luz.shadow.camera.top=32; luz.shadow.camera.bottom=-32;
   luz.shadow.camera.far=90; luz.shadow.bias=-0.0008;
@@ -1547,6 +1681,29 @@ function construirNivel(i){
   sways.length=0; G._mar=null;
   nv.build(scene,colliders);
   G._velMul=nv.velMul||1; G._noche=(i===4); RAIN.prox=0; if(RAIN.activa) pararLluvia(performance.now()*.001); if(RAIN.pts){ scene.add(RAIN.pts); RAIN.pts.visible=false; } G._velero=G._velero&&G._noche?G._velero:null;
+  // ---- follaje decorativo según calidad (no afecta jugabilidad) ----
+  (function sembrarDensidad(){
+    const dens=(typeof G._densidad==="number")?G._densidad:.8;
+    if(dens<=.5) return; // en "baja" no se siembra extra
+    const cuantos=Math.round(dens*(i===4?10:22)); // playa más despejada
+    const W2=W-2;
+    for(let k=0;k<cuantos;k++){
+      const x=-W2+Math.random()*W2*2, z=-W2+Math.random()*W2*2;
+      // evitar el centro de spawn del jugador
+      if(Math.hypot(x-2.5,z-5)<4) continue;
+      let m;
+      const r=Math.random();
+      if(i===4){ m = r<.6?matita3(.7+Math.random()*.5):roca3F(.5+Math.random()*.4); }
+      else if(r<.5) m=matita3(.8+Math.random()*.6);
+      else if(r<.8) m=arbusto3F(.6+Math.random()*.5);
+      else m=flores3F? flores3F():matita3(1);
+      if(!m) continue;
+      m.position.set(x,0,z); m.rotation.y=Math.random()*6.28;
+      const sc=.8+Math.random()*.5; m.scale.multiplyScalar(sc);
+      if(typeof sway==="function"&&r<.6) sway(m,.018,.8+Math.random());
+      scene.add(m);
+    }
+  })();
   // zonas de barro / agua estancada que frenan
   if(nv.barro){ const esPlaya=(i===4);
     nv.barro.forEach(([bx,bz,br])=>{
@@ -2059,7 +2216,10 @@ function tick(){
     $("#escudoTxt").textContent=usando?"¡ACTIVO!":(listo?"LISTO":Math.ceil(rest)+"s");
   }
 
-  renderer.render(scene,camera);
+  if(composer && composerOK && CALIDAD!=="baja"){
+    try{ composer.render(); }
+    catch(e){ console.warn("postprocesado falló, usando render directo:",e); composerOK=false; renderer.render(scene,camera); }
+  } else renderer.render(scene,camera);
 }
 
 /* ---------- Lluvia ---------- */
@@ -2176,6 +2336,25 @@ function iniciarDemo(){
   }catch(e){}
 }
 window.addEventListener("load",iniciarDemo);
+
+/* selector de calidad gráfica */
+(function(){
+  const sel=document.getElementById("calSel");
+  if(!sel) return;
+  // marcar el activo (guardado o detectado) ni bien carga
+  const marca=()=>{ const q=(typeof CALIDAD!=="undefined")?CALIDAD:"intensa";
+    [...sel.children].forEach(b=>b.classList.toggle("on", b.dataset.q===q)); };
+  setTimeout(marca,60);
+  sel.addEventListener("click",e=>{
+    const b=e.target.closest("button[data-q]"); if(!b) return;
+    const q=b.dataset.q;
+    if(typeof aplicarCalidad==="function") aplicarCalidad(q);
+    // reconstruir el nivel actual para aplicar densidad de vegetación del nuevo modo
+    try{ if(typeof construirNivel==="function"){ const ix=(typeof G!=="undefined"&&G.nivelActual!=null&&!demo)?G.nivelActual:0; construirNivel(ix); } }catch(_){}
+    [...sel.children].forEach(x=>x.classList.toggle("on", x.dataset.q===q));
+    try{ if(typeof sndOk==="function") sndOk(); }catch(_){}
+  });
+})();
 
 /* ---------- Orientación: forzar horizontal en táctil ---------- */
 async function bloquearHorizontal(){
