@@ -132,12 +132,6 @@ button{font-family:'Baloo 2',cursive;cursor:pointer;border:none}
 .avatar-opts{flex:1;min-width:260px;display:flex;flex-direction:column;gap:12px}
 .opt-row label{font-weight:800;font-size:.92rem;display:block;margin-bottom:6px;letter-spacing:.3px}
 .swatches{display:flex;gap:8px;flex-wrap:wrap}
-.genero-sel{display:flex;gap:8px}
-.genero-sel button{font-family:'Baloo 2';font-weight:800;font-size:1rem;padding:9px 22px;border-radius:12px;cursor:pointer;
-  border:2px solid rgba(21,50,75,.2);background:#fff;color:var(--tinta);transition:all .15s}
-.genero-sel button:active{transform:translateY(1px)}
-.genero-sel button.on{border-color:var(--azul);background:rgba(39,170,225,.12);
-  box-shadow:0 0 0 3px rgba(39,170,225,.18)}
 .sw{width:44px;height:44px;border-radius:13px;border:2px solid rgba(21,50,75,.25);
   box-shadow:0 3px 8px rgba(13,34,52,.16), inset 0 1px 0 rgba(255,255,255,.5);
   display:flex;align-items:center;justify-content:center;background:#fff;transition:transform .08s,border-color .15s}
@@ -484,10 +478,6 @@ body.touch #btnJump{display:flex}
           <label for="inpNombre">Tu nombre</label>
           <input id="inpNombre" maxlength="14" placeholder="Escribí tu nombre" autocomplete="off">
         </div>
-        <div class="opt-row"><label>¿Nene o nena?</label><div class="genero-sel" id="swGenero">
-          <button data-g="0">Nene</button>
-          <button data-g="1">Nena</button>
-        </div></div>
         <div class="opt-row"><label>Piel</label><div class="swatches" id="swPiel"></div></div>
         <div class="opt-row"><label>Pelo</label><div class="swatches" id="swPelo"></div></div>
         <div class="opt-row"><label>Remera</label><div class="swatches" id="swRemera"></div></div>
@@ -584,7 +574,7 @@ const $$ = s => document.querySelectorAll(s);
 
 /* ---------- Estado global ---------- */
 const G = {
-  nombre:"", genero:0, piel:0, pelo:0, remera:0, acc:0,
+  nombre:"", piel:0, pelo:0, remera:0, acc:0,
   nivelActual:0,
   progreso:[ {stars:0,score:0}, {stars:0,score:0}, {stars:0,score:0}, {stars:0,score:0}, {stars:0,score:0} ],
   encontrados:new Set(),
@@ -630,17 +620,13 @@ const ACCS=[
 function avatarSVG(g, anim=false){
   const piel=PIELES[g.piel], pelo=PELOS[g.pelo], rem=REMERAS[g.remera];
   let acc="";
-  if(g.acc===1) acc=`<path d="M-32,-58 A32,28 0 0 1 32,-58 L38,-50 L-40,-50 L-32,-58 Z" fill="#2A7DE1" ${STf}/><path d="M-40,-50 L-58,-46" ${ST} stroke="#1B5BA8"/><ellipse cx="0" cy="-72" rx="6" ry="5" fill="#1B5BA8"/>`;
-  if(g.acc===2) acc=`<path d="M-34,-50 A34,30 0 0 1 34,-50" fill="none" stroke="${rem}" stroke-width="9" stroke-linecap="round"/>`;
-  if(g.acc===3) acc=`<g transform="translate(-30,-58) rotate(-20)"><path d="M0,0 L-14,-10 L-12,4 Z M0,0 L14,-10 L12,4 Z" fill="${rem}" ${STf}/><circle r="5" fill="#FFFFFF" ${STf}/></g>`;
-  const coleta = g.genero===1 ? `<circle cx="0" cy="-70" r="13" fill="${pelo}" ${STf}/><circle cx="0" cy="-58" r="5" fill="${rem}"/>` : "";
+  if(g.acc===1) acc=`<path d="M-30,-62 A30,26 0 0 1 30,-62 L34,-56 L-44,-56 L-30,-62 Z" fill="${rem}" ${STf}/><circle cx="0" cy="-78" r="6" fill="${rem}" ${STf}/>`;
+  if(g.acc===2) acc=`<g><rect x="-30" y="-46" width="24" height="16" rx="7" fill="#15324B"/><rect x="6" y="-46" width="24" height="16" rx="7" fill="#15324B"/><line x1="-6" y1="-39" x2="6" y2="-39" stroke="#15324B" stroke-width="5"/></g>`;
+  if(g.acc===3) acc=`<g transform="translate(24,-66) rotate(20)"><path d="M0,0 L-14,-10 L-12,4 Z M0,0 L14,-10 L12,4 Z" fill="#FF8AC2" ${STf}/><circle r="5" fill="#FFC0DD" ${STf}/></g>`;
   const pestañeo = anim ? `<animate attributeName="ry" values="6;6;0.8;6;6" keyTimes="0;0.42;0.5;0.58;1" dur="3.4s" repeatCount="indefinite"/>` : "";
   return `<svg viewBox="-70 -100 140 200" xmlns="http://www.w3.org/2000/svg">
-    ${coleta}
     <!-- cuerpo -->
     <path d="M-34,18 Q-38,90 -26,92 L26,92 Q38,90 34,18 Q20,4 0,4 Q-20,4 -34,18 Z" fill="${rem}" ${ST}/>
-    <!-- escudo en el pecho -->
-    <path d="M0,30 L13,36 Q13,52 0,58 Q-13,52 -13,36 Z" fill="#FFFFFF" ${STf}/><path d="M-5,42 h10 M0,37 v10" stroke="#46B23A" stroke-width="4" stroke-linecap="round"/>
     <!-- brazos -->
     <path d="M-34,26 Q-56,48 -48,64" fill="none" ${ST}/><circle cx="-48" cy="66" r="9" fill="${piel}" ${STf}/>
     <path d="M34,26 Q56,48 48,64" fill="none" ${ST}/><circle cx="48" cy="66" r="9" fill="${piel}" ${STf}/>
@@ -1576,13 +1562,12 @@ function aplicarCalidad(q){
 function initGL(){
   if(renderer) return;
   const cv=$("#cv3d");
-  // calidad: guardada > detectada (protegido)
+  // calidad: guardada > detectada
   let guardada=null; try{ guardada=localStorage.getItem("dengue_calidad"); }catch(e){}
-  try{ CALIDAD=guardada||detectarCalidad(); }catch(e){ CALIDAD="intensa"; }
+  CALIDAD=guardada||detectarCalidad();
   const p=qGet();
   renderer=new T.WebGLRenderer({canvas:cv,antialias:p.antialias});
   renderer.setPixelRatio(Math.min(devicePixelRatio,(TOUCH?1.6:2)*p.px));
-  renderer.setClearColor(0x7EC8F2, 1); // celeste de respaldo: nunca negro
   renderer.shadowMap.enabled=p.sombras;
   renderer.shadowMap.type=T.PCFSoftShadowMap;
   renderer.toneMapping=T.ACESFilmicToneMapping;
@@ -1590,8 +1575,8 @@ function initGL(){
   renderer.outputEncoding=T.sRGBEncoding;
   camera=new T.PerspectiveCamera(fovBase,1,.1,260);
   clock=new T.Clock();
-  try{ initComposer(); }catch(e){ console.warn("initComposer:",e); composer=null; composerOK=false; }
-  try{ aplicarCalidad(CALIDAD); }catch(e){ console.warn("aplicarCalidad:",e); }
+  initComposer();
+  aplicarCalidad(CALIDAD);
   resize3D();
   window.addEventListener("resize",resize3D);
   initControles();
@@ -1607,81 +1592,34 @@ function resize3D(){
 /* ---------- Personaje (proporciones juguete) ---------- */
 function buildPlayer(){
   const piel=hx(PIELES[G.piel]), pelo=hx(PELOS[G.pelo]), rem=hx(REMERAS[G.remera]);
-  const AZUL=0x2A7DE1, AZULOSC=0x1B5BA8, BLANCO=0xFFFFFF, TINTA=0x15324B;
-  const esNena = G.genero===1;
   const g=new T.Group();
-
-  // ---- piernas con short azul + zapatillas blancas ----
   const mkPierna=x=>{ const p=grp();
-    const short=cyl(.12,.10,.22,AZULOSC,10); short.position.y=-.11;
-    const pierna=cyl(.085,.075,.24,piel,9); pierna.position.y=-.34;
-    const zap=sph(.14,BLANCO,12,9); zap.scale.set(1,.55,1.5); zap.position.set(0,-.5,.05);
-    const suela=cyl(.13,.13,.05,TINTA,12); suela.rotation.x=Math.PI/2; suela.scale.set(1,1.5,1); suela.position.set(0,-.55,.05);
-    p.add(short,pierna,zap,suela); p.position.set(x,.5,0); return p; };
-  const legL=mkPierna(-.14), legR=mkPierna(.14);
-
-  // ---- torso: remera con escudo en el pecho ----
-  const torso=sph(.35,rem,18,15); torso.scale.set(1,.98,.8); torso.position.y=.82;
-  const panza=sph(.31,rem,16,13); panza.scale.set(1,.82,.82); panza.position.y=.62;
-  // emblema escudo
-  const escudo=sph(.1,BLANCO,10,8); escudo.scale.set(.85,1,.35); escudo.position.set(0,.86,.3);
-  const cruz1=box(.025,.09,.02,0x46B23A); cruz1.position.set(0,.86,.33);
-  const cruz2=box(.07,.03,.02,0x46B23A); cruz2.position.set(0,.86,.33);
-
-  // ---- brazos ----
-  const mkBrazo=(x,lupa)=>{ const b=grp();
-    const manga=cyl(.095,.07,.22,rem,10); manga.position.y=-.1;
-    const ante=cyl(.07,.062,.2,piel,9); ante.position.y=-.3;
-    const mano=sph(.085,piel,10,8); mano.position.y=-.42;
-    b.add(manga,ante,mano);
-    if(lupa){ // lupa de detective sanitario (herramienta, no arma)
-      const aro=tor(.085,.022,0x6B4226,16); aro.position.set(0,-.56,.04); aro.rotation.x=Math.PI/2;
-      const vidrio=sph(.07,0xBFE3F5,10,8); vidrio.scale.set(1,1,.3); vidrio.position.set(0,-.56,.04); vidrio.material.opacity=.7; vidrio.material.transparent=true;
-      const mango=cyl(.018,.018,.13,0x6B4226,6); mango.position.set(0,-.66,.04);
-      b.add(aro,vidrio,mango);
-    }
-    b.position.set(x,1.03,0); b.rotation.z=x>0?-.2:.2; return b; };
-  const armL=mkBrazo(-.37,false), armR=mkBrazo(.37,true);
-
-  // ---- cabeza ----
-  const cabeza=sph(.35,piel,22,18); cabeza.position.y=1.56;
-  // pelo según género
-  const peloG=new T.Group();
-  const casquete=sph(.37,pelo,20,14); casquete.scale.set(1.03,.78,1.03); casquete.position.set(0,1.69,-.02);
-  const flequillo=sph(.35,pelo,16,9); flequillo.scale.set(.98,.36,.99); flequillo.position.set(0,1.76,.05);
-  peloG.add(casquete,flequillo);
-  if(esNena){ // coleta
-    const coleta=sph(.16,pelo,12,10); coleta.scale.set(1,1.5,1); coleta.position.set(0,1.66,-.34);
-    const lazo=tor(.06,.025,rem,12); lazo.position.set(0,1.78,-.28);
-    peloG.add(coleta,lazo);
-  }
-  // ojos grandes expresivos
-  const ojo=x=>{ const b=sph(.085,BLANCO,12,10); b.position.set(x,1.58,.3);
-    const p=sph(.045,TINTA,9,7); p.position.set(x,1.57,.37);
-    const brillo=sph(.016,BLANCO,6,6); brillo.position.set(x+.015,1.6,.4); return [b,p,brillo]; };
-  const cejas=x=>{ const c=box(.09,.018,.02,pelo); c.position.set(x,1.68,.32); c.rotation.z=x>0?-.1:.1; return c; };
-  const cachete=x=>{ const c=sph(.055,0xFF9D9B,8,6); c.material.transparent=true; c.material.opacity=.7; c.position.set(x,1.47,.29); return c; };
-  const boca=tor(.06,.016,TINTA,Math.PI); boca.position.set(0,1.44,.32); boca.rotation.z=Math.PI; boca.rotation.x=-.25;
-  const nariz=sph(.025,piel,6,6); nariz.position.set(0,1.52,.36);
-
-  g.add(legL,legR,panza,torso,escudo,cruz1,cruz2,armL,armR,cabeza,peloG,
-        ...ojo(-.13),...ojo(.13),cejas(-.13),cejas(.13),cachete(-.23),cachete(.23),boca,nariz);
-
-  // ---- gorra azul de agente (accesorio 1) con escudito ----
-  if(G.acc===1){
-    const gorra=sph(.38,AZUL,18,11); gorra.scale.set(1.05,.52,1.05); gorra.position.set(0,1.8,0);
-    const visera=box(.46,.06,.32,AZULOSC); visera.position.set(0,1.72,.42);
-    const boton=sph(.045,AZULOSC,8,8); boton.position.set(0,1.94,0);
-    const escudito=sph(.07,BLANCO,8,8); escudito.scale.set(.8,1,.3); escudito.position.set(0,1.83,.36);
-    g.add(gorra,visera,boton,escudito);
-  }
-  // vincha (accesorio 2) — apropiada, simple
-  if(G.acc===2){ const v=tor(.34,.04,rem,18); v.rotation.x=.4; v.position.set(0,1.74,0); g.add(v); }
-  // moño (accesorio 3) — para nena, sin elementos equívocos
-  if(G.acc===3){ const m1=cone(.12,.2,rem,7), m2=cone(.12,.2,rem,7);
-    m1.rotation.z=1.2; m2.rotation.z=-1.2; m1.position.set(-.34,1.86,-.1); m2.position.set(-.18,1.86,-.1);
-    const c=sph(.06,0xFFFFFF,8,8); c.position.set(-.26,1.86,-.1); g.add(m1,m2,c); }
-
+    const muslo=cyl(.11,.09,.42,0x3E6B9E,10); muslo.position.y=-.21;
+    const zap=sph(.13,0xFFFFFF,10,8); zap.scale.set(1,.6,1.4); zap.position.set(0,-.44,.04);
+    p.add(muslo,zap); p.position.set(x,.5,0); return p; };
+  const legL=mkPierna(-.13), legR=mkPierna(.13);
+  const torso=sph(.34,rem,16,14); torso.scale.set(1,.95,.78); torso.position.y=.78;
+  const panza=sph(.3,rem,14,12); panza.scale.set(1,.8,.8); panza.position.y=.6;
+  const mkBrazo=x=>{ const b=grp();
+    const manga=cyl(.09,.07,.4,rem,10); manga.position.y=-.16;
+    const mano=sph(.09,piel,10,8); mano.position.y=-.4;
+    b.add(manga,mano); b.position.set(x,1,0); b.rotation.z=x>0?-.18:.18; return b; };
+  const armL=mkBrazo(-.36), armR=mkBrazo(.36);
+  const cabeza=sph(.34,piel,20,16); cabeza.position.y=1.5;
+  const pelo1=sph(.36,pelo,18,12); pelo1.scale.set(1.02,.74,1.02); pelo1.position.set(0,1.63,-.03);
+  const flequillo=sph(.34,pelo,14,8); flequillo.scale.set(.96,.34,.96); flequillo.position.set(0,1.7,.06);
+  const ojo=x=>{ const b=sph(.075,0xffffff,10,8); b.position.set(x,1.53,.29);
+    const p=sph(.038,0x15324B,8,6); p.position.set(x,1.53,.355); return [b,p]; };
+  const cachete=x=>{ const c=sph(.05,0xFF9D9B,8,6); c.position.set(x,1.42,.28); return c; };
+  const boca=tor(.07,.018,0x15324B,Math.PI); boca.position.set(0,1.4,.31); boca.rotation.z=Math.PI; boca.rotation.x=-.2;
+  g.add(legL,legR,panza,torso,armL,armR,cabeza,pelo1,flequillo,...ojo(-.12),...ojo(.12),cachete(-.22),cachete(.22),boca);
+  if(G.acc===1){ const gorra=sph(.36,rem,16,9); gorra.scale.set(1.05,.5,1.05); gorra.position.set(0,1.74,0);
+    const visera=box(.42,.05,.3,rem); visera.position.set(0,1.66,.4); g.add(gorra,visera); }
+  if(G.acc===2){ const a=box(.18,.12,.05,0x15324B); a.position.set(-.12,1.53,.32);
+    const b=a.clone(); b.position.x=.12; const pu=box(.08,.03,.05,0x15324B); pu.position.set(0,1.54,.32); g.add(a,b,pu); }
+  if(G.acc===3){ const m1=cone(.13,.22,0xFF8AC2,7), m2=cone(.13,.22,0xFF8AC2,7);
+    m1.rotation.z=1.2; m2.rotation.z=-1.2; m1.position.set(.26,1.82,0); m2.position.set(.42,1.78,0);
+    const c=sph(.075,0xFFC0DD,8,8); c.position.set(.34,1.78,0); g.add(m1,m2,c); }
   limbs={legL,legR,armL,armR};
   g.traverse(o=>{ if(o.isMesh)o.castShadow=true; });
   return g;
@@ -1710,7 +1648,7 @@ function construirNivel(i){
   if(nv.cieloPano) texturaReal(nv.cieloPano, dome.material);
   const sol=solSprite(); sol.position.set(...nv.sol); scene.add(sol);
 
-  const hemi=new T.HemisphereLight(0xfdf6e8,0x86a86a,.75); hemi.color.convertSRGBToLinear(); hemi.groundColor.convertSRGBToLinear(); scene.add(hemi); G._hemi=hemi;
+  const hemi=new T.HemisphereLight(0xfdf6e8,0x86a86a,.75); hemi.color.convertSRGBToLinear(); hemi.groundColor.convertSRGBToLinear(); scene.add(hemi);
   const luz=new T.DirectionalLight(0xfff0d2,1.35); luz.color.convertSRGBToLinear();
   const _qp=(typeof qGet==="function")?qGet():{sombras:true,shadowSize:2048};
   luz.position.set(nv.sol[0]*.6,24,nv.sol[2]*.5); luz.castShadow=_qp.sombras;
@@ -1720,7 +1658,7 @@ function construirNivel(i){
   luz.shadow.camera.top=32; luz.shadow.camera.bottom=-32;
   luz.shadow.camera.far=90; luz.shadow.bias=-0.0008;
   scene.add(luz);
-  G._luz=luz;
+  G._luz=luz; G._hemi=hemi;
   // estrellas para el anochecer de la playa (aparecen con opacity en el tick)
   G._estrellas=null;
   if(i===4){
@@ -2006,7 +1944,6 @@ function popupScore(worldPos,txt,color="#3E9A38"){
 function tick(){
   requestAnimationFrame(tick);
   if(!scene||!player) return;
-  try{
   const dt=Math.min(clock.getDelta(),.05);
   const t=performance.now()*.001;
   if(demo){ yaw+=dt*.07; camDist+=(12.5-camDist)*Math.min(1,dt*1.5); pitch+=(.34-pitch)*Math.min(1,dt); }
@@ -2249,7 +2186,7 @@ function tick(){
   if(G._luz){
     const k=(G._noche&&G.jugando)?Math.max(0,Math.min(1,1-(G.tiempo/120))):0;
     G._luz.intensity=(1.35-.95*k)*lluviaK;
-    if(G._hemi) G._hemi.intensity=(.75-.42*k)*lluviaK;
+    G._hemi.intensity=(.75-.42*k)*lluviaK;
     if(G._dome) G._dome.color.setRGB(1-.55*k,1-.5*k,1-.28*k);
     if(G._estrellas) G._estrellas.material.opacity=k*.95;
   }
@@ -2278,8 +2215,6 @@ function tick(){
     eUI.classList.toggle("listo",listo);
     $("#escudoTxt").textContent=usando?"¡ACTIVO!":(listo?"LISTO":Math.ceil(rest)+"s");
   }
-
-  }catch(err){ if(!tick._avisado){ console.warn("tick error (se sigue dibujando):",err); tick._avisado=true; } }
 
   if(composer && composerOK && CALIDAD!=="baja"){
     try{ composer.render(); }
@@ -2470,12 +2405,6 @@ function renderAvatarBuilder(){
   };
   mk("#swPiel",PIELES,"piel"); mk("#swPelo",PELOS,"pelo");
   mk("#swRemera",REMERAS,"remera"); mk("#swAcc",ACCS,"acc",true);
-  // selector nena/nene
-  const gsel=$("#swGenero");
-  if(gsel){ [...gsel.children].forEach(b=>{
-    b.classList.toggle("on", +b.dataset.g===G.genero);
-    b.onclick=()=>{ G.genero=+b.dataset.g; sndTic(); renderAvatarBuilder(); };
-  }); }
   $("#avPreview").innerHTML = avatarSVG(G,true);
 }
 $("#inpNombre").addEventListener("input",e=>{ G.nombre=e.target.value.trim(); });
