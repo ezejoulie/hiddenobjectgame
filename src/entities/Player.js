@@ -34,31 +34,53 @@ export class Player {
     this.actions = {};
     this.current = null;
 
+    this.mesh = null;
     if (opts.gltf && opts.gltf.scene) {
-      this.mesh = this._buildGLB(opts.gltf, opts.targetHeight ?? 1.55);
-      this.isGLB = true;
-    } else {
-      this.mesh = this._buildPrimitive();
+      try {
+        this.mesh = this._buildGLB(opts.gltf, opts.targetHeight ?? 1.55);
+        this.isGLB = true;
+      } catch (e) {
+        console.warn('Falló el personaje GLB, usando placeholder:', e);
+        this.mesh = null;
+        this.isGLB = false;
+        this.mixer = null;
+      }
     }
+    if (!this.mesh) this.mesh = this._buildPrimitive();
     this.shieldUntil = 0;
   }
 
   // ---------- Modo GLB (riggeado + animado) ----------
   _buildGLB(gltf, targetH) {
     const model = skeletonClone(gltf.scene);
+    model.updateMatrixWorld(true);
 
-    // normalizar a la altura objetivo y apoyar en el piso
-    const box = new THREE.Box3().setFromObject(model);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const s = size.y > 0 ? targetH / size.y : 1;
-    model.scale.setScalar(s);
-    const box2 = new THREE.Box3().setFromObject(model);
-    const c = new THREE.Vector3();
-    box2.getCenter(c);
-    model.position.x -= c.x;
-    model.position.z -= c.z;
-    model.position.y -= box2.min.y;
+    // OJO: en un skinned mesh la geometría viene en bind-pose diminuta; el
+    // tamaño real lo dan los HUESOS. Medimos la altura por la extensión del
+    // esqueleto (con fallback a la caja de la geometría).
+    const v = new THREE.Vector3();
+    const boneBox = new THREE.Box3();
+    let bones = 0;
+    model.traverse((o) => {
+      if (o.isBone) {
+        v.setFromMatrixPosition(o.matrixWorld);
+        boneBox.expandByPoint(v);
+        bones += 1;
+      }
+    });
+
+    let h = 0;
+    if (bones >= 2 && isFinite(boneBox.min.y)) {
+      h = boneBox.getSize(new THREE.Vector3()).y;
+    }
+    if (!(h > 0.01)) {
+      const gb = new THREE.Box3().setFromObject(model);
+      const gs = gb.getSize(new THREE.Vector3());
+      h = gs.y > 0.01 ? gs.y : 1;
+    }
+
+    const s = targetH / h;
+    model.scale.setScalar(s); // origen en los pies → queda apoyado en y=0
 
     model.traverse((o) => {
       if (o.isMesh) {
