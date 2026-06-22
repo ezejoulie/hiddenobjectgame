@@ -17,7 +17,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <style>
 :root{
   --tinta:#15324B; --tinta2:#2A4A66;
@@ -51,6 +50,19 @@ button{font-family:'Baloo 2',cursive;cursor:pointer;border:none}
 .screen::before{content:"";margin-top:auto}
 .screen::after{content:"";margin-bottom:auto}
 .screen.active{display:flex}
+/* ---- Pantalla de carga de nivel ---- */
+#scr-loading{background:linear-gradient(180deg,#0E2438 0%,#15324A 55%,#1C4030 100%);color:#fff}
+.load-inner{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:460px;width:90%}
+.load-emoji{width:96px;height:96px;margin-bottom:6px;animation:loadPulse 1.6s ease-in-out infinite}
+.load-emoji svg{width:100%;height:100%}
+@keyframes loadPulse{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.05)}}
+.load-titulo{font-size:1.7rem;font-weight:900;margin:.1em 0 .15em;letter-spacing:-.01em}
+.load-sub{font-size:1rem;opacity:.82;margin:0 0 1.3em}
+.load-bar{width:100%;height:20px;background:rgba(255,255,255,.14);border-radius:999px;overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.3)}
+.load-fill{height:100%;width:0%;background:linear-gradient(180deg,#6FD962,#379A2C);border-radius:999px;transition:width .28s cubic-bezier(.4,0,.2,1);box-shadow:0 0 14px rgba(111,217,98,.6)}
+.load-pct{font-size:1.5rem;font-weight:900;margin-top:.55em;color:#9BE88E}
+.load-tip{font-size:.92rem;opacity:.7;margin-top:1.6em;line-height:1.45;max-width:380px;min-height:2.6em}
+
 .card{
   background:var(--glass);
   -webkit-backdrop-filter:blur(14px) saturate(1.25);backdrop-filter:blur(14px) saturate(1.25);
@@ -531,6 +543,18 @@ body.touch #btnJump{display:flex}
   <div id="tray"></div>
 </div>
 
+<!-- PANTALLA DE CARGA DE NIVEL -->
+<div class="screen" id="scr-loading">
+  <div class="load-inner">
+    <div class="load-emoji" id="loadEmoji"></div>
+    <h2 class="load-titulo" id="loadTitulo">Preparando el nivel</h2>
+    <p class="load-sub" id="loadSub">Cargando los modelos 3D…</p>
+    <div class="load-bar"><div class="load-fill" id="loadFill"></div></div>
+    <div class="load-pct" id="loadPct">0%</div>
+    <p class="load-tip" id="loadTip"></p>
+  </div>
+</div>
+
 <!-- MODAL INTRO -->
 <div class="modal" id="mod-intro">
   <div class="card">
@@ -872,7 +896,59 @@ const ASSETS={
   castillo:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/41c888c9-1607-4773-b995-f7f5ca2b5dd8.glb","assets/castillo.glb"],alto:.8},
   velero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/a8e12138-0b6a-4cfe-8f29-34a30d452fa5.glb","assets/velero.glb"],alto:2.2},
   regadera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/57daab7e-a92c-47e9-b46c-eef6440faf77.glb","assets/regadera.glb"],alto:.68},
-  agente:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/414839bb-671e-4bea-abe0-8e3f0642a4ea.glb","assets/agente.glb"],alto:1.7,animado:true},
+  pared_int:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/0cd21f10-2a14-4d70-bed3-8ee704d1ab42.glb"],alto:2.6},
+  piso_madera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/a1ced5da-4aa1-42c2-b4d2-f89137afe720.glb"],alto:0.1},
+  piso_baldosa:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/2fb7feb3-476a-4ce8-8df0-6cbda31683cb.glb"],alto:0.1},
+  mesada:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/03ace918-cec4-4f89-87d3-8e3db42e1622.glb"],alto:1.0},
+  alacena:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/03634343-930e-4d02-9a28-d804d2ce78e3.glb"],alto:1.8},
+  heladera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/a3cf4c30-d531-4ac5-87b4-a9da99cec845.glb"],alto:2.1},
+  banadera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/7e217d98-653e-41f9-ba8b-a9e2ce3b2b52.glb"],alto:0.9},
+  lavarropas:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/4fefb51d-a3b2-4363-b3ee-564333133ea9.glb"],alto:1.5},
+  sofa:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/65bc4673-a12f-46bb-a64a-862256c4dd82.glb"],alto:1.1},
+  mesa_ratona:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/e5107612-6450-4585-be48-98d6f8d63889.glb"],alto:0.55},
+  tele:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/82d48ff8-617f-4a73-bb7b-a127721bb1c0.glb"],alto:1.3},
+  cama:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/a5fb8855-06c1-4302-be77-68445deadb38.glb"],alto:1.1},
+  mesa_luz:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/1c5bc0b5-c8d5-4c3e-9bb9-7fcd641a3078.glb"],alto:0.7},
+  ropero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/f4c9a58d-0aee-438f-ab0e-a4d5c6ba6dbb.glb"],alto:2.3},
+  pileta_lav:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/6488016f-f663-40af-a78a-2607634fd150.glb"],alto:1.0},
+  cobertizo:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/736a1995-0f8b-4e1b-88f0-28bc458515af.glb"],alto:2.6},
+  huerta:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/2b5a0f73-eab9-48e5-94bd-c0ec48e3456e.glb"],alto:0.7},
+  sendero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/0ecf5138-5704-4d84-8a95-026244fae112.glb"],alto:0.1},
+  enredadera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/071cbd9e-290c-4993-9393-7269031ef498.glb"],alto:2.4},
+  manguera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/329d3830-9609-4b7a-9e60-41e5e1bb6db5.glb"],alto:0.4},
+  subibaja:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/225310d0-db84-4906-957f-a4eff00b612f.glb"],alto:1.1},
+  calesita:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/70394fb5-580d-4800-9c1b-c844cc1840f3.glb"],alto:1.4},
+  aro_basquet:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/850c44ef-a0d4-4d91-90a1-984461df2215.glb"],alto:3.0},
+  trepador:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/71efbd27-d583-40f8-9ccf-bae5d748ccac.glb"],alto:2.0},
+  pizarron:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/928ea3bb-0824-4bc4-8a70-f9bf649346e5.glb"],alto:1.8},
+  cesto:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/b6b5c69c-26bd-42e8-a286-906d008b5240.glb"],alto:0.9},
+  bebedero_esc:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/fdf135d7-bc9a-4383-8e14-07a145df8d76.glb"],alto:1.0},
+  cartel_esc:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/b1891686-53b7-4ef2-9dca-441b49e49172.glb"],alto:2.0},
+  glorieta:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/e05778d0-d40b-48a3-a790-040be4102ef5.glb"],alto:3.0},
+  puente:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/8cc55284-eddd-4f70-84e3-3844c141de8e.glb"],alto:1.0},
+  estanque:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/22f2152c-b630-4b2e-8e41-3c2d2d6be283.glb"],alto:0.5},
+  tronco_caido:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/81ddb424-1fe6-40c5-9983-e73a482f2241.glb"],alto:0.8},
+  roca_grande:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/20a5a656-fdc6-4196-80d9-b53dc4238d4d.glb"],alto:1.4},
+  cartel_parque:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/37e83b0b-be6d-4a1b-a1ae-83387ee67c04.glb"],alto:2.0},
+  hongo:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/3d6d6922-a516-4237-a4b5-6036ff42e65d.glb"],alto:0.7},
+  junco:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/ec20f5cf-94b5-4d64-a346-add29eccfd94.glb"],alto:1.5},
+  guardavidas:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/0b0f8255-c5bc-4318-9dec-d7b93ac115ab.glb"],alto:3.0},
+  reposera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/53500306-250f-475e-b520-bcae3ed3ed1c.glb"],alto:0.8},
+  muelle:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/656e2739-db45-4d2b-886d-a9b4db974dd3.glb"],alto:1.0},
+  toalla:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/dbd1375c-2928-4e0c-b7ed-646fc8089c58.glb"],alto:0.1},
+  caracol:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/f87dafdc-f47b-431d-8a9c-51075a478008.glb"],alto:0.5},
+  roca_costera:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/844a4822-7e04-4f1e-b992-ac35bf38872f.glb"],alto:1.2},
+  palmera_cocos:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/c314c06a-8958-4b44-9901-04a203916841.glb"],alto:3.6},
+  boya:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/f752a5dd-5a8c-41bf-a118-8eb86af0a86a.glb"],alto:1.0},
+  arbol_frond:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/441b91c8-308f-4f07-a586-30eab6642352.glb"],alto:4.0},
+  arbol_flor:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/05f96aa7-9358-4967-ba6f-8d01618b15cb.glb"],alto:3.6},
+  arbusto_red:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/82327eab-15fe-462b-96f8-25f1cb726742.glb"],alto:1.1},
+  cantero_flor:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/3245b424-b0b5-4b87-9501-da3ec7c94fc4.glb"],alto:0.6},
+  pasto_alto:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/2640c787-8cba-4b78-9c58-944e6dfbb2d5.glb"],alto:0.8},
+  banco_plaza:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/2cc9d88b-b6c9-4ec0-8e84-7b26b8069479.glb"],alto:1.0},
+  farol:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/f413c406-ad1c-4983-8534-d8d176500be9.glb"],alto:3.0},
+  macetero:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/1042ffbf-5111-4cdd-acdb-95c08a428aca.glb"],alto:1.0},
+  fuente_jardin:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/2d3c9ce1-71ae-4c1b-af92-8854d599a20a.glb"],alto:1.2},
   botella:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/ae6965fa-c4cb-4082-b762-56650d036f7a.glb","assets/botella.glb"],alto:.5},
   lata:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/55a338ec-6a86-4834-9cc8-d3558e9f2cdb.glb","assets/lata.glb"],alto:.38},
   vaso:{urls:["https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/66c29bb0-14bf-4b5c-a632-aeac3de52b7c.glb","assets/vaso.glb"],alto:.32},
@@ -934,53 +1010,74 @@ function cargarGLB(nombre){
     intento();
   });
 }
-function precargarAssets(){ const ps=Object.keys(ASSETS).filter(n=>n!=="agente").map(n=>cargarGLB(n)); ps.push(cargarAgente3D()); return Promise.all(ps); }
+function precargarAssets(){ return Promise.all(Object.keys(ASSETS).map(n=>cargarGLB(n))); }
 
-/* ===== Personaje 3D animado (GLB con rigging + walk) ===== */
-let AGENTE3D=null; // {scene, animations, alto} cargado crudo (con animaciones)
-function cargarAgente3D(){
+/* ===== Precarga por nivel con barra de progreso ===== */
+// Assets GLB que cada nivel necesita SÍ o SÍ (criaderos + props clave).
+const ASSETS_NIVEL=[
+  // Nivel 1 — Casa (interior): muebles + criaderos
+  ["mesada","alacena","heladera","banadera","lavarropas","pileta_lav","sofa","mesa_ratona","tele","cama","mesa_luz","ropero",
+   "balde","botella","tacho","bebedero","regadera","maceta","lata","vaso","florero","juguete","denguin"],
+  // Nivel 2 — Jardín
+  ["cubierta","carretilla","fuente","maceta","balde","botella","lona","bidon","lata","denguin"],
+  // Nivel 3 — Escuela
+  ["escuela","hamacas","arenero","canaleta","florero","maceta","balde","tacho","pelota","botella","juguete","vaso","denguin"],
+  // Nivel 4 — Parque
+  ["tobogan","hamacas","arenero","botella","lata","cubierta","bebedero","lona","balde","juguete","fuente","bidon","denguin"],
+  // Nivel 5 — Playa
+  ["sombrilla","palmera","castillo","velero","bote","conservadora","balde","pelota","botella","lata","cubierta","lona","vaso","denguin"],
+];
+
+const LOAD_TIPS=[
+  "Sin agua acumulada no hay mosquito. Sin mosquito no hay dengue.",
+  "Dato: el mosquito del dengue se cría en agua limpia y quieta, no en charcos sucios.",
+  "Revisá baldes, floreros, cubiertas y bebederos: ahí pone sus huevos.",
+  "Tip: dá vuelta los recipientes que junten agua y cambiá el agua de las mascotas seguido.",
+  "El Aedes aegypti vuela poca distancia: si limpiás tu casa, hacés una gran diferencia.",
+];
+
+// carga UN asset y resuelve siempre (aunque falle), para no trabar la barra
+function cargarAssetSeguro(n){
   return new Promise(res=>{
-    if(AGENTE3D!==undefined && AGENTE3D!==null) return res(AGENTE3D);
-    if(typeof THREE==="undefined"||!THREE.GLTFLoader){ AGENTE3D=null; return res(null); }
-    if(!gltfLoader) gltfLoader=new THREE.GLTFLoader();
-    const def=ASSETS.agente; let i=0;
-    const intento=()=>{
-      if(i>=def.urls.length){ AGENTE3D=null; return res(null); }
-      const u=def.urls[i++];
-      if(u.indexOf("__")===0) return intento();
-      gltfLoader.load(u,g=>{
-        try{
-          AGENTE3D={ scene:g.scene, animations:g.animations||[], alto:def.alto };
-          res(AGENTE3D);
-        }catch(e){ AGENTE3D=null; res(null); }
-      },undefined,()=>intento());
-    };
-    intento();
+    if(GLB[n]!==undefined) return res();
+    let listo=false; const fin=()=>{ if(!listo){ listo=true; res(); } };
+    // timeout de seguridad por si el CDN tarda demasiado (8s)
+    const to=setTimeout(fin, 8000);
+    cargarGLB(n).then(()=>{ clearTimeout(to); fin(); }).catch(()=>{ clearTimeout(to); fin(); });
   });
 }
-// construye una instancia jugable del agente 3D: devuelve {grupo, mixer, walkAction} o null
-function instanciaAgente3D(){
-  if(!AGENTE3D||!AGENTE3D.scene) return null;
-  try{
-    const obj=(THREE.SkeletonUtils&&THREE.SkeletonUtils.clone)?THREE.SkeletonUtils.clone(AGENTE3D.scene):AGENTE3D.scene.clone(true);
-    // normalizar tamaño/posición al piso
-    const box=new T.Box3().setFromObject(obj);
-    const size=new T.Vector3(); box.getSize(size);
-    if(size.y>0) obj.scale.setScalar(AGENTE3D.alto/size.y);
-    const box2=new T.Box3().setFromObject(obj);
-    const cen=new T.Vector3(); box2.getCenter(cen);
-    obj.position.x-=cen.x; obj.position.z-=cen.z; obj.position.y-=box2.min.y;
-    obj.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true;
-      if(o.material&&o.material.map) o.material.map.encoding=T.sRGBEncoding; } });
-    const wrap=new T.Group(); wrap.add(obj);
-    let mixer=null, walkAction=null;
-    if(AGENTE3D.animations&&AGENTE3D.animations.length){
-      mixer=new T.AnimationMixer(obj);
-      walkAction=mixer.clipAction(AGENTE3D.animations[0]);
-      walkAction.play(); walkAction.paused=true; // arranca quieto
-    }
-    return {grupo:wrap, mixer, walkAction};
-  }catch(e){ return null; }
+
+// precarga todos los assets del nivel i, reportando progreso 0..1
+function precargarNivel(i, onProgreso){
+  const lista=[...new Set(ASSETS_NIVEL[i]||[])].filter(n=>ASSETS[n]);
+  const total=lista.length||1;
+  let hechos=0;
+  if(typeof onProgreso==="function") onProgreso(0, total);
+  return Promise.all(lista.map(n=>cargarAssetSeguro(n).then(()=>{
+    hechos++; if(typeof onProgreso==="function") onProgreso(hechos/total, total);
+  }))).then(()=>{ if(typeof onProgreso==="function") onProgreso(1, total); });
+}
+
+// muestra la pantalla de carga, precarga el nivel y resuelve cuando está 100%
+function pantallaCargaNivel(i){
+  return new Promise(resolve=>{
+    const fill=$("#loadFill"), pct=$("#loadPct"), emoji=$("#loadEmoji"),
+          titulo=$("#loadTitulo"), tip=$("#loadTip");
+    if(emoji) emoji.innerHTML = (typeof IC_NIVEL!=="undefined" && IC_NIVEL[i]) ? IC_NIVEL[i] : "";
+    if(titulo) titulo.textContent = "Nivel "+(i+1)+": "+(NIVELES[i]?NIVELES[i].nombre:"");
+    if(tip) tip.textContent = LOAD_TIPS[Math.floor(Math.random()*LOAD_TIPS.length)];
+    if(fill) fill.style.width="0%";
+    if(pct) pct.textContent="0%";
+    showScreen("#scr-loading");
+    let mostrado=0;
+    const pintar=(p)=>{ const v=Math.round(p*100);
+      if(fill) fill.style.width=v+"%"; if(pct) pct.textContent=v+"%"; mostrado=v; };
+    precargarNivel(i, (p)=>pintar(p)).then(()=>{
+      pintar(1);
+      // pequeña pausa para que se vea el 100% antes de entrar
+      setTimeout(resolve, 420);
+    });
+  });
 }
 function instanciaGLB(nombre){ return GLB[nombre] ? GLB[nombre].clone() : null; }
 
@@ -1215,67 +1312,81 @@ function casa3F(){
   return grp(cuerpo,techo,puerta,pomo,vent,cruz1,cruz2,marco,chim);
 }
 /* ===== INTERIOR DE CASA (Nivel 1) ===== */
-const COL_PARED=0xF2E4D0, COL_PISO=[0xD8C2A0,0xCBE3E8,0xE6D5BC,0xC9D9C0,0xE3D2E0];
-function paredH(x,z,largo,ry,c){ // pared con grosor
-  const p=box(largo,2.6,.18,c||COL_PARED); p.position.set(x,1.3,z); p.rotation.y=ry; return p;
+const COL_PARED=0xE3C39C;     // pared cálida (arena/durazno)
+const COL_PARED_INT=0xEAD0AD;  // pared interna un toque más clara
+const COL_ZOCALO=0x9A6B45;     // zócalo de madera
+const ALTO_PARED=3.2;
+
+// pared con grosor + zócalo de madera abajo (se ve como pared de casa)
+function paredH(x,z,largo,ry,c){
+  const g=grp();
+  const cuerpo=box(largo,ALTO_PARED,.2,c||COL_PARED); cuerpo.position.y=ALTO_PARED/2; g.add(cuerpo);
+  const zoc=box(largo,.34,.24,COL_ZOCALO); zoc.position.y=.17; g.add(zoc);
+  g.position.set(x,0,z); g.rotation.y=ry; return g;
 }
 function muebleSimple(w,h,d,c,x,z){ const m=box(w,h,d,c); m.position.set(x,h/2,z); return m; }
-// alfombra/piso de una habitación
-function pisoHab(x,z,w,d,c){ const p=box(w,.06,d,c); p.position.set(x,.03,z); p.receiveShadow=true; return p; }
+// piso de una habitación, AL RAS (sin elevación), con juntas sutiles
+function pisoHab(x,z,w,d,c){
+  const g=grp();
+  const p=box(w,.04,d,c); p.position.y=.02; p.receiveShadow=true; g.add(p);
+  g.position.set(x,0,z); return g;
+}
 
 function interiorCasa(s,col){
   const HW=18; // semiancho interior
-  // ---- piso general (madera clara) ----
-  const pisoBase=box(HW*2,.1,HW*2,0xC9A876); pisoBase.position.y=0; pisoBase.receiveShadow=true; s.add(pisoBase);
+  // ---- piso general (base parquet cálido) ----
+  const pisoBase=box(HW*2,.1,HW*2,0xBE9A6E); pisoBase.position.y=-0.02; pisoBase.receiveShadow=true; s.add(pisoBase);
 
-  // ---- pisos por habitación (colores distintos para leer los ambientes) ----
-  // distribución (planta amplia):  COCINA(-11,-11) BAÑO(11,-11) LAVADERO(-11,11) LIVING(0,0) DORMITORIO(11,11)
-  s.add(pisoHab(-11,-11,12,12,0xD8C2A0)); // cocina
-  s.add(pisoHab(11,-11,12,12,0xCBE3E8));  // baño (celeste)
-  s.add(pisoHab(-11,11,12,12,0xE6D5BC));  // lavadero
-  s.add(pisoHab(0,0,11,11,0xC9D9C0));     // living (verdoso)
-  s.add(pisoHab(11,11,12,12,0xE3D2E0));   // dormitorio (lila)
+  // helper: colocar un GLB de mueble con collider
+  function poneGLB(nombre, x, z, ry, r, fallbackColor, fw, fh, fd){
+    let o=instanciaGLB(nombre);
+    if(!o){ o=box(fw||1, fh||1, fd||1, fallbackColor||0xBFA98A); o.position.y=(fh||1)/2; }
+    at(o, x, 0, z, ry||0);
+    s.add(o);
+    if(r>0) col.push({x:x, z:z, r:r});
+    return o;
+  }
 
-  // ---- paredes exteriores (límite del mundo) con colliders ----
+  // ---- pisos por ambiente (colores definidos, AL RAS) ----
+  s.add(pisoHab(-11,-11, 13,13, 0xE8D7B8)); // cocina (baldosa cálida)
+  s.add(pisoHab( 11,-11, 13,13, 0xBFE0E6)); // baño (celeste)
+  s.add(pisoHab(-11, 11, 13,13, 0xD8C9A6)); // lavadero
+  s.add(pisoHab(  0,  0, 12,12, 0xC2956A)); // living (madera más cálida)
+  s.add(pisoHab( 11, 11, 13,13, 0xDCC8DA)); // dormitorio (lila suave)
+
+  // ---- paredes exteriores SÓLIDAS (encierran la casa) ----
   const ext=[[0,-HW,HW*2,0],[0,HW,HW*2,0],[-HW,0,HW*2,Math.PI/2],[HW,0,HW*2,Math.PI/2]];
-  ext.forEach(([x,z,l,r])=>{ s.add(paredH(x,z,l,r,0xE8DAC4));
+  ext.forEach(([x,z,l,r])=>{ s.add(paredH(x,z,l,r,COL_PARED));
     if(r===0) col.push({x:x,z:z,r:1.0,wall:true,horiz:true,len:l}); else col.push({x:x,z:z,r:1.0,wall:true,horiz:false,len:l}); });
 
-  // ---- paredes internas que dividen ambientes (con aberturas para pasar) ----
-  // pared vertical central con dos huecos
-  [[-5,-15,6],[-5,-2,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,Math.PI/2,0xEFE2CE); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:false,len:l}); });
-  [[5,-15,6],[5,-2,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,Math.PI/2,0xEFE2CE); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:false,len:l}); });
-  // pared horizontal que separa adelante/atrás con huecos
-  [[-15,-5,6],[-2,-5,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,0,0xEFE2CE); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:true,len:l}); });
-  [[-15,5,6],[-2,5,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,0,0xEFE2CE); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:true,len:l}); });
+  // ---- paredes internas con aberturas para pasar ----
+  [[-5,-15,6],[-5,-2,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,Math.PI/2,COL_PARED_INT); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:false,len:l}); });
+  [[5,-15,6],[5,-2,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,Math.PI/2,COL_PARED_INT); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:false,len:l}); });
+  [[-15,-5,6],[-2,-5,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,0,COL_PARED_INT); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:true,len:l}); });
+  [[-15,5,6],[-2,5,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,0,COL_PARED_INT); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:true,len:l}); });
 
-  // ---- muebles simples como referencia de cada ambiente (con colliders) ----
-  // COCINA: mesada + alacena
-  s.add(muebleSimple(5,1,1.2,0xBFA98A,-13,-16)); col.push({x:-13,z:-16,r:1.4});
-  s.add(muebleSimple(1.2,1.6,1.2,0xCFC0A6,-16,-13)); col.push({x:-16,z:-13,r:.9});
-  // heladera
-  s.add(muebleSimple(1.4,2.2,1.4,0xEDEDED,-8,-16)); col.push({x:-8,z:-16,r:.9});
-  // BAÑO: bañadera + inodoro
-  s.add(muebleSimple(3,1,1.6,0xF2F2F2,14,-15)); col.push({x:14,z:-15,r:1.5});
-  s.add(muebleSimple(1,1.2,1,0xFFFFFF,8,-15)); col.push({x:8,z:-15,r:.7});
-  // LAVADERO: lavarropas + pileta
-  s.add(muebleSimple(1.4,1.6,1.4,0xE8E8E8,-15,13)); col.push({x:-15,z:13,r:.9});
-  s.add(muebleSimple(1.6,1,1.2,0xD9D2C4,-9,16)); col.push({x:-9,z:16,r:1.0});
-  // LIVING: sofá + mesa ratona + tele
-  s.add(muebleSimple(3.4,1,1.4,0xD96B5E,-2,3)); col.push({x:-2,z:3,r:1.6});
-  s.add(muebleSimple(1.8,.5,1,0xA07852,2,-1)); col.push({x:2,z:-1,r:1.0});
-  s.add(muebleSimple(2.4,1.4,.4,0x2C2C2C,4,4)); col.push({x:4,z:4,r:1.0});
-  // DORMITORIO: cama + mesa de luz + ropero
-  s.add(muebleSimple(3,1,4,0xB7D0E8,13,13)); col.push({x:13,z:13,r:2.0});
-  s.add(muebleSimple(1,1,1,0xC8A87C,9,9)); col.push({x:9,z:9,r:.7});
-  s.add(muebleSimple(1.4,2.4,1.6,0xA88C68,16,8)); col.push({x:16,z:8,r:1.0});
+  // ====== MUEBLES GLB REALES por ambiente ======
+  // COCINA: mesada, alacena, heladera
+  poneGLB("mesada",   -13,-16, 0,        1.4, 0xBFA98A, 5,1,1.2);
+  poneGLB("alacena",  -16,-13, Math.PI/2,.9,  0xCFC0A6, 1.2,1.8,1.2);
+  poneGLB("heladera", -8,-16,  0,        .9,  0xEDEDED, 1.4,2.1,1.4);
 
-  // ---- techo tenue (no tapa la cámara: solo borde decorativo alto) ----
-  // perro compañero en el living
-  const pe=instanciaGLB("perro"); if(pe){ pe.rotation.y=.6; s.add(at(pe,-3,0,-3)); col.push({x:-3,z:-3,r:.7}); }
+  // BAÑO: bañadera
+  poneGLB("banadera", 14,-15,  0,        1.5, 0xF2F2F2, 3,1,1.6);
 
-  // plantas decorativas en macetas (sin agua, decorativas)
-  [[-4,-4],[15,-2],[-2,15]].forEach(([x,z])=>{ const m=instanciaGLB("arbusto")||arbusto3F(.7); s.add(at(m,x,0,z)); });
+  // LAVADERO: lavarropas, pileta lavadero
+  poneGLB("lavarropas",-15,13, 0,        .9,  0xE8E8E8, 1.4,1.5,1.4);
+  poneGLB("pileta_lav",-9,16,  0,        1.0, 0xD9D2C4, 1.6,1,1.2);
+
+  // LIVING: sofá, mesa ratona, tele
+  poneGLB("sofa",      -2,3,   0,        1.6, 0xD96B5E, 3.4,1.1,1.4);
+  poneGLB("mesa_ratona",2,-1,  0,        1.0, 0xA07852, 1.8,.55,1);
+  poneGLB("tele",      4,4,    Math.PI,  1.0, 0x2C2C2C, 2.4,1.3,.4);
+
+  // DORMITORIO: cama, mesa de luz, ropero
+  poneGLB("cama",      13,13,  0,        2.0, 0xB7D0E8, 3,1.1,4);
+  poneGLB("mesa_luz",  9,9,    0,        .7,  0xC8A87C, 1,.7,1);
+  poneGLB("ropero",    16,8,   Math.PI/2,1.0, 0xA88C68, 1.4,2.3,1.6);
 }
 
 function escuela3(){
@@ -1704,14 +1815,6 @@ function buildPlayer(){
   const esNena = G.genero===1;
   const g=new T.Group();
 
-  // intentar agente 3D animado (GLB con rigging). Si no, fallback por piezas.
-  G._mixer=null; G._walkAction=null; G._agente3D=false;
-  const ag=(typeof instanciaAgente3D==="function")?instanciaAgente3D():null;
-  if(ag&&ag.grupo){
-    G._mixer=ag.mixer; G._walkAction=ag.walkAction; G._agente3D=true;
-    limbs={legL:null,legR:null,armL:null,armR:null}; // el GLB se anima por mixer
-    return ag.grupo;
-  }
 
   // ---- piernas separadas: muslo piel + zapatilla blanca ----
   const mkPierna=x=>{ const p=grp();
@@ -1805,6 +1908,11 @@ function construirNivel(i){
   scene=new T.Scene();
   const nv=LV3D[i];
   G._interior=!!nv.interior;
+  // exposición: interior con menos para que no se lave a blanco
+  if(renderer){
+    const baseExp = CALIDAD==="increible" ? 1.18 : (CALIDAD==="intensa" ? 1.08 : 1.0);
+    renderer.toneMappingExposure = nv.interior ? baseExp*0.82 : baseExp;
+  }
   scene.fog=new T.Fog(nv.niebla, 34, 95); scene.fog.color.convertSRGBToLinear();
 
   // domo de cielo: degradé de base + panorámica real si el nivel la define
@@ -1813,8 +1921,8 @@ function construirNivel(i){
   if(nv.cieloPano) texturaReal(nv.cieloPano, dome.material);
   if(!nv.interior){ const sol=solSprite(); sol.position.set(...nv.sol); scene.add(sol); }
 
-  const hemi=new T.HemisphereLight(0xfdf6e8,0x86a86a, nv.interior?1.05:.75); hemi.color.convertSRGBToLinear(); hemi.groundColor.convertSRGBToLinear(); scene.add(hemi); G._hemi=hemi;
-  const luz=new T.DirectionalLight(0xfff0d2, nv.interior?.9:1.35); luz.color.convertSRGBToLinear();
+  const hemi=new T.HemisphereLight(0xfff3e0,0xb89a78, nv.interior?.58:.75); hemi.color.convertSRGBToLinear(); hemi.groundColor.convertSRGBToLinear(); scene.add(hemi); G._hemi=hemi;
+  const luz=new T.DirectionalLight(0xfff0d2, nv.interior?1.05:1.35); luz.color.convertSRGBToLinear();
   const _qp=(typeof qGet==="function")?qGet():{sombras:true,shadowSize:2048};
   luz.position.set(nv.sol[0]*.6,24,nv.sol[2]*.5); luz.castShadow=_qp.sombras;
   const _ss=_qp.shadowSize||(TOUCH?1024:2048);
@@ -2114,7 +2222,6 @@ function tick(){
   if(!scene||!player) return;
   try{
   const dt=Math.min(clock.getDelta(),.05);
-  if(G._mixer) G._mixer.update(dt);
   const t=performance.now()*.001;
   if(demo){ yaw+=dt*.07; camDist+=(12.5-camDist)*Math.min(1,dt*1.5); pitch+=(.34-pitch)*Math.min(1,dt); }
 
@@ -2165,21 +2272,21 @@ function tick(){
     while(diff>Math.PI)diff-=6.2832; while(diff<-Math.PI)diff+=6.2832;
     player.rotation.y+=diff*Math.min(1,dt*12);
     walkPhase+=dt*10.5*mag;
-    if(G._agente3D){
-      if(G._walkAction){ G._walkAction.paused=false; G._walkAction.timeScale=Math.max(.6,mag*1.4); }
-    }else{
-      const sw=Math.sin(walkPhase)*.7;
-      if(limbs.legL){ limbs.legL.rotation.x=sw; limbs.legR.rotation.x=-sw;
-        limbs.armL.rotation.x=-sw*.85; limbs.armR.rotation.x=sw*.85; }
-    }
+    const sw=Math.sin(walkPhase)*.7;
+    limbs.legL.rotation.x=sw; limbs.legR.rotation.x=-sw;
+    limbs.armL.rotation.x=-sw*.85; limbs.armR.rotation.x=sw*.85;
     // pasos + polvo
     const f=Math.floor(walkPhase/Math.PI);
     if(f!==stepFlag&&enSuelo){ stepFlag=f;
       beep(f%2?170:150,.05,"triangle",.06);
       if(Math.random()<.85) puffPolvo(); }
   }else{
-    if(G._agente3D){ if(G._walkAction) G._walkAction.paused=true; }
-    else if(limbs.legL){ ["legL","legR","armL","armR"].forEach(k=>limbs[k].rotation.x*=(1-Math.min(1,dt*10))); }
+    ["legL","legR","armL","armR"].forEach(k=>limbs[k].rotation.x*=(1-Math.min(1,dt*10)));
+    // respiración idle: que no parezca un maniquí congelado
+    G._idle=(G._idle||0)+dt;
+    const br=Math.sin(G._idle*1.8);
+    if(player && enSuelo && vy===0){ player.position.y=Math.max(0,br*.012+.012); }
+    limbs.armL.rotation.z=-.05+br*.03; limbs.armR.rotation.z=.05-br*.03;
   }
   // salto / gravedad
   if(!enSuelo||vy!==0){
@@ -2518,9 +2625,9 @@ $("#introControles").innerHTML = TOUCH
 function iniciarDemo(){
   const posDemo=()=>{ player.position.set(2.5,0,5); player.rotation.y=2.6; camDist=12.5; pitch=.34; };
   try{ demo=true; initGL();
-    // arranca ya con los modelos procedurales y, cuando terminan de bajar los GLB,
-    // se reconstruye con un fade para que el cambio sea suave
-    precargarAssets().then(()=>{
+    // arranca ya con los modelos procedurales y, cuando terminan de bajar los GLB
+    // del nivel 1 (la casa de fondo), se reconstruye con un fade suave
+    precargarNivel(0).then(()=>{
       if(!demo) return;
       const cv=$("#cv3d");
       cv.style.opacity=0;
@@ -2703,11 +2810,14 @@ function iniciarNivel(i){
     tray.appendChild(d);
   });
   demo=false; camDist=CAM_BASE;
-  showScreen("#scr-game");
-  construirNivel(i);
-  resize3D();
-  showModal("#mod-intro",true);
-  sndTic();
+  // ⬇️ NUEVO: precargar todos los modelos 3D del nivel ANTES de mostrar la escena
+  pantallaCargaNivel(i).then(()=>{
+    showScreen("#scr-game");
+    construirNivel(i);
+    resize3D();
+    showModal("#mod-intro",true);
+    sndTic();
+  });
 }
 $("#btnEmpezar").addEventListener("click",()=>{
   bloquearHorizontal();
