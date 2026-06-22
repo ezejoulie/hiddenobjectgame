@@ -1600,80 +1600,82 @@ function resize3D(){
 /* ---------- Personaje (proporciones juguete) ---------- */
 function buildPlayer(){
   const piel=hx(PIELES[G.piel]), pelo=hx(PELOS[G.pelo]), rem=hx(REMERAS[G.remera]);
-  const AZUL=0x2A7DE1, AZULOSC=0x1B5BA8, BLANCO=0xFFFFFF, TINTA=0x15324B;
+  const AZUL=0x2A7DE1, AZULOSC=0x1B5BA8, BLANCO=0xFFFFFF, TINTA=0x15324B, VERDE=0x46B23A;
   const esNena = G.genero===1;
   const g=new T.Group();
 
-  // ---- piernas con short azul + zapatillas blancas ----
+  // ---- piernas: short azul + pierna + zapatilla blanca (pie apoyado en el piso) ----
   const mkPierna=x=>{ const p=grp();
-    const short=cyl(.12,.10,.22,AZULOSC,10); short.position.y=-.11;
-    const pierna=cyl(.085,.075,.24,piel,9); pierna.position.y=-.34;
-    const zap=sph(.14,BLANCO,12,9); zap.scale.set(1,.55,1.5); zap.position.set(0,-.5,.05);
-    const suela=cyl(.13,.13,.05,TINTA,12); suela.rotation.x=Math.PI/2; suela.scale.set(1,1.5,1); suela.position.set(0,-.55,.05);
-    p.add(short,pierna,zap,suela); p.position.set(x,.5,0); return p; };
-  const legL=mkPierna(-.14), legR=mkPierna(.14);
+    const short=cyl(.125,.105,.18,AZULOSC,12); short.position.y=-.04;
+    const pierna=cyl(.072,.065,.2,piel,10); pierna.position.y=-.24;
+    const zap=sph(.12,BLANCO,12,10); zap.scale.set(1,.62,1.55); zap.position.set(0,-.4,.05);
+    const punta=sph(.075,BLANCO,10,8); punta.scale.set(1,.6,1); punta.position.set(0,-.4,.16);
+    p.add(short,pierna,zap,punta); p.position.set(x,.48,0); return p; };
+  const legL=mkPierna(-.13), legR=mkPierna(.13);
 
-  // ---- torso: remera con escudo en el pecho ----
-  const torso=sph(.35,rem,18,15); torso.scale.set(1,.98,.8); torso.position.y=.82;
-  const panza=sph(.31,rem,16,13); panza.scale.set(1,.82,.82); panza.position.y=.62;
-  // emblema escudo
-  const escudo=sph(.1,BLANCO,10,8); escudo.scale.set(.85,1,.35); escudo.position.set(0,.86,.3);
-  const cruz1=box(.025,.09,.02,0x46B23A); cruz1.position.set(0,.86,.33);
-  const cruz2=box(.07,.03,.02,0x46B23A); cruz2.position.set(0,.86,.33);
+  // ---- torso: un solo cuerpo redondeado y esbelto + cuello ----
+  const torso=sph(.3,rem,20,16); torso.scale.set(1,1.28,.82); torso.position.y=.82;
+  const cuello=cyl(.1,.12,.1,piel,10); cuello.position.y=1.16;
+  // emblema escudo en el pecho (frente)
+  const escudo=sph(.1,BLANCO,12,10); escudo.scale.set(.9,1.1,.28); escudo.position.set(0,.9,.27);
+  const cruzV=box(.022,.085,.02,VERDE); cruzV.position.set(0,.9,.3);
+  const cruzH=box(.06,.026,.02,VERDE); cruzH.position.set(0,.9,.3);
 
-  // ---- brazos ----
+  // ---- brazos: a los lados, colgando con leve apertura ----
   const mkBrazo=(x,lupa)=>{ const b=grp();
-    const manga=cyl(.095,.07,.22,rem,10); manga.position.y=-.1;
-    const ante=cyl(.07,.062,.2,piel,9); ante.position.y=-.3;
-    const mano=sph(.085,piel,10,8); mano.position.y=-.42;
+    const manga=cyl(.082,.066,.2,rem,10); manga.position.y=-.1;
+    const ante=cyl(.062,.055,.2,piel,9); ante.position.y=-.28;
+    const mano=sph(.078,piel,10,8); mano.position.y=-.4;
     b.add(manga,ante,mano);
     if(lupa){ // lupa de detective sanitario (herramienta, no arma)
-      const aro=tor(.085,.022,0x6B4226,16); aro.position.set(0,-.56,.04); aro.rotation.x=Math.PI/2;
-      const vidrio=sph(.07,0xBFE3F5,10,8); vidrio.scale.set(1,1,.3); vidrio.position.set(0,-.56,.04); vidrio.material.opacity=.7; vidrio.material.transparent=true;
-      const mango=cyl(.018,.018,.13,0x6B4226,6); mango.position.set(0,-.66,.04);
+      const aro=tor(.08,.02,0x6B4226,16); aro.position.set(0,-.52,.06); aro.rotation.x=Math.PI/2;
+      const vidrio=sph(.064,0xBFE3F5,10,8); vidrio.scale.set(1,1,.3); vidrio.position.set(0,-.52,.06); vidrio.material.opacity=.6; vidrio.material.transparent=true;
+      const mango=cyl(.016,.016,.12,0x6B4226,6); mango.position.set(0,-.61,.06);
       b.add(aro,vidrio,mango);
     }
-    b.position.set(x,1.03,0); b.rotation.z=x>0?-.2:.2; return b; };
-  const armL=mkBrazo(-.37,false), armR=mkBrazo(.37,true);
+    b.position.set(x,1.04,0); b.rotation.z=x>0?-.13:.13; return b; };
+  const armL=mkBrazo(-.31,false), armR=mkBrazo(.31,true);
 
   // ---- cabeza ----
-  const cabeza=sph(.35,piel,22,18); cabeza.position.y=1.56;
+  const cabeza=sph(.33,piel,22,18); cabeza.position.y=1.5;
   // pelo según género
   const peloG=new T.Group();
-  const casquete=sph(.37,pelo,20,14); casquete.scale.set(1.03,.78,1.03); casquete.position.set(0,1.69,-.02);
-  const flequillo=sph(.35,pelo,16,9); flequillo.scale.set(.98,.36,.99); flequillo.position.set(0,1.76,.05);
+  const casquete=sph(.345,pelo,20,14); casquete.scale.set(1.04,.82,1.04); casquete.position.set(0,1.62,-.02);
+  const flequillo=sph(.335,pelo,16,9); flequillo.scale.set(1,.34,1); flequillo.position.set(0,1.69,.06);
   peloG.add(casquete,flequillo);
-  if(esNena){ // coleta
-    const coleta=sph(.16,pelo,12,10); coleta.scale.set(1,1.5,1); coleta.position.set(0,1.66,-.34);
-    const lazo=tor(.06,.025,rem,12); lazo.position.set(0,1.78,-.28);
-    peloG.add(coleta,lazo);
+  if(esNena){ // dos coletas con lazo
+    const cL=sph(.1,pelo,12,10); cL.scale.set(1,1.6,1); cL.position.set(-.3,1.42,-.05);
+    const cR=cL.clone(); cR.position.x=.3;
+    const lzL=tor(.05,.022,rem,12); lzL.position.set(-.3,1.56,-.02);
+    const lzR=lzL.clone(); lzR.position.x=.3;
+    peloG.add(cL,cR,lzL,lzR);
   }
   // ojos grandes expresivos
-  const ojo=x=>{ const b=sph(.085,BLANCO,12,10); b.position.set(x,1.58,.3);
-    const p=sph(.045,TINTA,9,7); p.position.set(x,1.57,.37);
-    const brillo=sph(.016,BLANCO,6,6); brillo.position.set(x+.015,1.6,.4); return [b,p,brillo]; };
-  const cejas=x=>{ const c=box(.09,.018,.02,pelo); c.position.set(x,1.68,.32); c.rotation.z=x>0?-.1:.1; return c; };
-  const cachete=x=>{ const c=sph(.055,0xFF9D9B,8,6); c.material.transparent=true; c.material.opacity=.7; c.position.set(x,1.47,.29); return c; };
-  const boca=tor(.06,.016,TINTA,Math.PI); boca.position.set(0,1.44,.32); boca.rotation.z=Math.PI; boca.rotation.x=-.25;
-  const nariz=sph(.025,piel,6,6); nariz.position.set(0,1.52,.36);
+  const ojo=x=>{ const b=sph(.078,BLANCO,12,10); b.scale.set(1,1.15,1); b.position.set(x,1.52,.27);
+    const p=sph(.04,TINTA,9,7); p.position.set(x,1.51,.33);
+    const brillo=sph(.014,BLANCO,6,6); brillo.position.set(x+.015,1.55,.36); return [b,p,brillo]; };
+  const ceja=x=>{ const c=box(.08,.016,.02,pelo); c.position.set(x,1.62,.29); c.rotation.z=x>0?-.08:.08; return c; };
+  const cachete=x=>{ const c=sph(.05,0xFF9D9B,8,6); c.material.transparent=true; c.material.opacity=.65; c.position.set(x,1.43,.26); return c; };
+  const boca=tor(.05,.014,TINTA,Math.PI); boca.position.set(0,1.41,.3); boca.rotation.z=Math.PI; boca.rotation.x=-.25;
+  const nariz=sph(.022,piel,6,6); nariz.position.set(0,1.47,.33);
 
-  g.add(legL,legR,panza,torso,escudo,cruz1,cruz2,armL,armR,cabeza,peloG,
-        ...ojo(-.13),...ojo(.13),cejas(-.13),cejas(.13),cachete(-.23),cachete(.23),boca,nariz);
+  g.add(legL,legR,torso,cuello,escudo,cruzV,cruzH,armL,armR,cabeza,peloG,
+        ...ojo(-.12),...ojo(.12),ceja(-.12),ceja(.12),cachete(-.21),cachete(.21),boca,nariz);
 
   // ---- gorra azul de agente (accesorio 1) con escudito ----
   if(G.acc===1){
-    const gorra=sph(.38,AZUL,18,11); gorra.scale.set(1.05,.52,1.05); gorra.position.set(0,1.8,0);
-    const visera=box(.46,.06,.32,AZULOSC); visera.position.set(0,1.72,.42);
-    const boton=sph(.045,AZULOSC,8,8); boton.position.set(0,1.94,0);
-    const escudito=sph(.07,BLANCO,8,8); escudito.scale.set(.8,1,.3); escudito.position.set(0,1.83,.36);
+    const gorra=sph(.36,AZUL,18,11); gorra.scale.set(1.05,.54,1.05); gorra.position.set(0,1.74,0);
+    const visera=box(.44,.055,.3,AZULOSC); visera.position.set(0,1.66,.38);
+    const boton=sph(.042,AZULOSC,8,8); boton.position.set(0,1.88,0);
+    const escudito=sph(.065,BLANCO,8,8); escudito.scale.set(.8,1,.3); escudito.position.set(0,1.77,.34);
     g.add(gorra,visera,boton,escudito);
   }
-  // vincha (accesorio 2) — apropiada, simple
-  if(G.acc===2){ const v=tor(.34,.04,rem,18); v.rotation.x=.4; v.position.set(0,1.74,0); g.add(v); }
-  // moño (accesorio 3) — para nena, sin elementos equívocos
-  if(G.acc===3){ const m1=cone(.12,.2,rem,7), m2=cone(.12,.2,rem,7);
-    m1.rotation.z=1.2; m2.rotation.z=-1.2; m1.position.set(-.34,1.86,-.1); m2.position.set(-.18,1.86,-.1);
-    const c=sph(.06,0xFFFFFF,8,8); c.position.set(-.26,1.86,-.1); g.add(m1,m2,c); }
+  // vincha (accesorio 2) — simple
+  if(G.acc===2){ const v=tor(.32,.038,rem,18); v.rotation.x=.4; v.position.set(0,1.66,0); g.add(v); }
+  // moño lateral (accesorio 3)
+  if(G.acc===3){ const m1=cone(.11,.18,rem,7), m2=cone(.11,.18,rem,7);
+    m1.rotation.z=1.2; m2.rotation.z=-1.2; m1.position.set(-.32,1.74,-.06); m2.position.set(-.16,1.74,-.06);
+    const c=sph(.055,0xFFFFFF,8,8); c.position.set(-.24,1.74,-.06); g.add(m1,m2,c); }
 
   limbs={legL,legR,armL,armR};
   g.traverse(o=>{ if(o.isMesh)o.castShadow=true; });
