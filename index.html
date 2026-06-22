@@ -1165,6 +1165,70 @@ function casa3F(){
   const chim=at(box(.6,1.2,.6,0xD86B50),1.8,4.1,-1);
   return grp(cuerpo,techo,puerta,pomo,vent,cruz1,cruz2,marco,chim);
 }
+/* ===== INTERIOR DE CASA (Nivel 1) ===== */
+const COL_PARED=0xF2E4D0, COL_PISO=[0xD8C2A0,0xCBE3E8,0xE6D5BC,0xC9D9C0,0xE3D2E0];
+function paredH(x,z,largo,ry,c){ // pared con grosor
+  const p=box(largo,2.6,.18,c||COL_PARED); p.position.set(x,1.3,z); p.rotation.y=ry; return p;
+}
+function muebleSimple(w,h,d,c,x,z){ const m=box(w,h,d,c); m.position.set(x,h/2,z); return m; }
+// alfombra/piso de una habitación
+function pisoHab(x,z,w,d,c){ const p=box(w,.06,d,c); p.position.set(x,.03,z); p.receiveShadow=true; return p; }
+
+function interiorCasa(s,col){
+  const HW=18; // semiancho interior
+  // ---- piso general (madera clara) ----
+  const pisoBase=box(HW*2,.1,HW*2,0xC9A876); pisoBase.position.y=0; pisoBase.receiveShadow=true; s.add(pisoBase);
+
+  // ---- pisos por habitación (colores distintos para leer los ambientes) ----
+  // distribución (planta amplia):  COCINA(-11,-11) BAÑO(11,-11) LAVADERO(-11,11) LIVING(0,0) DORMITORIO(11,11)
+  s.add(pisoHab(-11,-11,12,12,0xD8C2A0)); // cocina
+  s.add(pisoHab(11,-11,12,12,0xCBE3E8));  // baño (celeste)
+  s.add(pisoHab(-11,11,12,12,0xE6D5BC));  // lavadero
+  s.add(pisoHab(0,0,11,11,0xC9D9C0));     // living (verdoso)
+  s.add(pisoHab(11,11,12,12,0xE3D2E0));   // dormitorio (lila)
+
+  // ---- paredes exteriores (límite del mundo) con colliders ----
+  const ext=[[0,-HW,HW*2,0],[0,HW,HW*2,0],[-HW,0,HW*2,Math.PI/2],[HW,0,HW*2,Math.PI/2]];
+  ext.forEach(([x,z,l,r])=>{ s.add(paredH(x,z,l,r,0xE8DAC4));
+    if(r===0) col.push({x:x,z:z,r:1.0,wall:true,horiz:true,len:l}); else col.push({x:x,z:z,r:1.0,wall:true,horiz:false,len:l}); });
+
+  // ---- paredes internas que dividen ambientes (con aberturas para pasar) ----
+  // pared vertical central con dos huecos
+  [[-5,-15,6],[-5,-2,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,Math.PI/2,0xEFE2CE); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:false,len:l}); });
+  [[5,-15,6],[5,-2,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,Math.PI/2,0xEFE2CE); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:false,len:l}); });
+  // pared horizontal que separa adelante/atrás con huecos
+  [[-15,-5,6],[-2,-5,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,0,0xEFE2CE); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:true,len:l}); });
+  [[-15,5,6],[-2,5,5]].forEach(([x,z,l])=>{ const p=paredH(x,z,l,0,0xEFE2CE); s.add(p); col.push({x:x,z:z,r:.6,wall:true,horiz:true,len:l}); });
+
+  // ---- muebles simples como referencia de cada ambiente (con colliders) ----
+  // COCINA: mesada + alacena
+  s.add(muebleSimple(5,1,1.2,0xBFA98A,-13,-16)); col.push({x:-13,z:-16,r:1.4});
+  s.add(muebleSimple(1.2,1.6,1.2,0xCFC0A6,-16,-13)); col.push({x:-16,z:-13,r:.9});
+  // heladera
+  s.add(muebleSimple(1.4,2.2,1.4,0xEDEDED,-8,-16)); col.push({x:-8,z:-16,r:.9});
+  // BAÑO: bañadera + inodoro
+  s.add(muebleSimple(3,1,1.6,0xF2F2F2,14,-15)); col.push({x:14,z:-15,r:1.5});
+  s.add(muebleSimple(1,1.2,1,0xFFFFFF,8,-15)); col.push({x:8,z:-15,r:.7});
+  // LAVADERO: lavarropas + pileta
+  s.add(muebleSimple(1.4,1.6,1.4,0xE8E8E8,-15,13)); col.push({x:-15,z:13,r:.9});
+  s.add(muebleSimple(1.6,1,1.2,0xD9D2C4,-9,16)); col.push({x:-9,z:16,r:1.0});
+  // LIVING: sofá + mesa ratona + tele
+  s.add(muebleSimple(3.4,1,1.4,0xD96B5E,-2,3)); col.push({x:-2,z:3,r:1.6});
+  s.add(muebleSimple(1.8,.5,1,0xA07852,2,-1)); col.push({x:2,z:-1,r:1.0});
+  s.add(muebleSimple(2.4,1.4,.4,0x2C2C2C,4,4)); col.push({x:4,z:4,r:1.0});
+  // DORMITORIO: cama + mesa de luz + ropero
+  s.add(muebleSimple(3,1,4,0xB7D0E8,13,13)); col.push({x:13,z:13,r:2.0});
+  s.add(muebleSimple(1,1,1,0xC8A87C,9,9)); col.push({x:9,z:9,r:.7});
+  s.add(muebleSimple(1.4,2.4,1.6,0xA88C68,16,8)); col.push({x:16,z:8,r:1.0});
+
+  // ---- techo tenue (no tapa la cámara: solo borde decorativo alto) ----
+  // perro compañero en el living
+  const pe=instanciaGLB("perro"); if(pe){ pe.rotation.y=.6; s.add(at(pe,-3,0,-3)); col.push({x:-3,z:-3,r:.7}); }
+
+  // plantas decorativas en macetas (sin agua, decorativas)
+  [[-4,-4],[15,-2],[-2,15]].forEach(([x,z])=>{ const m=instanciaGLB("arbusto")||arbusto3F(.7); s.add(at(m,x,0,z)); });
+}
+
 function escuela3(){
   const g=instanciaGLB("escuela"); if(g) return g;
   return escuela3F();
@@ -1361,8 +1425,8 @@ function texturaSuelo(base,mancha,extra){
 
 /* ---------- Metadata + niveles ---------- */
 const NIVELES=[
- {nombre:"La Casa",desc:"El patio de tu casa esconde 10 cacharros con agua. ¡Recorrelo entero!",
-  items:["florero","vaso","balde","regadera","botella","maceta","lata","tacho","juguete","bebedero"].map(t=>({t}))},
+ {nombre:"La Casa",desc:"Los criaderos se esconden DENTRO de tu casa. ¡Revisá cada habitación!",
+  items:["balde","botella","tacho","bebedero","regadera","maceta","lata","vaso","florero","juguete"].map(t=>({t}))},
  {nombre:"El Jardín",desc:"Entre árboles y arbustos se esconden los criaderos. ¡Mirá con lupa!",
   items:["cubierta","carretilla","fuente","maceta","balde","botella","charco","lona","bidon","lata"].map(t=>({t}))},
  {nombre:"La Escuela",desc:"El patio de la escuela también junta agua. ¡Revisá hasta la canaleta!",
@@ -1375,24 +1439,11 @@ const NIVELES=[
 
 const W=26;
 const LV3D=[
-{ tex:"pasto", cieloPano:"cielo_dia", cielo:["#7EC8F2","#BDE6F8","#EAF8E2"], sol:[30,38,-40], niebla:0xBDE6F8, suelo:["#cfe09a","#b8cc82","#a3bd6e"],
-  build(s,col){
-    const casa=at(casa3(),-13,0,-13,.5); s.add(casa); col.push({x:-13,z:-13,r:4.3});
-    s.add(at(mesa3(),5,0,-7,.4)); col.push({x:5,z:-7,r:1.1});
-    [[14,-13,1.3],[-3,-18,1.1],[18,4,1.2]].forEach(([x,z,sc])=>{ s.add(at(arbol3(sc),x,0,z)); col.push({x,z,r:.7*sc}); });
-    [[8,12],[-16,6],[-6,16],[16,16]].forEach(([x,z])=>{ s.add(at(arbusto3(1.2),x,0,z)); });
-    s.add(at(cerca3(W*2,0),0,0,-W+.5), at(cerca3(W*2,0),0,0,W-.5),
-          at(cerca3(W*2,Math.PI/2),-W+.5,0,0), at(cerca3(W*2,Math.PI/2),W-.5,0,0));
-    [[0,-10],[-20,14],[12,2],[20,-6]].forEach(([x,z])=>s.add(at(flores3(),x,0,z)));
-    s.add(at(roca3(1.2),-19,0,-4));
-    s.add(at(tronco3(2.8,.5),11,0,-2)); col.push({x:11,z:-2,r:1.4});
-    s.add(at(roca3(1.1),-6,0,4)); col.push({x:-6,z:4,r:.8});
-    const pe=instanciaGLB("perro"); if(pe){ pe.rotation.y=.8; s.add(at(pe,-8,0,-6)); col.push({x:-8,z:-6,r:.7}); }
-    const pi=instanciaGLB("piscina"); if(pi){ s.add(at(pi,8,0,4)); col.push({x:8,z:4,r:1.7}); }
-  },
-  barro:[[-2,-2,2.2],[10,9,2.6]],
-  spawns:[["florero",3,-5],["vaso",6,-3.5],["balde",-9.5,-9],["regadera",-15.5,-8.5],["botella",2,3],
-          ["maceta",-8.6,-8.8],["lata",17.5,15],["tacho",20,-16],["juguete",-4,12],["bebedero",-9.2,-17.8]] },
+{ interior:true, tex:null, cieloPano:null, cielo:["#E8D8C0","#D8C8B0","#C8B89C"], sol:[10,30,-8], niebla:0xE0D2BC, suelo:["#C9A876","#B89868","#D8B888"],
+  build(s,col){ interiorCasa(s,col); },
+  barro:[],
+  spawns:[["balde",-15,-9],["botella",-9,-9],["tacho",15,-9],["bebedero",-15,15],["regadera",-12,16],
+          ["maceta",0,1],["lata",4,-3],["vaso",9,15],["florero",15,16],["juguete",13,9]] },
 
 { tex:"pasto", cieloPano:"cielo_dia", cielo:["#6FC5EE","#B2E4F6","#E2F6D8"], sol:[-26,40,-36], niebla:0xB2E4F6, suelo:["#7ec96f","#67b35a","#8fdc80"],
   build(s,col){
@@ -1600,82 +1651,80 @@ function resize3D(){
 /* ---------- Personaje (proporciones juguete) ---------- */
 function buildPlayer(){
   const piel=hx(PIELES[G.piel]), pelo=hx(PELOS[G.pelo]), rem=hx(REMERAS[G.remera]);
-  const AZUL=0x2A7DE1, AZULOSC=0x1B5BA8, BLANCO=0xFFFFFF, TINTA=0x15324B, VERDE=0x46B23A;
+  const AZUL=0x2A7DE1, AZULOSC=0x1B5BA8, BLANCO=0xFFFFFF, TINTA=0x15324B;
   const esNena = G.genero===1;
   const g=new T.Group();
 
-  // ---- piernas: short azul + pierna + zapatilla blanca (pie apoyado en el piso) ----
+  // ---- piernas separadas: muslo piel + zapatilla blanca ----
   const mkPierna=x=>{ const p=grp();
-    const short=cyl(.125,.105,.18,AZULOSC,12); short.position.y=-.04;
-    const pierna=cyl(.072,.065,.2,piel,10); pierna.position.y=-.24;
-    const zap=sph(.12,BLANCO,12,10); zap.scale.set(1,.62,1.55); zap.position.set(0,-.4,.05);
-    const punta=sph(.075,BLANCO,10,8); punta.scale.set(1,.6,1); punta.position.set(0,-.4,.16);
-    p.add(short,pierna,zap,punta); p.position.set(x,.48,0); return p; };
-  const legL=mkPierna(-.13), legR=mkPierna(.13);
+    const muslo=cyl(.085,.072,.34,piel,9); muslo.position.y=-.17;
+    const zap=sph(.11,BLANCO,12,9); zap.scale.set(1,.6,1.5); zap.position.set(0,-.37,.06);
+    const suela=cyl(.1,.1,.04,TINTA,12); suela.rotation.x=Math.PI/2; suela.scale.set(1,1.5,1); suela.position.set(0,-.41,.06);
+    p.add(muslo,zap,suela); p.position.set(x,.42,0); return p; };
+  const legL=mkPierna(-.11), legR=mkPierna(.11);
 
-  // ---- torso: un solo cuerpo redondeado y esbelto + cuello ----
-  const torso=sph(.3,rem,20,16); torso.scale.set(1,1.28,.82); torso.position.y=.82;
-  const cuello=cyl(.1,.12,.1,piel,10); cuello.position.y=1.16;
-  // emblema escudo en el pecho (frente)
-  const escudo=sph(.1,BLANCO,12,10); escudo.scale.set(.9,1.1,.28); escudo.position.set(0,.9,.27);
-  const cruzV=box(.022,.085,.02,VERDE); cruzV.position.set(0,.9,.3);
-  const cruzH=box(.06,.026,.02,VERDE); cruzH.position.set(0,.9,.3);
+  // ---- short azul (cadera) ----
+  const short=cyl(.17,.15,.2,AZULOSC,12); short.position.y=.52;
 
-  // ---- brazos: a los lados, colgando con leve apertura ----
+  // ---- torso esbelto (cilindro), remera ----
+  const torso=cyl(.155,.2,.5,rem,14); torso.position.y=.86;
+  const hombros=cyl(.2,.2,.08,rem,14); hombros.position.y=1.08;
+  const cuello=cyl(.07,.08,.08,piel,9); cuello.position.y=1.17;
+  // emblema escudo en el pecho
+  const escudo=sph(.085,BLANCO,10,8); escudo.scale.set(.8,1,.3); escudo.position.set(0,.92,.19);
+  const cruzV=box(.022,.08,.02,0x46B23A); cruzV.position.set(0,.92,.21);
+  const cruzH=box(.06,.026,.02,0x46B23A); cruzH.position.set(0,.92,.21);
+
+  // ---- brazos a los lados, visibles ----
   const mkBrazo=(x,lupa)=>{ const b=grp();
-    const manga=cyl(.082,.066,.2,rem,10); manga.position.y=-.1;
-    const ante=cyl(.062,.055,.2,piel,9); ante.position.y=-.28;
-    const mano=sph(.078,piel,10,8); mano.position.y=-.4;
+    const manga=cyl(.062,.055,.26,rem,9); manga.position.y=-.13;
+    const ante=cyl(.05,.046,.22,piel,9); ante.position.y=-.36;
+    const mano=sph(.062,piel,9,8); mano.position.y=-.49;
     b.add(manga,ante,mano);
     if(lupa){ // lupa de detective sanitario (herramienta, no arma)
-      const aro=tor(.08,.02,0x6B4226,16); aro.position.set(0,-.52,.06); aro.rotation.x=Math.PI/2;
-      const vidrio=sph(.064,0xBFE3F5,10,8); vidrio.scale.set(1,1,.3); vidrio.position.set(0,-.52,.06); vidrio.material.opacity=.6; vidrio.material.transparent=true;
-      const mango=cyl(.016,.016,.12,0x6B4226,6); mango.position.set(0,-.61,.06);
+      const aro=tor(.07,.018,0x6B4226,16); aro.position.set(0,-.62,.05); aro.rotation.x=Math.PI/2;
+      const vidrio=sph(.058,0xBFE3F5,10,8); vidrio.scale.set(1,1,.3); vidrio.position.set(0,-.62,.05);
+      vidrio.material.opacity=.6; vidrio.material.transparent=true;
+      const mango=cyl(.015,.015,.11,0x6B4226,6); mango.position.set(0,-.71,.05);
       b.add(aro,vidrio,mango);
     }
-    b.position.set(x,1.04,0); b.rotation.z=x>0?-.13:.13; return b; };
-  const armL=mkBrazo(-.31,false), armR=mkBrazo(.31,true);
+    b.position.set(x,1.04,0); b.rotation.z=x>0?-.12:.12; return b; };
+  const armL=mkBrazo(-.235,false), armR=mkBrazo(.235,true);
 
-  // ---- cabeza ----
-  const cabeza=sph(.33,piel,22,18); cabeza.position.y=1.5;
-  // pelo según género
+  // ---- cabeza apoyada sobre el cuello ----
+  const cabeza=sph(.27,piel,22,18); cabeza.scale.set(1,1.04,.96); cabeza.position.y=1.46;
   const peloG=new T.Group();
-  const casquete=sph(.345,pelo,20,14); casquete.scale.set(1.04,.82,1.04); casquete.position.set(0,1.62,-.02);
-  const flequillo=sph(.335,pelo,16,9); flequillo.scale.set(1,.34,1); flequillo.position.set(0,1.69,.06);
+  const casquete=sph(.285,pelo,20,14); casquete.scale.set(1.02,.82,1.02); casquete.position.set(0,1.55,-.015);
+  const flequillo=sph(.275,pelo,16,9); flequillo.scale.set(.99,.42,1); flequillo.position.set(0,1.62,.05);
   peloG.add(casquete,flequillo);
-  if(esNena){ // dos coletas con lazo
-    const cL=sph(.1,pelo,12,10); cL.scale.set(1,1.6,1); cL.position.set(-.3,1.42,-.05);
-    const cR=cL.clone(); cR.position.x=.3;
-    const lzL=tor(.05,.022,rem,12); lzL.position.set(-.3,1.56,-.02);
-    const lzR=lzL.clone(); lzR.position.x=.3;
-    peloG.add(cL,cR,lzL,lzR);
+  if(esNena){ // coleta atras
+    const coleta=sph(.13,pelo,12,10); coleta.scale.set(1,1.5,1); coleta.position.set(0,1.5,-.28);
+    const lazo=tor(.05,.02,rem,12); lazo.position.set(0,1.6,-.22);
+    peloG.add(coleta,lazo);
   }
-  // ojos grandes expresivos
-  const ojo=x=>{ const b=sph(.078,BLANCO,12,10); b.scale.set(1,1.15,1); b.position.set(x,1.52,.27);
-    const p=sph(.04,TINTA,9,7); p.position.set(x,1.51,.33);
-    const brillo=sph(.014,BLANCO,6,6); brillo.position.set(x+.015,1.55,.36); return [b,p,brillo]; };
-  const ceja=x=>{ const c=box(.08,.016,.02,pelo); c.position.set(x,1.62,.29); c.rotation.z=x>0?-.08:.08; return c; };
-  const cachete=x=>{ const c=sph(.05,0xFF9D9B,8,6); c.material.transparent=true; c.material.opacity=.65; c.position.set(x,1.43,.26); return c; };
-  const boca=tor(.05,.014,TINTA,Math.PI); boca.position.set(0,1.41,.3); boca.rotation.z=Math.PI; boca.rotation.x=-.25;
-  const nariz=sph(.022,piel,6,6); nariz.position.set(0,1.47,.33);
+  const ojo=x=>{ const b=sph(.06,BLANCO,12,10); b.position.set(x,1.47,.23);
+    const p=sph(.034,TINTA,9,7); p.position.set(x,1.46,.28);
+    const brillo=sph(.012,BLANCO,6,6); brillo.position.set(x+.012,1.49,.3); return [b,p,brillo]; };
+  const cejas=x=>{ const c=box(.07,.015,.02,pelo); c.position.set(x,1.55,.25); c.rotation.z=x>0?-.1:.1; return c; };
+  const cachete=x=>{ const c=sph(.042,0xFF9D9B,8,6); c.material.transparent=true; c.material.opacity=.65; c.position.set(x,1.39,.22); return c; };
+  const boca=tor(.045,.013,TINTA,Math.PI); boca.position.set(0,1.37,.25); boca.rotation.z=Math.PI; boca.rotation.x=-.25;
+  const nariz=sph(.02,piel,6,6); nariz.position.set(0,1.43,.28);
 
-  g.add(legL,legR,torso,cuello,escudo,cruzV,cruzH,armL,armR,cabeza,peloG,
-        ...ojo(-.12),...ojo(.12),ceja(-.12),ceja(.12),cachete(-.21),cachete(.21),boca,nariz);
+  g.add(legL,legR,short,torso,hombros,cuello,escudo,cruzV,cruzH,armL,armR,cabeza,peloG,
+        ...ojo(-.1),...ojo(.1),cejas(-.1),cejas(.1),cachete(-.18),cachete(.18),boca,nariz);
 
-  // ---- gorra azul de agente (accesorio 1) con escudito ----
+  // ---- gorra azul de agente (accesorio 1) ----
   if(G.acc===1){
-    const gorra=sph(.36,AZUL,18,11); gorra.scale.set(1.05,.54,1.05); gorra.position.set(0,1.74,0);
-    const visera=box(.44,.055,.3,AZULOSC); visera.position.set(0,1.66,.38);
-    const boton=sph(.042,AZULOSC,8,8); boton.position.set(0,1.88,0);
-    const escudito=sph(.065,BLANCO,8,8); escudito.scale.set(.8,1,.3); escudito.position.set(0,1.77,.34);
+    const gorra=sph(.3,AZUL,18,11); gorra.scale.set(1.04,.56,1.04); gorra.position.set(0,1.62,0);
+    const visera=box(.38,.05,.26,AZULOSC); visera.position.set(0,1.55,.32);
+    const boton=sph(.038,AZULOSC,8,8); boton.position.set(0,1.74,0);
+    const escudito=sph(.055,BLANCO,8,8); escudito.scale.set(.8,1,.3); escudito.position.set(0,1.64,.29);
     g.add(gorra,visera,boton,escudito);
   }
-  // vincha (accesorio 2) — simple
-  if(G.acc===2){ const v=tor(.32,.038,rem,18); v.rotation.x=.4; v.position.set(0,1.66,0); g.add(v); }
-  // moño lateral (accesorio 3)
-  if(G.acc===3){ const m1=cone(.11,.18,rem,7), m2=cone(.11,.18,rem,7);
-    m1.rotation.z=1.2; m2.rotation.z=-1.2; m1.position.set(-.32,1.74,-.06); m2.position.set(-.16,1.74,-.06);
-    const c=sph(.055,0xFFFFFF,8,8); c.position.set(-.24,1.74,-.06); g.add(m1,m2,c); }
+  if(G.acc===2){ const v=tor(.27,.032,rem,18); v.rotation.x=.4; v.position.set(0,1.58,0); g.add(v); }
+  if(G.acc===3){ const m1=cone(.1,.16,rem,7), m2=cone(.1,.16,rem,7);
+    m1.rotation.z=1.2; m2.rotation.z=-1.2; m1.position.set(-.28,1.66,-.08); m2.position.set(-.15,1.66,-.08);
+    const c=sph(.05,0xFFFFFF,8,8); c.position.set(-.215,1.66,-.08); g.add(m1,m2,c); }
 
   limbs={legL,legR,armL,armR};
   g.traverse(o=>{ if(o.isMesh)o.castShadow=true; });
@@ -1697,16 +1746,17 @@ function construirNivel(i){
   if(scene){ scene.traverse(o=>{ if(o.geometry)o.geometry.dispose(); if(o.material&&o.material.map)o.material.map.dispose(); }); }
   scene=new T.Scene();
   const nv=LV3D[i];
+  G._interior=!!nv.interior;
   scene.fog=new T.Fog(nv.niebla, 34, 95); scene.fog.color.convertSRGBToLinear();
 
   // domo de cielo: degradé de base + panorámica real si el nivel la define
   const dome=cieloDome(...nv.cielo); scene.add(dome);
   G._dome=dome.material;
   if(nv.cieloPano) texturaReal(nv.cieloPano, dome.material);
-  const sol=solSprite(); sol.position.set(...nv.sol); scene.add(sol);
+  if(!nv.interior){ const sol=solSprite(); sol.position.set(...nv.sol); scene.add(sol); }
 
-  const hemi=new T.HemisphereLight(0xfdf6e8,0x86a86a,.75); hemi.color.convertSRGBToLinear(); hemi.groundColor.convertSRGBToLinear(); scene.add(hemi); G._hemi=hemi;
-  const luz=new T.DirectionalLight(0xfff0d2,1.35); luz.color.convertSRGBToLinear();
+  const hemi=new T.HemisphereLight(0xfdf6e8,0x86a86a, nv.interior?1.05:.75); hemi.color.convertSRGBToLinear(); hemi.groundColor.convertSRGBToLinear(); scene.add(hemi); G._hemi=hemi;
+  const luz=new T.DirectionalLight(0xfff0d2, nv.interior?.9:1.35); luz.color.convertSRGBToLinear();
   const _qp=(typeof qGet==="function")?qGet():{sombras:true,shadowSize:2048};
   luz.position.set(nv.sol[0]*.6,24,nv.sol[2]*.5); luz.castShadow=_qp.sombras;
   const _ss=_qp.shadowSize||(TOUCH?1024:2048);
@@ -1729,10 +1779,12 @@ function construirNivel(i){
   const relleno=new T.DirectionalLight(0xbfe2ff,.35); relleno.color.convertSRGBToLinear();
   relleno.position.set(-nv.sol[0],14,-nv.sol[2]); scene.add(relleno);
 
-  const suelo=new T.Mesh(new T.PlaneGeometry(W*2+16,W*2+16),
-    new T.MeshLambertMaterial({map:texturaSuelo(...nv.suelo)}));
-  suelo.rotation.x=-Math.PI/2; suelo.receiveShadow=true; scene.add(suelo);
-  if(nv.tex) texturaReal(nv.tex, suelo.material);
+  if(!nv.interior){
+    const suelo=new T.Mesh(new T.PlaneGeometry(W*2+16,W*2+16),
+      new T.MeshLambertMaterial({map:texturaSuelo(...nv.suelo)}));
+    suelo.rotation.x=-Math.PI/2; suelo.receiveShadow=true; scene.add(suelo);
+    if(nv.tex) texturaReal(nv.tex, suelo.material);
+  }
 
   colliders=[]; items3=[]; pickups=[]; nubes=[]; chispas=[]; maris=[]; pajaros=[]; polvo=[]; barros=[];
   sways.length=0; G._mar=null;
@@ -1740,6 +1792,7 @@ function construirNivel(i){
   G._velMul=nv.velMul||1; G._noche=(i===4); RAIN.prox=0; if(RAIN.activa) pararLluvia(performance.now()*.001); if(RAIN.pts){ scene.add(RAIN.pts); RAIN.pts.visible=false; } G._velero=G._velero&&G._noche?G._velero:null;
   // ---- follaje decorativo según calidad (no afecta jugabilidad) ----
   (function sembrarDensidad(){
+    if(nv.interior) return; // adentro de la casa no hay pasto
     const dens=(typeof G._densidad==="number")?G._densidad:.8;
     if(dens<=.5) return; // en "baja" no se siembra extra
     const cuantos=Math.round(dens*(i===4?10:22)); // playa más despejada
@@ -1805,7 +1858,7 @@ function construirNivel(i){
   });
 
   player=buildPlayer();
-  player.position.set(0,0,14);
+  player.position.set(0,0, (LV3D[G.nivelActual]&&LV3D[G.nivelActual].interior)?0:14);
   scene.add(player);
   vy=0; enSuelo=true;
 
@@ -2025,11 +2078,28 @@ function tick(){
     if(enBarro&&Math.random()<.15) puffPolvo("#8a6242");
     player.position.x+=dir.x*vel*dt;
     player.position.z+=dir.z*vel*dt;
-    player.position.x=Math.max(-W+1,Math.min(W-1,player.position.x));
-    player.position.z=Math.max(-W+1,Math.min(W-1,player.position.z));
-    for(const c of colliders){ if(!c.r)continue;
+    const _lim=(G._interior?17:W-1);
+    player.position.x=Math.max(-_lim,Math.min(_lim,player.position.x));
+    player.position.z=Math.max(-_lim,Math.min(_lim,player.position.z));
+    const PR=.45; // radio del jugador
+    for(const c of colliders){
+      if(c.wall){
+        // colisión rectangular contra pared (horizontal o vertical)
+        const half=(c.len||4)/2, gros=.55;
+        if(c.horiz){ // pared a lo largo de X, centrada en (c.x,c.z)
+          if(Math.abs(player.position.x-c.x)<half+PR && Math.abs(player.position.z-c.z)<gros+PR){
+            player.position.z = c.z + (player.position.z>c.z? 1:-1)*(gros+PR);
+          }
+        }else{ // pared a lo largo de Z
+          if(Math.abs(player.position.z-c.z)<half+PR && Math.abs(player.position.x-c.x)<gros+PR){
+            player.position.x = c.x + (player.position.x>c.x? 1:-1)*(gros+PR);
+          }
+        }
+        continue;
+      }
+      if(!c.r)continue;
       const dx=player.position.x-c.x, dz=player.position.z-c.z;
-      const d=Math.hypot(dx,dz), min=c.r+.45;
+      const d=Math.hypot(dx,dz), min=c.r+PR;
       if(d<min&&d>0){ player.position.x=c.x+dx/d*min; player.position.z=c.z+dz/d*min; } }
     const objetivo=Math.atan2(dir.x,dir.z);
     let diff=objetivo-player.rotation.y;
