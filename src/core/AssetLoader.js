@@ -16,12 +16,31 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 export class AssetLoader {
   constructor({ dracoPath = 'https://www.gstatic.com/draco/versioned/decoders/1.5.7/' } = {}) {
     this.cache = new Map(); // url -> THREE.Group (la escena del gltf)
+    this.fullCache = new Map(); // url -> {scene, animations}
     this.gltf = new GLTFLoader();
 
     const draco = new DRACOLoader();
     draco.setDecoderPath(dracoPath);
     this.gltf.setDRACOLoader(draco);
     this.draco = draco;
+  }
+
+  /** Carga un gltf completo (escena + animaciones). Para personajes riggeados. */
+  loadGLTF(url) {
+    if (this.fullCache.has(url)) return Promise.resolve(this.fullCache.get(url));
+    return new Promise((resolve, reject) => {
+      this.gltf.load(
+        url,
+        (gltf) => {
+          const data = { scene: gltf.scene, animations: gltf.animations || [] };
+          this.fullCache.set(url, data);
+          this.cache.set(url, gltf.scene);
+          resolve(data);
+        },
+        undefined,
+        (err) => reject(err)
+      );
+    });
   }
 
   /** Carga (o devuelve de caché) un gltf. Resuelve con la escena cruda. */
