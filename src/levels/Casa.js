@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Level } from './Level.js';
 import { boxCollider } from '../systems/Collision.js';
 import { CASA_LIVING } from '../data/levels.config.js';
+import { woodFloorTexture, artTexture } from '../core/Textures.js';
 
 /**
  * Casa.js — Sprint 1: SOLO el living, compacto y lleno, bien iluminado.
@@ -87,17 +88,25 @@ export class Casa extends Level {
     return m;
   }
 
-  /** Cuadro colgado: marco + obra, apoyado en una pared. `ry` orienta la pared. */
-  _frame(x, y, z, ry, w, h, artColor) {
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, h + 0.08, 0.04), mat(0x3a2a1a, 0.6));
+  /** Cuadro colgado: marco de madera + pintura (canvas), apoyado en una pared. */
+  _frame(x, y, z, ry, w, h, style = 0) {
+    // marco con bisel: caja exterior + passe-partout claro
+    const frame = new THREE.Mesh(
+      new THREE.BoxGeometry(w + 0.1, h + 0.1, 0.05),
+      new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: 0.5, metalness: 0.1 })
+    );
     frame.position.set(x, y, z);
     frame.rotation.y = ry;
     frame.receiveShadow = true;
+    frame.castShadow = true;
     this.add(frame);
-    const art = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat(artColor, 0.75));
+
+    const n = new THREE.Vector3(Math.sin(ry), 0, Math.cos(ry)); // normal de la pared
+    const art = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshStandardMaterial({ map: artTexture(style), roughness: 0.65, metalness: 0.0 })
+    );
     art.rotation.y = ry;
-    // empujar la obra apenas por delante del marco (evita z-fighting)
-    const n = new THREE.Vector3(Math.sin(ry), 0, Math.cos(ry));
     art.position.set(x, y, z).addScaledVector(n, 0.03);
     this.add(art);
   }
@@ -129,10 +138,17 @@ export class Casa extends Level {
     const hz = D / 2;
     const t = 0.2; // grosor de pared
 
-    // ---------- Piso (UNA sola capa PBR, sin solapamientos → sin z-fighting) ----------
+    // ---------- Piso de madera (UNA sola capa PBR + leve barniz que refleja) ----------
+    const floorTex = woodFloorTexture(Math.round(W / 2.2), Math.round(D / 2.2));
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(W, D),
-      mat(P.piso, 0.7, 0.0)
+      new THREE.MeshPhysicalMaterial({
+        map: floorTex,
+        roughness: 0.55,
+        metalness: 0.0,
+        clearcoat: 0.22,
+        clearcoatRoughness: 0.5,
+      })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
@@ -278,24 +294,16 @@ export class Casa extends Level {
     // ---- Planta (rincón fondo-der) — GLB real con fallback ----
     this._addPlant(hx - 0.6, -hz + 0.6, 0.95);
 
-    // ---- Cuadro en la pared del fondo ----
-    this._box(0.9, 0.6, 0.04, 0x3a2a1a, 1.6, 1.8, -hz + t / 2 + 0.03, { cast: false });
-    const art = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.78, 0.48),
-      mat(0xe8a13a, 0.7)
-    );
-    art.position.set(1.6, 1.8, -hz + t / 2 + 0.06);
-    this.add(art);
-
-    // ---- Galería de cuadros extra ----
+    // ---- Galería de cuadros (marco de madera + pintura) ----
+    // pared del fondo
+    this._frame(1.6, 1.8, -hz + t / 2 + 0.03, 0, 0.78, 0.5, 0); // atardecer
+    this._frame(3.0, 2.0, -hz + t / 2 + 0.03, 0, 0.5, 0.5, 3); // mar
     // pared izquierda (mira a +X)
-    this._frame(-hx + t / 2 + 0.03, 1.95, -1.4, Math.PI / 2, 0.5, 0.62, 0x4f86c8);
-    this._frame(-hx + t / 2 + 0.03, 1.55, -0.3, Math.PI / 2, 0.42, 0.42, 0xe0703a);
-    this._frame(-hx + t / 2 + 0.03, 1.88, 0.95, Math.PI / 2, 0.6, 0.4, 0x57a86a);
-    // pared del fondo (otra obra)
-    this._frame(3.0, 2.0, -hz + t / 2 + 0.03, 0, 0.5, 0.5, 0x8a5fb0);
+    this._frame(-hx + t / 2 + 0.03, 1.95, -1.4, Math.PI / 2, 0.5, 0.62, 2); // montañas
+    this._frame(-hx + t / 2 + 0.03, 1.55, -0.3, Math.PI / 2, 0.42, 0.42, 1); // abstracto
+    this._frame(-hx + t / 2 + 0.03, 1.88, 0.95, Math.PI / 2, 0.6, 0.4, 4); // jardín
     // pared del frente, a la derecha de la puerta
-    this._frame(2.7, 1.85, hz - t / 2 - 0.03, Math.PI, 0.56, 0.42, 0xe8b84a);
+    this._frame(2.7, 1.85, hz - t / 2 - 0.03, Math.PI, 0.56, 0.42, 0); // atardecer
 
     // ---- Plantas extra (rincones del frente) ----
     this._addPlant(-hx + 0.7, hz - 0.85, 1.0); // frente-izq
