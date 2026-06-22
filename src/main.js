@@ -28,6 +28,9 @@ const MODELS = {
   lamp: `${BASE}assets/models/base/IridescenceLamp.glb`,
 };
 
+// Personaje riggeado + animado (interino hasta el Mateo custom del Sprint 4)
+const CHARACTER_URL = `${BASE}assets/models/heroes/RobotExpressive.glb`;
+
 // ---------- Overlay de carga ----------
 function makeLoadingOverlay() {
   const el = document.createElement('div');
@@ -76,19 +79,26 @@ async function boot() {
 
   // ---------- Cargar modelos del pack ----------
   const loader = new AssetLoader();
-  await loader.preload(Object.values(MODELS), (p) => overlay.set(p));
+  await loader.preload(Object.values(MODELS), (p) => overlay.set(p * 0.85));
   const models = {};
   for (const [key, url] of Object.entries(MODELS)) {
     const s = loader.instance(url); // clon listo para usar
     if (s) models[key] = s;
   }
 
+  // ---------- Cargar personaje riggeado ----------
+  const charGltf = await loader.loadGLTF(CHARACTER_URL).catch((e) => {
+    console.warn('No se pudo cargar el personaje, usando placeholder:', e);
+    return null;
+  });
+  overlay.set(1);
+
   // ---------- Nivel ----------
   const casa = new Casa({ models });
   casa.addTo(scene);
 
   // ---------- Jugador ----------
-  const player = new Player();
+  const player = new Player({ gltf: charGltf });
   player.setPosition(casa.spawn.x, 0, casa.spawn.z);
   scene.add(player.mesh);
 
