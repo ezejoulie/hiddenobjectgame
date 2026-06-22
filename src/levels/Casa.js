@@ -29,7 +29,7 @@ export class Casa extends Level {
    * caja. Devuelve el grupo. Esto hace que los GLB del pack sean drop-in sin
    * importar en qué unidades vengan.
    */
-  _placeModel(model, { footprint = 1, x = 0, z = 0, ry = 0, collide = true, colliderPad = 0.06 } = {}) {
+  _placeModel(model, { footprint = 1, x = 0, z = 0, ry = 0, baseY = 0, collide = true, colliderPad = 0.06 } = {}) {
     const inner = model;
     const box = new THREE.Box3().setFromObject(inner);
     const size = new THREE.Vector3();
@@ -46,7 +46,7 @@ export class Casa extends Level {
 
     const wrap = new THREE.Group();
     wrap.add(inner);
-    wrap.position.set(x, 0, z);
+    wrap.position.set(x, baseY, z);
     wrap.rotation.y = ry;
     wrap.traverse((o) => {
       if (o.isMesh) {
@@ -65,6 +65,14 @@ export class Casa extends Level {
       });
     }
     return wrap;
+  }
+
+  /** Planta: usa el GLB real del pack si está, si no la primitiva. */
+  _addPlant(x, z, footprint = 1.0) {
+    if (this.models.plant) {
+      return this._placeModel(this.models.plant.clone(true), { footprint, x, z });
+    }
+    return this._plant(x, z, { h: footprint * 1.4 });
   }
 
   /** Caja con material PBR; opcionalmente registra collider y/o pared. */
@@ -205,9 +213,12 @@ export class Casa extends Level {
       this._box(1.4, 0.18, 0.8, 0x6fa0c8, 0.78, 0.62, sofaZ + 0.05, { rough: 0.9 });
     }
 
-    // ---- Sillón de acento (GLB real, Khronos SheenChair) ----
+    // ---- Sillones de acento (GLB reales) flanqueando la mesa ratona ----
     if (this.models.armchair) {
       this._placeModel(this.models.armchair.clone(true), { footprint: 1.1, x: 2.3, z: -0.4, ry: -0.9 });
+    }
+    if (this.models.chair2) {
+      this._placeModel(this.models.chair2.clone(true), { footprint: 1.0, x: -2.3, z: -0.4, ry: 0.9 });
     }
 
     // ---- Mesa ratona ----
@@ -221,6 +232,10 @@ export class Casa extends Level {
     const tvX = -1.4;
     const tvZ = hz - 0.55;
     this._box(1.8, 0.5, 0.45, 0x8a8f96, tvX, 0.25, tvZ, { collide: true, rough: 0.5 }); // mueble
+    // lámpara decorativa (GLB real) sobre el mueble de la TV
+    if (this.models.lamp) {
+      this._placeModel(this.models.lamp.clone(true), { footprint: 0.42, x: tvX + 0.7, z: tvZ, baseY: 0.5, collide: false });
+    }
     this._box(1.7, 0.95, 0.06, 0x101316, tvX, 1.15, tvZ - 0.18, { rough: 0.25, metal: 0.2 }); // panel TV
     // brillo de pantalla
     const screen = new THREE.Mesh(
@@ -260,18 +275,8 @@ export class Casa extends Level {
     this.add(lampLight);
     this.lights.push(lampLight);
 
-    // ---- Planta (rincón fondo-der) ----
-    const plX = hx - 0.6;
-    const plZ = -hz + 0.6;
-    this._box(0.4, 0.4, 0.4, 0xb5651d, plX, 0.2, plZ, { collide: true, rough: 0.8 }); // maceta
-    const foliage = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 1), mat(0x3f8e58, 0.9));
-    foliage.position.set(plX, 0.85, plZ);
-    foliage.castShadow = true;
-    this.add(foliage);
-    const foliage2 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.32, 1), mat(0x4faa6a, 0.9));
-    foliage2.position.set(plX + 0.18, 1.15, plZ - 0.1);
-    foliage2.castShadow = true;
-    this.add(foliage2);
+    // ---- Planta (rincón fondo-der) — GLB real con fallback ----
+    this._addPlant(hx - 0.6, -hz + 0.6, 0.95);
 
     // ---- Cuadro en la pared del fondo ----
     this._box(0.9, 0.6, 0.04, 0x3a2a1a, 1.6, 1.8, -hz + t / 2 + 0.03, { cast: false });
@@ -292,15 +297,19 @@ export class Casa extends Level {
     // pared del frente, a la derecha de la puerta
     this._frame(2.7, 1.85, hz - t / 2 - 0.03, Math.PI, 0.56, 0.42, 0xe8b84a);
 
-    // ---- Plantas extra ----
-    this._plant(-hx + 0.65, hz - 0.8, { h: 1.45 }); // rincón frente-izq (alta)
-    this._plant(hx - 0.7, hz - 0.85, { h: 1.0, potColor: 0xc77b3a }); // rincón frente-der
+    // ---- Plantas extra (rincones del frente) ----
+    this._addPlant(-hx + 0.7, hz - 0.85, 1.0); // frente-izq
+    this._addPlant(hx - 0.75, hz - 0.9, 0.9); // frente-der
 
-    // plantita sobre la mesa ratona
-    this._box(0.2, 0.2, 0.2, 0x9b59b6, 0.45, 0.56, mtZ, { rough: 0.7 });
-    const miniLeaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 1), mat(0x4faa6a, 0.9));
-    miniLeaf.position.set(0.45, 0.78, mtZ);
-    miniLeaf.castShadow = true;
-    this.add(miniLeaf);
+    // ---- Florero con flores (GLB real) sobre la mesa ratona ----
+    if (this.models.vase) {
+      this._placeModel(this.models.vase.clone(true), { footprint: 0.42, x: 0.45, z: mtZ, baseY: 0.46, collide: false });
+    } else {
+      this._box(0.2, 0.2, 0.2, 0x9b59b6, 0.45, 0.56, mtZ, { rough: 0.7 });
+      const miniLeaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 1), mat(0x4faa6a, 0.9));
+      miniLeaf.position.set(0.45, 0.78, mtZ);
+      miniLeaf.castShadow = true;
+      this.add(miniLeaf);
+    }
   }
 }

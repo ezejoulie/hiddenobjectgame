@@ -22,6 +22,10 @@ const BASE = import.meta.env.BASE_URL; // './' o '/'
 const MODELS = {
   sofa: `${BASE}assets/models/base/GlamVelvetSofa.glb`,
   armchair: `${BASE}assets/models/base/SheenChair.glb`,
+  chair2: `${BASE}assets/models/base/ChairDamaskPurplegold.glb`,
+  vase: `${BASE}assets/models/base/GlassVaseFlowers.glb`,
+  plant: `${BASE}assets/models/base/DiffuseTransmissionPlant.glb`,
+  lamp: `${BASE}assets/models/base/IridescenceLamp.glb`,
 };
 
 // ---------- Overlay de carga ----------
