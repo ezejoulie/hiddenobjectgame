@@ -14,13 +14,15 @@ const DURACION = 120;
 const RADIO_PICKUP = 1.15;
 
 export class Game {
-  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels }) {
+  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels, level }) {
     this.scene = scene;
     this.getPlayer = getPlayer;
     this.spawns = spawns; // [[tipo,x,z], ...]
     this.hud = hud;
     this.screens = screens;
     this.cacharroModels = cacharroModels || {};
+    this.level = level; // para abrir el portón
+    this.gateAt = 5;
 
     this.cacharros = [];
     this.state = 'intro';
@@ -74,6 +76,7 @@ export class Game {
   reset() {
     this._clear();
     this._spawn();
+    if (this.level && this.level.resetGate) this.level.resetGate();
     this.denguin.reset();
     this.time = DURACION;
     this.found = 0;
@@ -127,6 +130,10 @@ export class Game {
         this.hud.setCount(this.found);
         this.hud.markCollected(c.index);
         this.hud.showTip(c.info.nombre, c.info.tip);
+        if (this.found === this.gateAt && this.level && this.level.openGate) {
+          this.level.openGate();
+          this.hud.showTip('¡Portón abierto! 🔓', 'Ya podés pasar a los otros cuartos por el pasillo.');
+        }
         if (this.found >= this.cacharros.length) return this._win();
       }
     }
