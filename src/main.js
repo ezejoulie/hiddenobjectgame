@@ -137,7 +137,7 @@ async function boot() {
   setHero('nene');
 
   // ---------- Cámara 3ra persona ----------
-  const tpCam = new ThirdPersonCamera(camera, { distance: 5.0, height: 1.45 });
+  const tpCam = new ThirdPersonCamera(camera, { distance: 4.3, height: 1.4 });
   tpCam.setObstacles(casa.wallMeshes);
   tpCam.yaw = Math.PI;
   tpCam.update(player.position, 0);
