@@ -19,6 +19,7 @@ export class HUD {
       <div class="hud-tip"><span class="hud-tip-ic">💧</span><span class="hud-tip-tx"></span></div>
       <div class="hud-alert">🦟 ¡Denguín te quiere picar! ¡Escudo! (Espacio)</div>
       <div class="hud-defense"></div>
+      <div class="hud-doble">⚡ ¡DOBLE DEFENSA! ⚡</div>
       <div class="hud-flash"></div>`;
     document.body.appendChild(el);
     this.el = el;
@@ -30,6 +31,7 @@ export class HUD {
     this.tipTx = el.querySelector('.hud-tip-tx');
     this.alert = el.querySelector('.hud-alert');
     this.defense = el.querySelector('.hud-defense');
+    this.doble = el.querySelector('.hud-doble');
     this.flashEl = el.querySelector('.hud-flash');
     this.total = items.length;
 
@@ -78,6 +80,12 @@ export class HUD {
     this.defense.classList.remove('show');
     void this.defense.offsetWidth;
     this.defense.classList.add('show');
+  }
+
+  dobleDefensa() {
+    this.doble.classList.remove('show');
+    void this.doble.offsetWidth;
+    this.doble.classList.add('show');
   }
 
   showTip(nombre, tip) {

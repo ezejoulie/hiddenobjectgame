@@ -296,7 +296,10 @@ export class Player {
   }
 
   triggerShield(now) {
+    if (now < (this.shieldCd || 0)) return false; // en cooldown
     this.shieldUntil = now + 1.7;
+    this.shieldCd = now + 4.0;
+    return true;
   }
 
   update(dt, move, camYaw, colliders) {
