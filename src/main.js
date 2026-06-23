@@ -10,10 +10,13 @@ import { Player } from './entities/Player.js';
 import { ThirdPersonCamera } from './systems/Camera.js';
 import { Casa } from './levels/Casa.js';
 import { Jardin } from './levels/Jardin.js';
+import { Escuela } from './levels/Escuela.js';
+import { Parque } from './levels/Parque.js';
+import { Playa } from './levels/Playa.js';
 import { HUD } from './ui/HUD.js';
 import { Screens } from './ui/Screens.js';
 import { Game, itemsDeSpawns } from './core/Game.js';
-import { CASA_LIVING, JARDIN, NIVELES } from './data/levels.config.js';
+import { CASA_LIVING, JARDIN, ESCUELA, PARQUE, PLAYA, NIVELES } from './data/levels.config.js';
 
 /**
  * main.js — Sprint 1 + integración del pack de assets.
@@ -65,6 +68,43 @@ const MODELS = {
   fuente: `${CF}94905414-b9b1-490a-8aa4-8c023f882d85.glb`,
   fuente_jardin: `${CF}2d3c9ce1-71ae-4c1b-af92-8854d599a20a.glb`,
   pasto_alto: `${CF}2640c787-8cba-4b78-9c58-944e6dfbb2d5.glb`,
+  // escuela
+  escuela: `${CF}815cdd67-9875-4090-a37a-d1ed4915497f.glb`,
+  tobogan: `${CF}a4e4a773-3848-4909-8814-8fb0b1707858.glb`,
+  hamacas: `${CF}57d2c7c4-0fe5-44b0-a225-100f02dc8c65.glb`,
+  arenero: `${CF}96f4d585-c334-4fb6-96c6-6558676a20d3.glb`,
+  trepador: `${CF}71efbd27-d583-40f8-9ccf-bae5d748ccac.glb`,
+  castillo: `${CF}41c888c9-1607-4773-b995-f7f5ca2b5dd8.glb`,
+  mastil: `${CF}70a8aa94-2c64-4af1-9a8e-c5c8caf002a4.glb`,
+  cesto: `${CF}b6b5c69c-26bd-42e8-a286-906d008b5240.glb`,
+  bebedero_esc: `${CF}fdf135d7-bc9a-4383-8e14-07a145df8d76.glb`,
+  pizarron: `${CF}928ea3bb-0824-4bc4-8a70-f9bf649346e5.glb`,
+  cartel_esc: `${CF}b1891686-53b7-4ef2-9dca-441b49e49172.glb`,
+  aro_basquet: `${CF}850c44ef-a0d4-4d91-90a1-984461df2215.glb`,
+  banco_plaza: `${CF}2cc9d88b-b6c9-4ec0-8e84-7b26b8069479.glb`,
+  // parque
+  glorieta: `${CF}e05778d0-d40b-48a3-a790-040be4102ef5.glb`,
+  puente: `${CF}8cc55284-eddd-4f70-84e3-3844c141de8e.glb`,
+  estanque: `${CF}22f2152c-b630-4b2e-8e41-3c2d2d6be283.glb`,
+  tronco_caido: `${CF}81ddb424-1fe6-40c5-9983-e73a482f2241.glb`,
+  cartel_parque: `${CF}37e83b0b-be6d-4a1b-a1ae-83387ee67c04.glb`,
+  hongo: `${CF}3d6d6922-a516-4237-a4b5-6036ff42e65d.glb`,
+  calesita: `${CF}70394fb5-580d-4800-9c1b-c844cc1840f3.glb`,
+  subibaja: `${CF}225310d0-db84-4906-957f-a4eff00b612f.glb`,
+  farol: `${CF}f413c406-ad1c-4983-8534-d8d176500be9.glb`,
+  roca_grande: `${CF}20a5a656-fdc6-4196-80d9-b53dc4238d4d.glb`,
+  // playa
+  velero: `${CF}a8e12138-0b6a-4cfe-8f29-34a30d452fa5.glb`,
+  bote: `${CF}5135f625-059c-4abd-90ae-d340b2b1ddb0.glb`,
+  sombrilla: `${CF}eb4957c2-762f-4aa8-8331-b82a849a632b.glb`,
+  reposera: `${CF}53500306-250f-475e-b520-bcae3ed3ed1c.glb`,
+  muelle: `${CF}656e2739-db45-4d2b-886d-a9b4db974dd3.glb`,
+  toalla: `${CF}dbd1375c-2928-4e0c-b7ed-646fc8089c58.glb`,
+  caracol: `${CF}f87dafdc-f47b-431d-8a9c-51075a478008.glb`,
+  roca_costera: `${CF}844a4822-7e04-4f1e-b992-ac35bf38872f.glb`,
+  palmera_cocos: `${CF}c314c06a-8958-4b44-9901-04a203916841.glb`,
+  boya: `${CF}f752a5dd-5a8c-41bf-a118-8eb86af0a86a.glb`,
+  conservadora: `${CF}a64000b6-fba9-4ade-93db-0db9a5177509.glb`,
   vase: `${BASE}assets/models/base/GlassVaseFlowers.glb`,
   plant: `${BASE}assets/models/base/DiffuseTransmissionPlant.glb`,
   lamp: `${BASE}assets/models/base/IridescenceLamp.glb`,
@@ -211,8 +251,8 @@ async function boot() {
   window.addEventListener('resize', onResize);
 
   // ---------- Gestión de niveles ----------
-  const LEVEL_CLASSES = { casa: Casa, jardin: Jardin };
-  const LEVEL_CONFIGS = { casa: CASA_LIVING, jardin: JARDIN };
+  const LEVEL_CLASSES = { casa: Casa, jardin: Jardin, escuela: Escuela, parque: Parque, playa: Playa };
+  const LEVEL_CONFIGS = { casa: CASA_LIVING, jardin: JARDIN, escuela: ESCUELA, parque: PARQUE, playa: PLAYA };
   let level = null;
   let game = null;
   let hud = null;

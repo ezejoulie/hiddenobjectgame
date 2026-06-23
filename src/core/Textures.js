@@ -121,6 +121,56 @@ export function grassTexture(repeat = 14) {
   return tex;
 }
 
+/** Arena: tono cálido con granos y onditas. Tileable, para la playa. */
+export function sandTexture(repeat = 18) {
+  const s = 512;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = s;
+  const ctx = cv.getContext('2d');
+
+  const g = ctx.createLinearGradient(0, 0, s, s);
+  g.addColorStop(0, '#e8d3a3');
+  g.addColorStop(0.5, '#e2caa0');
+  g.addColorStop(1, '#edd9ad');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, s, s);
+
+  // parches suaves
+  const tones = ['#dcc290', '#efdcb0', '#d8bd88', '#e6cf9e'];
+  for (let i = 0; i < 160; i++) {
+    ctx.fillStyle = tones[i % tones.length];
+    ctx.globalAlpha = 0.08 + Math.random() * 0.14;
+    const r = 8 + Math.random() * 30;
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * s, Math.random() * s, r, r * 0.7, Math.random() * 3, 0, 7);
+    ctx.fill();
+  }
+  // granos
+  ctx.globalAlpha = 0.5;
+  for (let i = 0; i < 1400; i++) {
+    ctx.fillStyle = Math.random() < 0.5 ? '#c9ad78' : '#fbeec5';
+    ctx.fillRect(Math.random() * s, Math.random() * s, 1.4, 1.4);
+  }
+  // onditas
+  ctx.globalAlpha = 0.18;
+  ctx.strokeStyle = '#c4a875';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 12; i++) {
+    const y = (i / 12) * s + Math.random() * 8;
+    ctx.beginPath();
+    for (let x = 0; x <= s; x += 8) ctx.lineTo(x, y + Math.sin((x + i * 30) / 26) * 5);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repeat, repeat);
+  tex.anisotropy = 8;
+  return tex;
+}
+
 /** "Pinturas" para los cuadros. `index` elige el estilo (determinista). */
 export function artTexture(index = 0) {
   const w = 256;

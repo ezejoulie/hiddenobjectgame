@@ -62,11 +62,77 @@ export const JARDIN = {
   ],
 };
 
+export const ESCUELA = {
+  nombre: 'La Escuela',
+  emoji: '🏫',
+  interior: false,
+  bg: '#bfe3f3',
+  gate: 0,
+  room: { width: 38, depth: 32 },
+  spawn: { x: 0, z: 13 },
+  cacharros: [
+    ['balde', 6, 10],
+    ['tacho', -6, 10],
+    ['maceta', 11, 3],
+    ['regadera', -11, 4],
+    ['vaso', 2, 2],
+    ['botella', -4, -4],
+    ['florero', 8, -2],
+    ['lata', -10, -6],
+    ['bebedero', 4, -8],
+    ['frasco', 13, 7],
+  ],
+};
+
+export const PARQUE = {
+  nombre: 'El Parque',
+  emoji: '🛝',
+  interior: false,
+  bg: '#9ad6ef',
+  gate: 0,
+  room: { width: 38, depth: 32 },
+  spawn: { x: 0, z: 13 },
+  cacharros: [
+    ['balde', 4, 6],
+    ['botella', -5, 2],
+    ['lata', 7, 3],
+    ['tacho', -13, -4],
+    ['bebedero', 2, -5],
+    ['regadera', -3, 11],
+    ['maceta', 12, 6],
+    ['vaso', 6, -10],
+    ['florero', -8, 13],
+    ['frasco', 13, -2],
+  ],
+};
+
+export const PLAYA = {
+  nombre: 'La Playa',
+  emoji: '🏖️',
+  interior: false,
+  bg: '#bfe8f5',
+  gate: 0,
+  room: { width: 38, depth: 32 },
+  spawn: { x: 0, z: 13 },
+  cacharros: [
+    ['balde', 5, 6],
+    ['botella', -4, 4],
+    ['lata', 8, 8],
+    ['vaso', -8, 9],
+    ['tacho', 12, 1],
+    ['bebedero', -12, 2],
+    ['maceta', 2, 11],
+    ['frasco', -6, -3],
+    ['regadera', 9, -4],
+    ['florero', -2, 1],
+  ],
+};
+
 // Registro de niveles para el mapa. `id` se mapea a su clase en main.js.
 export const NIVELES = [
   { id: 'casa', nombre: 'La Casa', emoji: '🏠' },
   { id: 'jardin', nombre: 'El Jardín', emoji: '🌳' },
-  { id: 'escuela', nombre: 'La Escuela', emoji: '🏫', locked: true },
-  { id: 'parque', nombre: 'El Parque', emoji: '🛝', locked: true },
-  { id: 'playa', nombre: 'La Playa', emoji: '🏖️', locked: true },
+  { id: 'escuela', nombre: 'La Escuela', emoji: '🏫' },
+  { id: 'parque', nombre: 'El Parque', emoji: '🛝' },
+  { id: 'playa', nombre: 'La Playa', emoji: '🏖️' },
 ];
