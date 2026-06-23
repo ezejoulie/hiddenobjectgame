@@ -54,6 +54,20 @@ const HEROES = {
 };
 const DENGUIN_URL = `${CF}6f01a442-57d2-41f0-be11-587d0ffe4f80.glb`;
 
+// Cacharros reales (GLB) por tipo, con fallback a primitiva
+const CACHARRO_URLS = {
+  balde: `${CF}2e210d1e-88a4-466c-9685-80a882dcff9c.glb`,
+  tacho: `${CF}7fc43ae3-a607-4bca-bad6-501d4de2d615.glb`,
+  regadera: `${CF}57daab7e-a92c-47e9-b46c-eef6440faf77.glb`,
+  botella: `${CF}ae6965fa-c4cb-4082-b762-56650d036f7a.glb`,
+  lata: `${CF}55a338ec-6a86-4834-9cc8-d3558e9f2cdb.glb`,
+  vaso: `${CF}66c29bb0-14bf-4b5c-a632-aeac3de52b7c.glb`,
+  florero: `${CF}3d81b496-7836-4c4a-ae93-0d0bc617eb4a.glb`,
+  maceta: `${CF}4b328b48-3966-465c-b5b5-3b480f21fad9.glb`,
+  bebedero: `${CF}3ee4d0fc-5561-48c2-a5a8-aeaa060a131c.glb`,
+  frasco: `${CF}590439a9-f32c-4a13-9727-8d81c8a1f5a0.glb`, // bidón
+};
+
 // Selector de personaje (sin etiquetas de género)
 function buildHeroSelector(onPick) {
   const el = document.createElement('div');
@@ -129,6 +143,14 @@ async function boot() {
   heroes.nene = await loader.loadGLTF(HEROES.nene).catch(() => null);
   heroes.nena = await loader.loadGLTF(HEROES.nena).catch(() => null);
   const denguinModel = await loader.loadGLTF(DENGUIN_URL).then((g) => g.scene).catch(() => null);
+
+  // ---------- Cargar cacharros reales ----------
+  await loader.preload(Object.values(CACHARRO_URLS), (p) => overlay.set(0.88 + p * 0.12));
+  const cacharroModels = {};
+  for (const [tipo, url] of Object.entries(CACHARRO_URLS)) {
+    const s = loader.instance(url);
+    if (s) cacharroModels[tipo] = s;
+  }
   overlay.set(1);
 
   // ---------- Nivel ----------
@@ -168,7 +190,7 @@ async function boot() {
   const hud = new HUD(itemsDeSpawns(spawns));
   const screens = new Screens();
   const bounds = { x: CASA_LIVING.room.width / 2 - 1, z: CASA_LIVING.room.depth / 2 - 1 };
-  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens, bounds, denguinModel });
+  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens, bounds, denguinModel, cacharroModels });
   screens.intro({ onStart: () => game.start() });
 
   // ---------- Post-procesado ----------

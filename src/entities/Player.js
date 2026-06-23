@@ -36,7 +36,7 @@ function pbr(color, roughness = 0.7, metalness = 0.0) {
 
 export class Player {
   constructor(opts = {}) {
-    this.radius = 0.34;
+    this.radius = 0.3;
     this.speed = 4.2;
     this.position = new THREE.Vector3();
     this.heading = Math.PI;
