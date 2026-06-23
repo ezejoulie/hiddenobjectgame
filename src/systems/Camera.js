@@ -69,6 +69,9 @@ export class ThirdPersonCamera {
       .copy(this._target)
       .addScaledVector(this._dir, this._currentDist);
 
+    // seguridad: que la cámara nunca baje del piso (evita ver "por abajo")
+    if (this._desired.y < 0.4) this._desired.y = 0.4;
+
     this.camera.position.copy(this._desired);
     this.camera.lookAt(this._target);
   }

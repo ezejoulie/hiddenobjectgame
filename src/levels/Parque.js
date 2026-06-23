@@ -94,7 +94,10 @@ export class Parque extends Exterior {
     // matas de pasto + flores
     [[-14, -4], [13, 8], [7, -9], [-8, 13]].forEach(([x, z]) => this._pastoCluster(x, z, 6, 2.2));
     for (let i = 0; i < 8; i++) {
-      this._flores((Math.random() - 0.5) * 2 * (this.HW - 2), (Math.random() - 0.5) * 2 * (this.HD - 2), 4);
+      const x = (Math.random() - 0.5) * 2 * (this.HW - 2);
+      const z = (Math.random() - 0.5) * 2 * (this.HD - 2);
+      if (this._inPond(x, z)) continue;
+      this._flores(x, z, 4);
     }
   }
 }

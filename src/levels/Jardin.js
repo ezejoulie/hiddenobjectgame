@@ -92,12 +92,15 @@ export class Jardin extends Exterior {
     [[-13, 3], [12, -8], [6, 12], [-7, -11], [14, 4], [-15, -5], [9, -11], [-4, 9]].forEach(([x, z]) =>
       this._pastoCluster(x, z, 6, 2.2));
 
-    // flores sueltas
-    for (let i = 0; i < 10; i++) {
-      this._flores((Math.random() - 0.5) * 2 * (this.HW - 2), (Math.random() - 0.5) * 2 * (this.HD - 2), 4);
-    }
-
-    // estanque chico
+    // estanque chico (antes de las flores, para poder evitar el agua)
     this._lago(-13, 11, 2.6, 2.0);
+
+    // flores sueltas (nunca dentro del agua)
+    for (let i = 0; i < 10; i++) {
+      const x = (Math.random() - 0.5) * 2 * (this.HW - 2);
+      const z = (Math.random() - 0.5) * 2 * (this.HD - 2);
+      if (this._inPond(x, z)) continue;
+      this._flores(x, z, 4);
+    }
   }
 }

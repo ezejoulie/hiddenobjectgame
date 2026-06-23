@@ -308,6 +308,8 @@ async function boot() {
     player.heading = prevHeading;
     player.mesh.position.copy(prevPos);
     player.mesh.rotation.y = prevHeading;
+    // sin sombra dura del personaje (el "círculo" bajo el jugador molestaba)
+    player.mesh.traverse((o) => { if (o.isMesh) o.castShadow = false; });
     scene.add(player.mesh);
   }
 
@@ -430,12 +432,11 @@ async function boot() {
     disposeLevel();
     player.mesh.visible = false;
     screens.hide();
-    levelLoader.show(LEVEL_CONFIGS[id]);
+    const cfg = LEVEL_CONFIGS[id];
+    levelLoader.show(cfg);
     const models = await loadLevelModels(id);
-    levelLoader.hide();
 
     const Cls = LEVEL_CLASSES[id];
-    const cfg = LEVEL_CONFIGS[id];
     level = new Cls({ models });
     level.addTo(scene);
     scene.background = new THREE.Color(cfg.bg || '#c9d6e3');
@@ -446,7 +447,10 @@ async function boot() {
     player.mesh.rotation.y = Math.PI;
     player.mesh.visible = true;
     tpCam.setObstacles(level.wallMeshes);
-    tpCam.distance = cfg.interior ? 3.0 : 4.3; // adentro, cámara más cerca (menos clipping)
+    // adentro: cámara más cerca y más en picada (menos clipping con paredes)
+    tpCam.distance = cfg.interior ? 2.6 : 4.3;
+    tpCam.minPitch = cfg.interior ? 0.5 : 0.12;
+    tpCam.pitch = cfg.interior ? 0.7 : 0.5;
     tpCam.yaw = Math.PI;
     tpCam.update(player.position, 0);
 
@@ -460,6 +464,12 @@ async function boot() {
       onComplete: () => markCompleted(id), thumbs: cacharroThumbs,
       audio, educa: !!cfg.educa,
     });
+    // pre-compila shaders/materiales + corre un frame de toda la cadena de
+    // post-proceso para que NO se trabe al arrancar el nivel
+    renderer.compile(scene, camera);
+    postfx.render(0);
+    levelLoader.hide();
+
     screens.intro({
       onStart: () => {
         audio.resume();
@@ -473,7 +483,12 @@ async function boot() {
   function showMap() {
     disposeLevel();
     player.mesh.visible = false;
-    screens.map(NIVELES, (id) => startLevel(id), { completed, onMedal: showDiploma });
+    // recorrido OBLIGATORIO en orden: cada nivel se desbloquea al completar el anterior
+    const niveles = NIVELES.map((n, i) => ({
+      ...n,
+      locked: i > 0 && !completed.has(NIVELES[i - 1].id),
+    }));
+    screens.map(niveles, (id) => startLevel(id), { completed, onMedal: showDiploma });
   }
 
   function showDiploma() {

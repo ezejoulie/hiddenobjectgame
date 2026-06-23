@@ -37,6 +37,7 @@ export class Exterior extends Level {
     this.butterflies = [];
     this.critters = [];
     this.waters = [];
+    this._ponds = [];
     this.scene = null;
 
     this.sky = p.sky ?? 0x9bd6f0;
@@ -200,6 +201,7 @@ export class Exterior extends Level {
     for (let i = 0; i < n; i++) {
       const x = cx + (Math.random() - 0.5) * 2 * spread;
       const z = cz + (Math.random() - 0.5) * 2 * spread;
+      if (this._inPond(x, z)) continue;
       this._pasto(x, z, this._terrainH(x, z));
     }
   }
@@ -246,37 +248,91 @@ export class Exterior extends Level {
     return water;
   }
 
+  /** ¿(x,z) cae dentro (o cerca) de algún estanque? Para no tirar flores al agua. */
+  _inPond(x, z, margin = 0.5) {
+    return this._ponds.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + margin);
+  }
+
+  _totora(cx, cz, rx, rz) {
+    const stemMat = mat(0x5a8f3c, 0.9);
+    const tipMat = mat(0x7a4a2a, 0.8);
+    const spots = 4;
+    for (let s = 0; s < spots; s++) {
+      const ang = (s / spots) * Math.PI * 2 + 0.4;
+      const bx = cx + Math.cos(ang) * (rx + 0.12);
+      const bz = cz + Math.sin(ang) * (rz + 0.12);
+      const n = 2 + Math.floor(Math.random() * 2);
+      for (let k = 0; k < n; k++) {
+        const ox = bx + (Math.random() - 0.5) * 0.5;
+        const oz = bz + (Math.random() - 0.5) * 0.5;
+        const h = 0.8 + Math.random() * 0.5;
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, h, 6), stemMat);
+        stem.position.set(ox, h / 2, oz);
+        stem.rotation.z = (Math.random() - 0.5) * 0.22;
+        stem.castShadow = true;
+        this.add(stem);
+        if (Math.random() < 0.7) {
+          const spike = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.22, 8), tipMat);
+          spike.position.set(ox, h - 0.04, oz);
+          spike.castShadow = true;
+          this.add(spike);
+        }
+      }
+    }
+  }
+
   _lago(cx, cz, rx, rz) {
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(1, 40), mat(0x6a5238, 0.95));
-    ground.scale.set(rx + 0.5, rz + 0.5, 1);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(cx, 0.015, cz);
-    ground.receiveShadow = true;
-    this.add(ground);
-    this._agua(cx, cz, rx, rz);
+    this._ponds.push({ x: cx, z: cz, r: Math.max(rx, rz) });
+    // borde de tierra húmeda
+    const shore = new THREE.Mesh(new THREE.CircleGeometry(1, 56), mat(0x6f5a3c, 0.95));
+    shore.scale.set(rx + 0.55, rz + 0.55, 1);
+    shore.rotation.x = -Math.PI / 2;
+    shore.position.set(cx, 0.012, cz);
+    shore.receiveShadow = true;
+    this.add(shore);
+    // agua profunda (base oscura) → da sensación de profundidad
+    const deep = new THREE.Mesh(
+      new THREE.CircleGeometry(1, 56),
+      new THREE.MeshStandardMaterial({ color: 0x14618a, roughness: 0.25, metalness: 0, transparent: true, opacity: 0.96 })
+    );
+    deep.scale.set(rx, rz, 1);
+    deep.rotation.x = -Math.PI / 2;
+    deep.position.set(cx, 0.03, cz);
+    deep.receiveShadow = true;
+    this.add(deep);
+    // superficie translúcida animada (más clara)
+    this._agua(cx, cz, rx * 0.97, rz * 0.97, { color: 0x49b6e6, opacity: 0.55, y: 0.06 });
+    // reflejo/brillo suave descentrado
+    const glint = new THREE.Mesh(
+      new THREE.CircleGeometry(1, 32),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false })
+    );
+    glint.scale.set(rx * 0.45, rz * 0.3, 1);
+    glint.rotation.x = -Math.PI / 2;
+    glint.position.set(cx - rx * 0.22, 0.065, cz - rz * 0.18);
+    this.add(glint);
+
     this.colliders.push({ type: 'circle', x: cx, z: cz, r: Math.min(rx, rz) - 0.2 });
 
-    const lily = mat(0x3ea35a, 0.85);
-    for (let i = 0; i < 5; i++) {
+    // nenúfares (pocos, alguno con florcita)
+    const lily = mat(0x3ea35a, 0.8);
+    for (let i = 0; i < 4; i++) {
       const ang = Math.random() * Math.PI * 2;
-      const rr = Math.random() * 0.6;
-      const pad = new THREE.Mesh(new THREE.CircleGeometry(0.18 + Math.random() * 0.1, 12), lily);
+      const rr = 0.2 + Math.random() * 0.5;
+      const px = cx + Math.cos(ang) * rx * rr;
+      const pz = cz + Math.sin(ang) * rz * rr;
+      const pad = new THREE.Mesh(new THREE.CircleGeometry(0.2 + Math.random() * 0.12, 14), lily);
       pad.rotation.x = -Math.PI / 2;
-      pad.position.set(cx + Math.cos(ang) * rx * rr, 0.07, cz + Math.sin(ang) * rz * rr);
+      pad.position.set(px, 0.07, pz);
       this.add(pad);
+      if (i % 2 === 0) {
+        const f = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 7), mat(0xff8ac2, 0.7));
+        f.position.set(px, 0.12, pz);
+        this.add(f);
+      }
     }
-    const junco = mat(0x6f8f3a, 0.9);
-    for (let i = 0; i < 12; i++) {
-      const ang = (i / 12) * Math.PI * 2;
-      const jx = cx + Math.cos(ang) * (rx + 0.15);
-      const jz = cz + Math.sin(ang) * (rz + 0.15);
-      const h = 0.5 + Math.random() * 0.4;
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, h, 5), junco);
-      c.position.set(jx, h / 2, jz);
-      c.rotation.z = (Math.random() - 0.5) * 0.3;
-      c.castShadow = true;
-      this.add(c);
-    }
+    // totoras/cattails en el borde
+    this._totora(cx, cz, rx, rz);
   }
 
   _mariposa(x, z, color) {
