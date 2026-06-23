@@ -69,10 +69,19 @@ function pushOut(x, z, r, c) {
   return [x, c.max.z + r];
 }
 
-/** Resuelve el círculo (x,z,r) contra todos los colliders. */
+/** Resuelve el círculo (x,z,r) contra todos los colliders.
+ *  Itera varias veces para estabilizar esquinas (evita que el jugador se trabe
+ *  oscilando entre dos colliders vecinos). */
 export function resolveCircle(x, z, r, colliders) {
-  for (const c of colliders) {
-    [x, z] = pushOut(x, z, r, c);
+  for (let iter = 0; iter < 3; iter++) {
+    let moved = false;
+    for (const c of colliders) {
+      const nx = pushOut(x, z, r, c);
+      if (nx[0] !== x || nx[1] !== z) moved = true;
+      x = nx[0];
+      z = nx[1];
+    }
+    if (!moved) break;
   }
   return [x, z];
 }

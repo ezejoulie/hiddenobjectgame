@@ -108,7 +108,7 @@ function construir(tipo, color) {
 }
 
 export class Cacharro {
-  constructor(tipo, x, z) {
+  constructor(tipo, x, z, model) {
     this.tipo = tipo;
     this.info = CACHARRO_TIPOS[tipo] || { nombre: tipo, tip: '', color: 0x27aae1 };
     this.collected = false;
@@ -117,7 +117,7 @@ export class Cacharro {
     this.phase = Math.random() * 6.28;
 
     this.group = new THREE.Group();
-    this.body = construir(tipo, this.info.color);
+    this.body = model ? this._normalizeModel(model) : construir(tipo, this.info.color);
     this.group.add(this.body);
 
     // aro indicador en el piso
@@ -129,6 +129,31 @@ export class Cacharro {
     this.group.add(this.ring);
 
     this.group.position.set(x, 0, z);
+  }
+
+  /** Normaliza un GLB de cacharro: ~0.5 m de alto, centrado y apoyado al piso. */
+  _normalizeModel(src) {
+    const model = src.clone(true);
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const h = size.y > 0.01 ? size.y : 0.5;
+    model.scale.multiplyScalar(0.5 / h);
+    const box2 = new THREE.Box3().setFromObject(model);
+    const c = new THREE.Vector3();
+    box2.getCenter(c);
+    model.position.x -= c.x;
+    model.position.z -= c.z;
+    model.position.y -= box2.min.y;
+    model.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = true;
+        o.receiveShadow = true;
+      }
+    });
+    const g = new THREE.Group();
+    g.add(model);
+    return g;
   }
 
   update(dt, t, playerPos) {

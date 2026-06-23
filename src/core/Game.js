@@ -14,12 +14,13 @@ const DURACION = 120;
 const RADIO_PICKUP = 1.15;
 
 export class Game {
-  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel }) {
+  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels }) {
     this.scene = scene;
     this.getPlayer = getPlayer;
     this.spawns = spawns; // [[tipo,x,z], ...]
     this.hud = hud;
     this.screens = screens;
+    this.cacharroModels = cacharroModels || {};
 
     this.cacharros = [];
     this.state = 'intro';
@@ -52,7 +53,7 @@ export class Game {
 
   _spawn() {
     this.spawns.forEach(([tipo, x, z], i) => {
-      const c = new Cacharro(tipo, x, z);
+      const c = new Cacharro(tipo, x, z, this.cacharroModels[tipo]);
       c.index = i;
       this.scene.add(c.group);
       this.cacharros.push(c);
