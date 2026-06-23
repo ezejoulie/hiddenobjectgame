@@ -8,6 +8,12 @@
 
 // Un tema por escena (progresión del bajo, melodías, tempo, timbres).
 const THEMES = {
+  menu: {
+    beat: 0.15, bass: 'triangle', mel: 'square',
+    roots: [130.81, 220.0, 174.61, 196.0], // C Am F G (alegre, de menú)
+    melA: [659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 659.25, 523.25],
+    melB: [523.25, 659.25, 783.99, 1046.5, 880.0, 783.99, 659.25, 587.33],
+  },
   casa: {
     beat: 0.16, bass: 'square', mel: 'triangle',
     roots: [130.81, 196.0, 220.0, 174.61],

@@ -50,6 +50,8 @@ export class Exterior extends Level {
 
     this.rainIntensity = 0;
     this._rainClock = Math.random() * 25;
+    this._skyCol = new THREE.Color(p.sky ?? 0x9bd6f0);
+    this._greyCol = new THREE.Color(0x848b97);
 
     this._buildBase();
     this._decorate();
@@ -57,25 +59,29 @@ export class Exterior extends Level {
     this._buildRain();
   }
 
-  // ---- lluvia (puntos que caen sobre el área jugable) ----
+  // ---- lluvia (rayas que caen sobre el área jugable) ----
   _buildRain() {
-    const N = 700;
+    const N = 1300;
     const geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(N * 3);
+    const pos = new Float32Array(N * 6); // 2 vértices por gota (raya)
     this._rainV = new Float32Array(N);
-    this._rainH = 14;
+    this._rainH = 15;
+    const len = 0.55;
     for (let i = 0; i < N; i++) {
-      pos[i * 3] = (Math.random() * 2 - 1) * (this.HW + 5);
-      pos[i * 3 + 1] = Math.random() * this._rainH;
-      pos[i * 3 + 2] = (Math.random() * 2 - 1) * (this.HD + 5);
-      this._rainV[i] = 9 + Math.random() * 7;
+      const x = (Math.random() * 2 - 1) * (this.HW + 6);
+      const y = Math.random() * this._rainH;
+      const z = (Math.random() * 2 - 1) * (this.HD + 6);
+      pos[i * 6] = x; pos[i * 6 + 1] = y; pos[i * 6 + 2] = z;
+      pos[i * 6 + 3] = x; pos[i * 6 + 4] = y - len; pos[i * 6 + 5] = z;
+      this._rainV[i] = 14 + Math.random() * 9;
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const mat = new THREE.PointsMaterial({ color: 0xc4d8ee, size: 0.08, transparent: true, opacity: 0, depthWrite: false });
-    const pts = new THREE.Points(geo, mat);
-    pts.frustumCulled = false;
-    this.add(pts);
-    this._rain = pts;
+    const mat = new THREE.LineBasicMaterial({ color: 0xcfe0f2, transparent: true, opacity: 0 });
+    const lines = new THREE.LineSegments(geo, mat);
+    lines.frustumCulled = false;
+    this.add(lines);
+    this._rain = lines;
+    this._rainLen = len;
   }
 
   speedFactor() {
@@ -88,19 +94,33 @@ export class Exterior extends Level {
     const cyc = this._rainClock % 42;
     const target = cyc > 16 && cyc < 28 ? 1 : 0;
     this.rainIntensity += (target - this.rainIntensity) * Math.min(1, dt * 0.6);
+    const r = this.rainIntensity;
+
+    // oscurecer la escena (sol + niebla + cielo) cuando llueve
+    if (this._sun) this._sun.intensity = 2.2 * (1 - r * 0.6);
+    if (this.scene) {
+      if (this.scene.fog) this.scene.fog.color.copy(this._skyCol).lerp(this._greyCol, r * 0.75);
+      if (this.scene.background && this.scene.background.isColor) {
+        this.scene.background.copy(this._skyCol).lerp(this._greyCol, r * 0.7);
+      }
+    }
+
     if (!this._rain) return;
-    const on = this.rainIntensity > 0.02;
+    const on = r > 0.02;
     this._rain.visible = on;
-    this._rain.material.opacity = this.rainIntensity * 0.55;
+    this._rain.material.opacity = Math.min(0.9, r * 0.95);
     if (!on) return;
     const p = this._rain.geometry.attributes.position;
     const a = p.array;
     for (let i = 0; i < this._rainV.length; i++) {
-      a[i * 3 + 1] -= this._rainV[i] * dt;
-      if (a[i * 3 + 1] < 0) {
-        a[i * 3 + 1] = this._rainH;
-        a[i * 3] = (Math.random() * 2 - 1) * (this.HW + 5);
-        a[i * 3 + 2] = (Math.random() * 2 - 1) * (this.HD + 5);
+      const dy = this._rainV[i] * dt;
+      a[i * 6 + 1] -= dy;
+      a[i * 6 + 4] -= dy;
+      if (a[i * 6 + 4] < 0) {
+        const x = (Math.random() * 2 - 1) * (this.HW + 6);
+        const z = (Math.random() * 2 - 1) * (this.HD + 6);
+        a[i * 6] = x; a[i * 6 + 1] = this._rainH; a[i * 6 + 2] = z;
+        a[i * 6 + 3] = x; a[i * 6 + 4] = this._rainH - this._rainLen; a[i * 6 + 5] = z;
       }
     }
     p.needsUpdate = true;
@@ -458,6 +478,7 @@ export class Exterior extends Level {
     this.add(sun);
     this.add(sun.target);
     this.lights.push(sun);
+    this._sun = sun;
 
     const HW = this.HW, HD = this.HD;
     this.colliders.push(boxCollider(0, -HD, 2 * HW + 4, 1.5));

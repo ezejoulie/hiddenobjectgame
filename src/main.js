@@ -357,6 +357,20 @@ async function boot() {
   });
   document.body.appendChild(muteBtn);
 
+  // música de menú desde el primer gesto (antes de la primera escena),
+  // distinta a la de los niveles. Los navegadores exigen un gesto para sonar.
+  const startMenuMusic = () => {
+    audio.resume();
+    audio.startMusic('menu');
+  };
+  const firstGesture = () => {
+    startMenuMusic();
+    window.removeEventListener('pointerdown', firstGesture);
+    window.removeEventListener('keydown', firstGesture);
+  };
+  window.addEventListener('pointerdown', firstGesture);
+  window.addEventListener('keydown', firstGesture);
+
   const levelLoader = makeLevelLoader();
 
   function onResize() {
@@ -492,6 +506,7 @@ async function boot() {
 
   function showMap() {
     disposeLevel();
+    startMenuMusic(); // volver a la música de menú entre escenas
     player.mesh.visible = false;
     // recorrido OBLIGATORIO en orden: cada nivel se desbloquea al completar el anterior
     const niveles = NIVELES.map((n, i) => ({
