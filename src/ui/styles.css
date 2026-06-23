@@ -225,9 +225,9 @@ body {
 }
 .hud-tip {
   position: absolute;
-  bottom: 96px;
+  bottom: 150px;
   left: 50%;
-  transform: translateX(-50%) translateY(180%);
+  transform: translateX(-50%) translateY(220%);
   background: #fff;
   border: 3px solid #15324b;
   border-radius: 16px;
@@ -983,3 +983,22 @@ body {
 }
 .hero-name-in:focus { border-color: #2faae1; }
 .hero-go { margin-top: 2px; }
+
+/* puntitos de pasos del tutorial */
+.tut-dots {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  margin-top: 14px;
+}
+.tut-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(21, 50, 75, 0.22);
+  transition: background 0.2s, transform 0.2s;
+}
+.tut-dots span.on {
+  background: #2faae1;
+  transform: scale(1.25);
+}

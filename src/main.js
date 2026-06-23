@@ -293,6 +293,7 @@ async function boot() {
   let player = null;
   let essentialsLoaded = false;
   let sessionName = 'Agente';
+  let seenTutorial = false;
 
   const tpCam = new ThirdPersonCamera(camera, { distance: 4.3, height: 1.4 });
   const input = new Input(renderer.domElement);
@@ -471,13 +472,18 @@ async function boot() {
     postfx.render(0);
     levelLoader.hide();
 
-    screens.intro({
-      onStart: () => {
-        audio.resume();
-        audio.startMusic();
-        game.start();
-      },
-    });
+    const startGame = () => {
+      audio.resume();
+      audio.startMusic();
+      game.start();
+    };
+    // la primera vez: tutorial paso a paso de la jugabilidad; después, intro corta
+    if (!seenTutorial) {
+      seenTutorial = true;
+      screens.tutorial({ onDone: startGame });
+    } else {
+      screens.intro({ onStart: startGame });
+    }
     busy = false;
   }
 

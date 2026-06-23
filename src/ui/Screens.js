@@ -185,6 +185,30 @@ export class Screens {
     this.el.classList.add('on');
   }
 
+  /** Tutorial paso a paso de la jugabilidad (antes de arrancar). */
+  tutorial({ onDone }) {
+    const steps = [
+      { emoji: '🎯', title: 'Tu misión', html: 'Sos un <b>agente anti-dengue</b>. En cada lugar tenés que <b>encontrar y eliminar los 10 cacharros</b> con agua estancada. ¡Sin agua acumulada, no hay mosquito! 💧' },
+      { emoji: '🔎', title: 'Los cacharros', html: 'Abajo, en la <b>bandeja</b>, ves los 10 elementos que tenés que buscar (balde, botella, regadera…). Cuando te <b>acercás</b> a uno, lo juntás solo y se marca como listo. ✅' },
+      { emoji: '⏱️', title: 'El tiempo', html: 'Tenés <b>2 minutos</b> (la barra de arriba). Si se acaba y no juntaste los 10, perdés. ¡Revisá bien cada rincón!' },
+      { emoji: '❤️', title: 'Tus vidas', html: 'Tenés <b>3 vidas</b> (corazones ❤️❤️❤️). Cada vez que <b>Denguín te pica</b>, perdés una vida y se te <b>escapan cacharros</b>. Si te pica <b>3 veces</b>, volvés a empezar.' },
+      { emoji: '🦟', title: 'Denguín', html: 'Cada <b>15 segundos</b> Denguín viene a picarte. Mirá la cuenta <b>“🦟 Ns”</b> y la <b>flecha roja</b> que indica de dónde viene; cuando se acerca, vas a <b>escuchar el zumbido</b>.' },
+      { emoji: '🛡️', title: '¡Doble Defensa!', html: 'Justo antes de que te pique, apretá <b>Espacio</b> (o el botón de escudo) para activar la <b>¡DOBLE DEFENSA!</b> y rebotarlo. Tarda unos segundos en recargarse.' },
+      { emoji: '🕹️', title: 'Controles', html: 'Movete con <b>WASD</b> o las <b>flechas</b>. <b>Arrastrá</b> con el mouse o el dedo para <b>girar la cámara</b> y mirar por todos lados. ¡Listo!' },
+    ];
+    let i = 0;
+    const render = () => {
+      const s = steps[i];
+      const last = i === steps.length - 1;
+      const dots = `<div class="tut-dots">${steps.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join('')}</div>`;
+      const buttons = [];
+      if (i > 0) buttons.push({ label: '◀', cls: '', onClick: () => { i -= 1; render(); } });
+      buttons.push({ label: last ? '¡Jugar! 🚀' : 'Siguiente ▶', cls: 'verde', onClick: () => { if (last) onDone(); else { i += 1; render(); } } });
+      this._show({ emoji: s.emoji, title: s.title, descHtml: `<p class="scr-lead">${s.html}</p>${dots}`, buttons });
+    };
+    render();
+  }
+
   /** Pausa educativa (nivel tutorial): muestra el cacharro y cómo prevenir. */
   educa({ info, thumb, n, total, onContinue }) {
     const head = thumb ? `<img class="edu-img" src="${thumb}" alt="">` : '';
