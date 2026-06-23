@@ -16,22 +16,20 @@ export const CASA_LIVING = {
     paredInt: 0xf0e6d6,
     paredZocalo: 0x9a6b45,
   },
-  // 10 criaderos repartidos: 2 por ambiente. [tipo, x, z]
+  // 10 criaderos. Los PRIMEROS 5 están en la zona sur (accesible al arrancar);
+  // al juntarlos se abre el portón y se accede a los otros 5 (zona norte).
   cacharros: [
-    // living (norte, ancho)
-    ['florero', -4, -6.2],
-    ['bebedero', 4, -7],
-    // cocina (oeste-norte)
-    ['balde', -6, -1],
-    ['botella', -9, -3.6],
-    // baño (este-norte)
-    ['frasco', 5, -1],
-    ['vaso', 8.5, -3.6],
-    // lavadero (oeste-sur)
-    ['tacho', -6, 2.6],
-    ['regadera', -9, 6.4],
-    // dormitorio (este-sur)
-    ['maceta', 5, 2.6],
-    ['lata', 9, 6.4],
+    // --- ZONA SUR (primeros 5) ---
+    ['tacho', -6, 2.6], // lavadero
+    ['regadera', -9, 6.4], // lavadero
+    ['maceta', 5, 2.6], // dormitorio
+    ['lata', 9, 6.4], // dormitorio
+    ['vaso', 0, 6], // pasillo
+    // --- ZONA NORTE (tras el portón) ---
+    ['balde', -6, -1], // cocina
+    ['botella', -9, -3.6], // cocina
+    ['frasco', 5, -1], // baño
+    ['bebedero', 8.5, -3.6], // baño
+    ['florero', -4, -6.2], // living
   ],
 };

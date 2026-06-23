@@ -190,7 +190,7 @@ async function boot() {
   const hud = new HUD(itemsDeSpawns(spawns));
   const screens = new Screens();
   const bounds = { x: CASA_LIVING.room.width / 2 - 1, z: CASA_LIVING.room.depth / 2 - 1 };
-  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens, bounds, denguinModel, cacharroModels });
+  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens, bounds, denguinModel, cacharroModels, level: casa });
   screens.intro({ onStart: () => game.start() });
 
   // ---------- Post-procesado ----------

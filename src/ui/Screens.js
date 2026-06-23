@@ -63,8 +63,8 @@ export class Screens {
           <div>🛡️ <b>Escudo</b><span>Espacio</span></div>
           <div>🦟 <b>Denguín</b><span>si te pica, dispersa cacharros</span></div>
         </div>
-        <p class="scr-note">Nivel 1: <b>La Casa</b> 🏠 — próximamente El Jardín, La Escuela, El Parque y La Playa.
-        Elegí tu personaje arriba a la derecha.</p>`,
+        <p class="scr-note">🔓 Juntá los <b>primeros 5</b> y se abre el <b>portón</b> del pasillo para pasar a los demás cuartos.
+        Nivel 1: <b>La Casa</b> 🏠 — próximamente El Jardín, La Escuela, El Parque y La Playa.</p>`,
       buttons: [{ label: '¡Empezar!', cls: 'verde', onClick: onStart }],
     });
   }

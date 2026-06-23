@@ -116,11 +116,21 @@ export class Casa extends Level {
     this.add(f);
   }
 
-  /** Mueble real (GLB) si está, con un box de fallback. */
+  /** Mueble real (GLB) si está, con un box de fallback. Los GLB NO colisionan
+   *  (evita muros invisibles por bounding boxes grandes); las primitivas sí. */
   _mueble(key, opts, fb) {
-    if (this.models[key]) return this._placeModel(this.models[key].clone(true), opts);
+    if (this.models[key]) return this._placeModel(this.models[key].clone(true), { collide: false, ...opts });
     if (fb) fb();
     return null;
+  }
+
+  /** Panel de color en una pared, para que cada ambiente se distinga. */
+  _accent(x, y, z, w, h, ry, color) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.05), new THREE.MeshStandardMaterial({ color, roughness: 0.9 }));
+    m.position.set(x, y, z);
+    m.rotation.y = ry;
+    m.receiveShadow = true;
+    this.add(m);
   }
 
   _build() {
@@ -179,6 +189,50 @@ export class Casa extends Level {
     // paredes z=0 que separan norte/sur en los laterales
     this._wall(-6.75, 0, 2 * (HW - HALL), T);
     this._wall(6.75, 0, 2 * (HW - HALL), T);
+
+    // PORTÓN con llave en el pasillo (z=0): bloquea hasta juntar los primeros 5
+    const gate = new THREE.Mesh(
+      new THREE.BoxGeometry(2 * HALL, 2.4, 0.16),
+      new THREE.MeshStandardMaterial({ color: 0xb05a2a, roughness: 0.5, metalness: 0.1 })
+    );
+    gate.position.set(0, 1.2, 0);
+    gate.castShadow = true;
+    gate.receiveShadow = true;
+    const lock = new THREE.Mesh(
+      new THREE.BoxGeometry(0.3, 0.36, 0.1),
+      new THREE.MeshStandardMaterial({ color: 0xf4b72e, metalness: 0.5, roughness: 0.3 })
+    );
+    lock.position.set(0, 0.1, 0.13);
+    gate.add(lock);
+    this.add(gate);
+    this.gateMesh = gate;
+    this.gateCollider = boxCollider(0, 0, 2 * HALL, 0.4);
+    this.colliders.push(this.gateCollider);
+  }
+
+  /** Abre el portón (al juntar los primeros 5). */
+  openGate() {
+    if (this._gateOpen) return;
+    this._gateOpen = true;
+    this.colliders = this.colliders.filter((c) => c !== this.gateCollider);
+    const m = this.gateMesh;
+    const t0 = performance.now();
+    const tick = () => {
+      const k = Math.min(1, (performance.now() - t0) / 600);
+      m.position.y = 1.2 + k * 2.5;
+      if (k < 1) requestAnimationFrame(tick);
+      else m.visible = false;
+    };
+    tick();
+  }
+
+  resetGate() {
+    this._gateOpen = false;
+    if (this.gateMesh) {
+      this.gateMesh.visible = true;
+      this.gateMesh.position.y = 1.2;
+    }
+    if (this.gateCollider && !this.colliders.includes(this.gateCollider)) this.colliders.push(this.gateCollider);
   }
 
   _buildLights() {
@@ -216,6 +270,7 @@ export class Casa extends Level {
   // ===================== AMBIENTES =====================
 
   _living() {
+    this._accent(0, 2.35, -HD + T / 2 + 0.03, 7, 0.7, 0, 0xe8633a); // coral
     // TV contra la pared norte (z=-9)
     this._mueble('tele', { footprint: 1.9, x: 0, z: -HD + 0.5, ry: 0 }, () => {
       this._box(1.9, 0.5, 0.45, 0x8a8f96, 0, 0.25, -HD + 0.45, { collide: true });
@@ -256,6 +311,7 @@ export class Casa extends Level {
   }
 
   _cocina() {
+    this._accent(-HW + T / 2 + 0.03, 2.3, -2.5, 4.5, 0.7, Math.PI / 2, 0xf2c94c); // amarillo
     // mesada contra la pared oeste (x=-11)
     this._mueble('mesada', { footprint: 4, x: -HW + 0.5, z: -2.5, ry: Math.PI / 2 }, () => {
       this._box(0.6, 0.9, 4, 0xbfa98a, -HW + 0.45, 0.45, -2.5, { collide: true });
@@ -275,6 +331,7 @@ export class Casa extends Level {
   }
 
   _bano() {
+    this._accent(HW - T / 2 - 0.03, 2.3, -2.5, 4.5, 0.7, Math.PI / 2, 0x5bc4f0); // celeste
     // bañadera contra la pared este (x=11)
     this._mueble('banadera', { footprint: 2.6, x: HW - 0.9, z: -2.5, ry: Math.PI / 2 }, () => {
       this._box(1.3, 0.55, 2.8, 0xf2f2f2, HW - 0.75, 0.28, -2.5, { collide: true, rough: 0.3 });
@@ -290,6 +347,7 @@ export class Casa extends Level {
   }
 
   _lavadero() {
+    this._accent(-HW + T / 2 + 0.03, 2.3, 4.5, 4.5, 0.7, Math.PI / 2, 0x6fd99a); // verde menta
     this._mueble('lavarropas', { footprint: 0.9, x: -HW + 0.75, z: HD - 0.9, ry: 0 }, () => {
       this._box(0.9, 1.2, 0.9, 0xe8e8e8, -HW + 0.75, 0.6, HD - 0.9, { collide: true, rough: 0.4 });
       const door = new THREE.Mesh(new THREE.CircleGeometry(0.28, 18), new THREE.MeshStandardMaterial({ color: 0x3a3f44, roughness: 0.2, metalness: 0.5 }));
@@ -305,6 +363,7 @@ export class Casa extends Level {
   }
 
   _dormitorio() {
+    this._accent(HW - T / 2 - 0.03, 2.3, 4.5, 4.5, 0.7, Math.PI / 2, 0xb98fd9); // lila
     // cama
     this._mueble('cama', { footprint: 2.8, x: HW - 1.8, z: 6.2, ry: -Math.PI / 2 }, () => {
       this._box(2.6, 0.45, 3.4, 0xb7d0e8, HW - 1.8, 0.32, 6.2, { collide: true, rough: 0.85 });
