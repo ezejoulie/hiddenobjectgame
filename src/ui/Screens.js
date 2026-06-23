@@ -35,6 +35,8 @@ export class Screens {
   }
 
   _show({ emoji, title, desc, descHtml, stars = '', score = '', buttons }) {
+    // al mostrar un modal liberamos el mouse (pointer lock) para poder tocar botones
+    if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
     if (this.card) this.card.classList.remove('modal-mapa');
     this.emoji.textContent = emoji || '';
     this.title.textContent = title || '';
@@ -194,7 +196,7 @@ export class Screens {
       { emoji: '❤️', title: 'Tus vidas', html: 'Tenés <b>3 vidas</b> (corazones ❤️❤️❤️). Cada vez que <b>Denguín te pica</b>, perdés una vida y se te <b>escapan cacharros</b>. Si te pica <b>3 veces</b>, volvés a empezar.' },
       { emoji: '🦟', title: 'Denguín', html: 'Cada <b>15 segundos</b> Denguín viene a picarte. Mirá la cuenta <b>“🦟 Ns”</b> y la <b>flecha roja</b> que indica de dónde viene; cuando se acerca, vas a <b>escuchar el zumbido</b>.' },
       { emoji: '🛡️', title: '¡Doble Defensa!', html: 'Justo antes de que te pique, apretá <b>Espacio</b> (o el botón de escudo) para activar la <b>¡DOBLE DEFENSA!</b> y rebotarlo. Tarda unos segundos en recargarse.' },
-      { emoji: '🕹️', title: 'Controles', html: 'Movete con <b>WASD</b> o las <b>flechas</b>. <b>Arrastrá</b> con el mouse o el dedo para <b>girar la cámara</b> y mirar por todos lados. ¡Listo!' },
+      { emoji: '🕹️', title: 'Controles', html: 'Movete con <b>WASD</b> o las <b>flechas</b>. Hacé <b>click</b> en la escena y <b>moviendo el mouse</b> mirás para todos lados (no hace falta mantener apretado; apretá <b>Esc</b> para soltar). En celular, arrastrá con el dedo. ¡Listo!' },
     ];
     let i = 0;
     const render = () => {
@@ -227,6 +229,7 @@ export class Screens {
 
   /** Mapa de niveles tipo "mundo de islas": pines sobre un camino serpenteante. */
   map(niveles, onPick, opts = {}) {
+    if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
     const completed = opts.completed || new Set();
     const allDone = niveles.length > 0 && niveles.every((n) => completed.has(n.id));
 

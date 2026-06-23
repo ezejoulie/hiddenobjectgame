@@ -38,6 +38,7 @@ export class Player {
   constructor(opts = {}) {
     this.radius = 0.3;
     this.speed = 4.2;
+    this.speedScale = 1; // <1 cuando llueve (afuera)
     this.position = new THREE.Vector3();
     this.heading = Math.PI;
     this.walkPhase = 0;
@@ -311,7 +312,7 @@ export class Player {
       const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
       const dir = fwd.multiplyScalar(move.y).add(right.multiplyScalar(move.x)).normalize();
 
-      const vel = this.speed * mag;
+      const vel = this.speed * mag * (this.speedScale || 1);
       this.position.x += dir.x * vel * dt;
       this.position.z += dir.z * vel * dt;
       if (colliders && colliders.length) {

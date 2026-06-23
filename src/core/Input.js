@@ -17,6 +17,7 @@ export class Input {
     this.keys = new Set();
     this.look = { dx: 0, dy: 0 };
     this._shieldQueued = false;
+    this._locked = false; // pointer lock: mover el mouse = mover cámara (sin mantener)
 
     this._drag = null;
 
@@ -38,6 +39,13 @@ export class Input {
       this.el.setPointerCapture?.(e.pointerId);
     };
     this._onPointerMove = (e) => {
+      // con pointer lock: cualquier movimiento del mouse gira la cámara
+      if (this._locked) {
+        this.look.dx += (e.movementX || 0);
+        this.look.dy += (e.movementY || 0);
+        return;
+      }
+      // sin lock: arrastrar (mantener apretado) — fallback y para touch
       if (!this._drag || e.pointerId !== this._drag.id) return;
       const sens = e.pointerType === 'mouse' ? 1.0 : 0.7;
       this.look.dx += (e.clientX - this._drag.x) * sens;
@@ -49,12 +57,30 @@ export class Input {
       if (this._drag && e.pointerId === this._drag.id) this._drag = null;
     };
 
+    // click en la escena → activar pointer lock (mirar moviendo el mouse)
+    this._onClick = () => {
+      if (!this._locked && this.el.requestPointerLock) this.el.requestPointerLock();
+    };
+    this._onLockChange = () => {
+      this._locked = document.pointerLockElement === this.el;
+    };
+
     window.addEventListener('keydown', this._onKeyDown);
     window.addEventListener('keyup', this._onKeyUp);
     this.el.addEventListener('pointerdown', this._onPointerDown);
     this.el.addEventListener('pointermove', this._onPointerMove);
     this.el.addEventListener('pointerup', this._onPointerUp);
     this.el.addEventListener('pointercancel', this._onPointerUp);
+    this.el.addEventListener('click', this._onClick);
+    document.addEventListener('pointerlockchange', this._onLockChange);
+  }
+
+  /** Pide pointer lock (debe llamarse dentro de un gesto del usuario). */
+  lock() {
+    if (this.el.requestPointerLock) this.el.requestPointerLock();
+  }
+  isLocked() {
+    return this._locked;
   }
 
   isDown(code) {
@@ -100,5 +126,7 @@ export class Input {
     this.el.removeEventListener('pointermove', this._onPointerMove);
     this.el.removeEventListener('pointerup', this._onPointerUp);
     this.el.removeEventListener('pointercancel', this._onPointerUp);
+    this.el.removeEventListener('click', this._onClick);
+    document.removeEventListener('pointerlockchange', this._onLockChange);
   }
 }

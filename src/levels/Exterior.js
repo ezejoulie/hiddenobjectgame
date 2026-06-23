@@ -48,9 +48,62 @@ export class Exterior extends Level {
     this.relief = p.relief !== false;
     this.ground = p.ground ?? { type: 'grass', color: 0xffffff, repeat: 30 };
 
+    this.rainIntensity = 0;
+    this._rainClock = Math.random() * 25;
+
     this._buildBase();
     this._decorate();
     this._spawnLife();
+    this._buildRain();
+  }
+
+  // ---- lluvia (puntos que caen sobre el área jugable) ----
+  _buildRain() {
+    const N = 700;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3);
+    this._rainV = new Float32Array(N);
+    this._rainH = 14;
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = (Math.random() * 2 - 1) * (this.HW + 5);
+      pos[i * 3 + 1] = Math.random() * this._rainH;
+      pos[i * 3 + 2] = (Math.random() * 2 - 1) * (this.HD + 5);
+      this._rainV[i] = 9 + Math.random() * 7;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xc4d8ee, size: 0.08, transparent: true, opacity: 0, depthWrite: false });
+    const pts = new THREE.Points(geo, mat);
+    pts.frustumCulled = false;
+    this.add(pts);
+    this._rain = pts;
+  }
+
+  speedFactor() {
+    return 1 - this.rainIntensity * 0.45; // más lento cuando llueve
+  }
+
+  _updateRain(dt) {
+    // ciclo: llueve ~12 s cada ~42 s
+    this._rainClock += dt;
+    const cyc = this._rainClock % 42;
+    const target = cyc > 16 && cyc < 28 ? 1 : 0;
+    this.rainIntensity += (target - this.rainIntensity) * Math.min(1, dt * 0.6);
+    if (!this._rain) return;
+    const on = this.rainIntensity > 0.02;
+    this._rain.visible = on;
+    this._rain.material.opacity = this.rainIntensity * 0.55;
+    if (!on) return;
+    const p = this._rain.geometry.attributes.position;
+    const a = p.array;
+    for (let i = 0; i < this._rainV.length; i++) {
+      a[i * 3 + 1] -= this._rainV[i] * dt;
+      if (a[i * 3 + 1] < 0) {
+        a[i * 3 + 1] = this._rainH;
+        a[i * 3] = (Math.random() * 2 - 1) * (this.HW + 5);
+        a[i * 3 + 2] = (Math.random() * 2 - 1) * (this.HD + 5);
+      }
+    }
+    p.needsUpdate = true;
   }
 
   // ---- ciclo de vida (niebla en la escena) ----
@@ -512,6 +565,7 @@ export class Exterior extends Level {
   _decorate() {}
 
   update(dt, t) {
+    this._updateRain(dt);
     for (const w of this.waters) {
       w.mesh.position.y = w.y + Math.sin(t * 1.2) * 0.01;
       w.mesh.material.emissiveIntensity = 0.22 + Math.sin(t * 2) * 0.06;

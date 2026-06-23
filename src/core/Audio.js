@@ -1,10 +1,45 @@
 /**
  * Audio.js — música y SFX 100% procedurales (Web Audio API), sin descargas.
  *
- * Música: pad suave + arpegio que recorre una progresión alegre (loop).
- * SFX: pick (juntar), shield (doble defensa), bite (picadura), win, lose, click.
- * Se arranca recién con un gesto del usuario (requisito de los navegadores).
+ * Música: groove tipo cartoon (bombo + hats + bajo saltarín + melodía), con un
+ * tema distinto por escena. SFX: pick, shield, bite, win, lose, click.
+ * Zumbido del mosquito y lluvia como loops controlados por intensidad.
  */
+
+// Un tema por escena (progresión del bajo, melodías, tempo, timbres).
+const THEMES = {
+  casa: {
+    beat: 0.16, bass: 'square', mel: 'triangle',
+    roots: [130.81, 196.0, 220.0, 174.61],
+    melA: [523.25, 659.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25],
+    melB: [659.25, 523.25, 587.33, 783.99, 880.0, 783.99, 659.25, 587.33],
+  },
+  jardin: {
+    beat: 0.14, bass: 'square', mel: 'triangle',
+    roots: [146.83, 220.0, 246.94, 196.0],
+    melA: [587.33, 739.99, 659.25, 880.0, 739.99, 659.25, 587.33, 493.88],
+    melB: [880.0, 739.99, 659.25, 587.33, 659.25, 739.99, 880.0, 987.77],
+  },
+  escuela: {
+    beat: 0.13, bass: 'square', mel: 'square',
+    roots: [130.81, 174.61, 196.0, 130.81],
+    melA: [523.25, 523.25, 659.25, 659.25, 587.33, 587.33, 523.25, 392.0],
+    melB: [659.25, 659.25, 783.99, 783.99, 659.25, 587.33, 523.25, 523.25],
+  },
+  parque: {
+    beat: 0.18, bass: 'triangle', mel: 'sine',
+    roots: [174.61, 130.81, 146.83, 116.54],
+    melA: [698.46, 659.25, 587.33, 523.25, 587.33, 659.25, 698.46, 783.99],
+    melB: [523.25, 587.33, 659.25, 698.46, 659.25, 587.33, 523.25, 440.0],
+  },
+  playa: {
+    beat: 0.15, bass: 'triangle', mel: 'sine',
+    roots: [196.0, 146.83, 164.81, 130.81],
+    melA: [783.99, 987.77, 880.0, 783.99, 659.25, 783.99, 880.0, 987.77],
+    melB: [1174.66, 987.77, 880.0, 783.99, 880.0, 987.77, 1174.66, 880.0],
+  },
+};
+
 export class Audio {
   constructor() {
     this.ctx = null;
@@ -79,50 +114,45 @@ export class Audio {
     src.start(t0);
   }
 
-  // ---------- música (saltarina, tipo cartoon) ----------
-  startMusic() {
+  // ---------- música (saltarina, tipo cartoon; un tema por escena) ----------
+  startMusic(themeKey) {
     this._ensure();
-    if (!this.ctx || this._musicTimer) return;
+    if (!this.ctx) return;
+    const theme = THEMES[themeKey] || THEMES.casa;
+    // si ya suena el mismo tema, no reiniciar
+    if (this._musicTimer && this._themeKey === themeKey) return;
+    this.stopMusic();
+    this._themeKey = themeKey;
+    this.theme = theme;
     this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);
+    this.musicGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
     this.musicGain.gain.linearRampToValueAtTime(0.26, this.ctx.currentTime + 0.8);
     this._bar = 0;
-    this._step = 16; // 16 corcheas por compás
-    this._beat = 0.15; // ~125 BPM, bien movido
     this._nextBar = this.ctx.currentTime + 0.1;
     const tick = () => {
       if (!this.ctx) return;
       while (this._nextBar < this.ctx.currentTime + 0.6) {
         this._emitBar(this._nextBar);
-        this._nextBar += this._step * this._beat;
+        this._nextBar += 16 * this.theme.beat;
       }
     };
     tick();
     this._musicTimer = setInterval(tick, 110);
   }
 
-  /** Emite un compás divertido: bombo, hats, bajo saltarín y melodía pegadiza. */
+  /** Emite un compás del tema actual: bombo, hats, bajo saltarín y melodía. */
   _emitBar(t0) {
-    const step = this._beat;
-    // progresión alegre I–V–vi–IV (Do), raíz del bajo por compás
-    const roots = [130.81, 196.0, 220.0, 174.61]; // C3 G3 A3 F3
-    const root = roots[this._bar % 4];
-    // melodía saltarina en Do mayor (8 notas por compás)
-    const melA = [523.25, 659.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25];
-    const melB = [659.25, 523.25, 587.33, 783.99, 880.0, 783.99, 659.25, 587.33];
-    const mel = this._bar % 2 ? melB : melA;
+    const th = this.theme;
+    const step = th.beat;
+    const root = th.roots[this._bar % th.roots.length];
+    const mel = this._bar % 2 ? th.melB : th.melA;
     for (let s = 0; s < 16; s++) {
       const t = t0 + s * step;
-      // bombo en 1 y 3
       if (s === 0 || s === 8) this._tone(60, t, 0.13, { type: 'sine', gain: 0.16, out: this.musicGain, attack: 0.004, release: 0.07 });
-      // hats en los contratiempos
       if (s % 2 === 1) this._noise(t, 0.025, { gain: 0.018, freq: 7000 });
-      // bajo saltarín: raíz en la negra, quinta en la "y"
-      if (s % 4 === 0) this._tone(root, t, step * 1.5, { type: 'square', gain: 0.06, out: this.musicGain, attack: 0.004, release: 0.05 });
-      if (s % 4 === 2) this._tone(root * 1.5, t, step * 0.7, { type: 'square', gain: 0.045, out: this.musicGain, attack: 0.004, release: 0.04 });
-      // melodía (corcheas)
-      if (s % 2 === 0) {
-        this._tone(mel[(s / 2) % 8], t, step * 1.2, { type: 'triangle', gain: 0.06, out: this.musicGain, attack: 0.004, release: 0.06 });
-      }
+      if (s % 4 === 0) this._tone(root, t, step * 1.5, { type: th.bass, gain: 0.06, out: this.musicGain, attack: 0.004, release: 0.05 });
+      if (s % 4 === 2) this._tone(root * 1.5, t, step * 0.7, { type: th.bass, gain: 0.045, out: this.musicGain, attack: 0.004, release: 0.04 });
+      if (s % 2 === 0) this._tone(mel[(s / 2) % 8], t, step * 1.2, { type: th.mel, gain: 0.06, out: this.musicGain, attack: 0.004, release: 0.06 });
     }
     this._bar++;
   }
@@ -132,7 +162,40 @@ export class Audio {
       clearInterval(this._musicTimer);
       this._musicTimer = null;
     }
+    this._themeKey = null;
     if (this.ctx && this.musicGain) this.musicGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
+  }
+
+  // ---------- lluvia (loop de ruido filtrado, controlado por intensidad) ----------
+  _ensureRain() {
+    if (this.rain || !this.ctx) return;
+    // ruido continuo
+    const n = 2 * this.ctx.sampleRate;
+    const buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 2200;
+    const g = this.ctx.createGain();
+    g.gain.value = 0;
+    src.connect(lp);
+    lp.connect(g);
+    g.connect(this.master);
+    src.start();
+    this.rain = src;
+    this.rainGain = g;
+  }
+
+  /** v: 0..1 intensidad de lluvia → volumen del loop. */
+  setRain(v) {
+    this._ensure();
+    this._ensureRain();
+    if (!this.rainGain) return;
+    this.rainGain.gain.setTargetAtTime(Math.max(0, Math.min(1, v)) * 0.12, this.ctx.currentTime, 0.4);
   }
 
   // ---------- SFX ----------

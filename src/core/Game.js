@@ -15,7 +15,7 @@ const DURACION = 120;
 const RADIO_PICKUP = 1.15;
 
 export class Game {
-  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels, level, gate, onWin, onComplete, audio, educa, thumbs }) {
+  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels, level, gate, onWin, onComplete, audio, educa, thumbs, relock }) {
     this.scene = scene;
     this.getPlayer = getPlayer;
     this.spawns = spawns; // [[tipo,x,z], ...]
@@ -29,6 +29,7 @@ export class Game {
     this.audio = audio || null;
     this.educa = !!educa; // pausa educativa al juntar (nivel tutorial)
     this.thumbs = thumbs || {};
+    this.relock = relock; // re-activar pointer lock al cerrar el pop-up
     this.bounds = bounds || { x: 8, z: 8 };
     this._gateOpened = false;
     this.paused = false;
@@ -220,6 +221,7 @@ export class Game {
               this.paused = false;
               this.screens.hide();
               if (last) this._win();
+              else if (this.relock) this.relock(); // volver al mouse-look
             },
           });
           return;

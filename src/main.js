@@ -422,6 +422,8 @@ async function boot() {
     if (game) game.dispose();
     if (hud) hud.destroy();
     if (level) level.dispose();
+    audio.setRain(0);
+    raining = false;
     game = null;
     hud = null;
     level = null;
@@ -464,7 +466,7 @@ async function boot() {
       scene, getPlayer: () => player, spawns: cfg.cacharros, hud, screens,
       bounds, denguinModel, cacharroModels, level, gate: cfg.gate, onWin: showMap,
       onComplete: () => markCompleted(id), thumbs: cacharroThumbs,
-      audio, educa: !!cfg.educa,
+      audio, educa: !!cfg.educa, relock: () => input.lock(),
     });
     // pre-compila shaders/materiales + corre un frame de toda la cadena de
     // post-proceso para que NO se trabe al arrancar el nivel
@@ -474,8 +476,9 @@ async function boot() {
 
     const startGame = () => {
       audio.resume();
-      audio.startMusic();
+      audio.startMusic(id); // música propia de cada escena
       game.start();
+      input.lock(); // mirar con el mouse (sin mantener); Esc para soltar
     };
     // la primera vez: tutorial paso a paso de la jugabilidad; después, intro corta
     if (!seenTutorial) {
@@ -526,6 +529,7 @@ async function boot() {
   const clock = new THREE.Clock();
   const _v = new THREE.Vector3();
   let wasPaused = false;
+  let raining = false;
   function loop() {
     requestAnimationFrame(loop);
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -539,6 +543,17 @@ async function boot() {
         // arrastre acumulado, para que la cámara NO pegue un salto.
         if (!wasPaused) tpCam.applyLook(look);
         wasPaused = false;
+        if (level.update) level.update(dt, now);
+        // lluvia (exteriores): el jugador va más lento y suena el loop de lluvia
+        const rain = level.rainIntensity || 0;
+        player.speedScale = level.speedFactor ? level.speedFactor() : 1;
+        audio.setRain(game.state === 'playing' ? rain : 0);
+        if (rain > 0.35 && !raining) {
+          raining = true;
+          if (game.state === 'playing') hud.showTip('🌧️ ¡Está lloviendo!', 'Te movés más lento bajo la lluvia. ¡Aprovechá cuando pare!');
+        } else if (rain < 0.15) {
+          raining = false;
+        }
         const move = input.moveVector();
         player.update(dt, move, tpCam.yaw, level.colliders);
         if (input.shieldPressed() && player.triggerShield(now)) {
@@ -546,7 +561,6 @@ async function boot() {
           audio.shield();
         }
         tpCam.update(player.position, dt);
-        if (level.update) level.update(dt, now);
       } else {
         input.consumeLook(); // drenar mientras está en pausa
         wasPaused = true;
