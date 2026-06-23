@@ -593,26 +593,6 @@ body {
   color: #fff;
 }
 
-/* Etiqueta discreta de look-dev (Sprint 0) */
-#lookdev-tag {
-  position: fixed;
-  left: 14px;
-  bottom: 12px;
-  z-index: 10;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(13, 34, 52, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  pointer-events: none;
-}
-
 /* ================= Mapa "mundo de islas" ================= */
 #scr-card.modal-mapa {
   width: min(820px, 94vw);
