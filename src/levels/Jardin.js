@@ -1,22 +1,31 @@
 import * as THREE from 'three';
 import { Level } from './Level.js';
 import { boxCollider } from '../systems/Collision.js';
+import { grassTexture } from '../core/Textures.js';
 import { JARDIN } from '../data/levels.config.js';
 
 /**
- * Jardin.js — El Jardín: primer nivel exterior.
+ * Jardin.js — El Jardín: nivel exterior abierto en una loma.
  *
- * Patio-parque abierto a escala del personaje (~1.4 m): árboles, pinos,
- * palmeras, arbustos, canteros y rocas reales (GLB) más un lago con plantas
- * acuáticas, un perrito que mueve la cola y mariposas que revolotean.
- * Todo modelo GLB se normaliza por ALTURA o HUELLA para quedar proporcional;
- * si un modelo no cargó, cae a una primitiva equivalente.
+ * Inspirado en la referencia: una huerta de campo (cobertizo, canteros con
+ * verduras, fuente de piedra, carretilla, banco, macetas, arbustos florecidos,
+ * sendero de piedra) sobre un pasto texturado que se pierde en colinas y
+ * montañas lejanas con niebla. No hay cerca: el área jugable tiene un límite
+ * invisible, así el espacio "sigue" pero no podés avanzar.
+ *
+ * Todo modelo GLB se normaliza por ALTURA o HUELLA para quedar proporcional al
+ * personaje (~1.4 m); si un modelo no cargó, cae a una primitiva equivalente.
  */
 
 const mat = (c, r = 0.85, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
 
-const HW = 13; // medio ancho (x)
-const HD = 11; // media profundidad (z)
+// Pasto fotográfico real (mismo CDN del prototipo); si falla, queda el canvas.
+const PASTO_URL =
+  'https://d8j0ntlcm91z4.cloudfront.net/user_3DfretboJ3mEvg6Sf67bZOoyIiH/hf_20260612_044206_56015de1-3c48-43e9-9021-c07e45f3e506.png';
+
+const SKY = 0x9bd6f0;
+const HW = 18; // medio ancho jugable (x)
+const HD = 15; // media profundidad jugable (z)
 
 export class Jardin extends Level {
   constructor(opts = {}) {
@@ -26,36 +35,32 @@ export class Jardin extends Level {
     this.lights = [];
     this.models = opts.models || {};
     this.butterflies = [];
-    this.critters = []; // perro, etc. (bob suave)
+    this.critters = [];
     this.water = null;
+    this.scene = null;
     this._build();
+  }
+
+  addTo(scene) {
+    this.scene = scene;
+    scene.add(this.group);
+    // niebla aérea: difumina colinas y montañas hacia el horizonte
+    this._prevFog = scene.fog;
+    scene.fog = new THREE.Fog(SKY, 38, 130);
+    return this;
+  }
+
+  dispose() {
+    if (this.scene) this.scene.fog = this._prevFog || null;
+    super.dispose();
   }
 
   // ---------- helpers ----------
 
-  _box(w, h, d, color, x, y, z, opts = {}) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), opts.mat || mat(color, opts.rough, opts.metal));
-    m.position.set(x, y, z);
-    m.castShadow = opts.cast !== false;
-    m.receiveShadow = true;
-    this.add(m);
-    if (opts.collide) this.colliders.push(boxCollider(x, z, w, d, opts.pad || 0));
-    return m;
-  }
-
-  /**
-   * Coloca un GLB normalizado y proporcional al personaje.
-   * @param {string} key  clave en this.models
-   * @param {object} o    { x, z, height, footprint, ry, collide, colliderR, jitter }
-   * Si se pasa `height`, escala para que mida eso de alto; si no, usa `footprint`
-   * (ancho máximo en XZ). Apoya la base en el piso (min.y → 0).
-   * Devuelve el grupo colocado, o null si el modelo no existe (usa fallback).
-   */
   _placeGLB(key, o = {}) {
     const src = this.models[key];
     if (!src) return null;
     const g = src.clone(true);
-    // medir
     let box = new THREE.Box3().setFromObject(g);
     const size = new THREE.Vector3();
     box.getSize(size);
@@ -64,7 +69,6 @@ export class Jardin extends Level {
     else if (o.footprint) s = o.footprint / (Math.max(size.x, size.z) || 1);
     if (o.jitter) s *= 1 + (Math.random() - 0.5) * o.jitter;
     g.scale.multiplyScalar(s);
-    // recalcular para apoyar en piso y centrar en XZ
     box = new THREE.Box3().setFromObject(g);
     const c = new THREE.Vector3();
     box.getCenter(c);
@@ -78,16 +82,16 @@ export class Jardin extends Level {
     });
     this.add(g);
     if (o.collide && o.colliderR) this.colliders.push({ type: 'circle', x: o.x, z: o.z, r: o.colliderR });
-    else if (o.collide) {
-      const b2 = new THREE.Box3().setFromObject(g);
-      const sz = new THREE.Vector3();
-      b2.getSize(sz);
-      this.colliders.push(boxCollider(o.x, o.z, sz.x * 0.7, sz.z * 0.7));
-    }
     return g;
   }
 
-  // --- fallbacks primitivos (proporcionales al personaje) ---
+  /** Prueba varios modelos (variedad) y si ninguno está, usa el fallback. */
+  _tree(x, z, h, keys, colliderR = 0.5) {
+    for (const k of keys) {
+      if (this._placeGLB(k, { x, z, height: h, ry: Math.random() * 6.28, collide: true, colliderR, jitter: 0.16 })) return;
+    }
+    this._arbolPrim(x, z, h);
+  }
 
   _arbolPrim(x, z, h = 3.2) {
     const g = new THREE.Group();
@@ -105,11 +109,11 @@ export class Jardin extends Level {
     });
     g.position.set(x, 0, z);
     this.add(g);
-    this.colliders.push({ type: 'circle', x, z, r: 0.35 });
+    this.colliders.push({ type: 'circle', x, z, r: 0.4 });
   }
 
-  _arbustoPrim(x, z, h = 0.7) {
-    const b = new THREE.Mesh(new THREE.IcosahedronGeometry(h * 0.7, 1), mat(0x57a84a, 0.95));
+  _arbustoPrim(x, z, h = 0.7, color = 0x57a84a) {
+    const b = new THREE.Mesh(new THREE.IcosahedronGeometry(h * 0.7, 1), mat(color, 0.95));
     b.position.set(x, h * 0.45, z);
     b.scale.y = 0.8;
     b.castShadow = true;
@@ -127,15 +131,15 @@ export class Jardin extends Level {
     this.colliders.push({ type: 'circle', x, z, r: h * 0.7 });
   }
 
-  _flores(x, z) {
+  _flores(x, z, n = 8) {
     const g = new THREE.Group();
-    const cols = [0xff5e5b, 0xffc93c, 0x9b59b6, 0xff8ac2, 0xff8a3d];
-    for (let i = 0; i < 7; i++) {
-      const fx = (Math.random() - 0.5) * 1.3;
-      const fz = (Math.random() - 0.5) * 1.3;
+    const cols = [0xff5e5b, 0xffc93c, 0x9b59b6, 0xff8ac2, 0xff8a3d, 0xffffff];
+    for (let i = 0; i < n; i++) {
+      const fx = (Math.random() - 0.5) * 1.6;
+      const fz = (Math.random() - 0.5) * 1.6;
       const tallo = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 5), mat(0x3e9a38));
       tallo.position.set(fx, 0.15, fz);
-      const flor = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 7), mat(cols[i % 5]));
+      const flor = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 7), mat(cols[i % cols.length]));
       flor.position.set(fx, 0.32, fz);
       g.add(tallo, flor);
     }
@@ -143,30 +147,76 @@ export class Jardin extends Level {
     this.add(g);
   }
 
-  /** Tronco/poste + travesaños de la cerca perimetral. */
-  _cerca(cx, cz, len, horiz) {
-    const n = Math.max(2, Math.round(len / 1.5));
+  /** Sendero de piedras planas entre dos puntos. */
+  _sendero(x1, z1, x2, z2, n = 7) {
+    const stone = mat(0xcdbf9c, 0.95);
     for (let i = 0; i <= n; i++) {
-      const t = -len / 2 + (i * len) / n;
-      const px = horiz ? cx + t : cx;
-      const pz = horiz ? cz : cz + t;
-      this._box(0.12, 0.9, 0.12, 0xfff1d8, px, 0.45, pz, { cast: true });
+      const t = i / n;
+      const x = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 0.4;
+      const z = z1 + (z2 - z1) * t + (Math.random() - 0.5) * 0.4;
+      const p = new THREE.Mesh(new THREE.CircleGeometry(0.42 + Math.random() * 0.12, 9), stone);
+      p.rotation.x = -Math.PI / 2;
+      p.rotation.z = Math.random() * 3;
+      p.scale.set(1, 0.8 + Math.random() * 0.3, 1);
+      p.position.set(x, 0.02, z);
+      p.receiveShadow = true;
+      this.add(p);
     }
-    const w = horiz ? len : 0.12;
-    const d = horiz ? 0.12 : len;
-    this._box(w, 0.1, d, 0xfff1d8, cx, 0.62, cz, { cast: false });
-    this._box(w, 0.1, d, 0xfff1d8, cx, 0.32, cz, { cast: false });
-    this.colliders.push(boxCollider(cx, cz, horiz ? len : 0.25, horiz ? 0.25 : len));
   }
 
-  // ---------- lago ----------
+  // ---------- entorno lejano (colinas, montañas, árboles de fondo) ----------
+
+  _entorno() {
+    // colinas: domos verdes aplastados, más allá del área jugable
+    const hillMat = mat(0x7cc25a, 1.0);
+    for (let i = 0; i < 26; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 30 + Math.random() * 34;
+      const x = Math.cos(ang) * rad;
+      const z = Math.sin(ang) * rad * 0.85;
+      const s = 5 + Math.random() * 14;
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(s, 14, 10), hillMat);
+      dome.position.set(x, -s * 0.62, z);
+      dome.scale.y = 0.4;
+      dome.receiveShadow = true;
+      this.add(dome);
+    }
+    // árboles lejanos (baratos: tronco + bocha) salpicando las colinas
+    const farTrunk = mat(0x7a5230, 1);
+    const farLeaf = mat(0x5aa84a, 1);
+    for (let i = 0; i < 34; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 26 + Math.random() * 34;
+      const x = Math.cos(ang) * rad;
+      const z = Math.sin(ang) * rad * 0.85;
+      if (Math.abs(x) < HW + 4 && Math.abs(z) < HD + 4) continue;
+      const sc = 1 + Math.random() * 1.6;
+      const g = new THREE.Group();
+      const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.18 * sc, 0.24 * sc, 1.4 * sc, 6), farTrunk);
+      tr.position.y = 0.7 * sc;
+      const lf = new THREE.Mesh(new THREE.IcosahedronGeometry(1.1 * sc, 1), farLeaf);
+      lf.position.y = 2.1 * sc;
+      lf.scale.y = 0.9;
+      g.add(tr, lf);
+      g.position.set(x, 0, z);
+      this.add(g);
+    }
+    // montañas azuladas en el horizonte
+    const mtnMat = mat(0x8fa9c4, 1.0);
+    for (let i = 0; i < 9; i++) {
+      const ang = (i / 9) * Math.PI * 2 + 0.3;
+      const rad = 78 + Math.random() * 22;
+      const h = 16 + Math.random() * 20;
+      const m = new THREE.Mesh(new THREE.ConeGeometry(h * 0.85, h, 5), mtnMat);
+      m.position.set(Math.cos(ang) * rad, h * 0.38, Math.sin(ang) * rad);
+      this.add(m);
+    }
+  }
+
+  // ---------- pond + mariposas ----------
 
   _lago(cx, cz, rx, rz) {
-    // hueco de tierra húmeda + lámina de agua animada + juncos y nenúfares.
-    const ground = new THREE.Mesh(
-      new THREE.CircleGeometry(1, 40),
-      mat(0x6a5238, 0.95)
-    );
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(1, 40), mat(0x6a5238, 0.95));
     ground.scale.set(rx + 0.5, rz + 0.5, 1);
     ground.rotation.x = -Math.PI / 2;
     ground.position.set(cx, 0.015, cz);
@@ -174,13 +224,8 @@ export class Jardin extends Level {
     this.add(ground);
 
     const waterMat = new THREE.MeshStandardMaterial({
-      color: 0x2f9ad6,
-      roughness: 0.12,
-      metalness: 0.0,
-      transparent: true,
-      opacity: 0.88,
-      emissive: 0x0d3b66,
-      emissiveIntensity: 0.25,
+      color: 0x2f9ad6, roughness: 0.12, metalness: 0, transparent: true,
+      opacity: 0.9, emissive: 0x0d3b66, emissiveIntensity: 0.25,
     });
     const water = new THREE.Mesh(new THREE.CircleGeometry(1, 48), waterMat);
     water.scale.set(rx, rz, 1);
@@ -189,11 +234,8 @@ export class Jardin extends Level {
     water.receiveShadow = true;
     this.add(water);
     this.water = water;
-
-    // collider: no se puede caminar dentro del agua (un poco más chico que el visual)
     this.colliders.push({ type: 'circle', x: cx, z: cz, r: Math.min(rx, rz) - 0.2 });
 
-    // nenúfares
     const lily = mat(0x3ea35a, 0.85);
     for (let i = 0; i < 5; i++) {
       const ang = Math.random() * Math.PI * 2;
@@ -203,10 +245,9 @@ export class Jardin extends Level {
       pad.position.set(cx + Math.cos(ang) * rx * rr, 0.07, cz + Math.sin(ang) * rz * rr);
       this.add(pad);
     }
-    // juncos en el borde
     const junco = mat(0x6f8f3a, 0.9);
-    for (let i = 0; i < 14; i++) {
-      const ang = (i / 14) * Math.PI * 2;
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2;
       const jx = cx + Math.cos(ang) * (rx + 0.15);
       const jz = cz + Math.sin(ang) * (rz + 0.15);
       const h = 0.5 + Math.random() * 0.4;
@@ -218,17 +259,10 @@ export class Jardin extends Level {
     }
   }
 
-  // ---------- mariposas ----------
-
   _mariposa(x, z, color) {
     const g = new THREE.Group();
     const wingMat = new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.5,
-      metalness: 0,
-      side: THREE.DoubleSide,
-      emissive: color,
-      emissiveIntensity: 0.15,
+      color, roughness: 0.5, metalness: 0, side: THREE.DoubleSide, emissive: color, emissiveIntensity: 0.15,
     });
     const shape = new THREE.CircleGeometry(0.09, 10);
     const lw = new THREE.Mesh(shape, wingMat);
@@ -242,141 +276,171 @@ export class Jardin extends Level {
     g.position.set(x, 1.0, z);
     this.add(g);
     this.butterflies.push({
-      g, lw, rw,
-      cx: x, cz: z,
-      r: 1.2 + Math.random() * 1.6,
-      speed: 0.5 + Math.random() * 0.5,
-      phase: Math.random() * Math.PI * 2,
-      yBase: 0.8 + Math.random() * 0.8,
+      g, lw, rw, cx: x, cz: z,
+      r: 1.2 + Math.random() * 1.8, speed: 0.5 + Math.random() * 0.5,
+      phase: Math.random() * Math.PI * 2, yBase: 0.8 + Math.random() * 0.9,
     });
   }
 
   // ---------- build ----------
 
   _build() {
-    // piso de pasto (dos tonos para dar textura)
-    const piso = new THREE.Mesh(new THREE.PlaneGeometry(2 * HW + 6, 2 * HD + 6), mat(0x6fb44a, 0.96));
+    // ---- piso de pasto texturado (canvas + foto real best-effort) ----
+    const grassMat = mat(0xffffff, 0.96);
+    grassMat.map = grassTexture(30);
+    const piso = new THREE.Mesh(new THREE.PlaneGeometry(170, 170), grassMat);
     piso.rotation.x = -Math.PI / 2;
     piso.receiveShadow = true;
     this.add(piso);
-    // sendero claro en cruz (estético, no bloquea)
-    const sendMat = mat(0xcdb892, 0.95);
-    const sendV = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 2 * HD), sendMat);
-    sendV.rotation.x = -Math.PI / 2;
-    sendV.position.set(0, 0.01, 0);
-    sendV.receiveShadow = true;
-    this.add(sendV);
+    new THREE.TextureLoader().load(
+      PASTO_URL,
+      (t) => {
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.repeat.set(46, 46);
+        t.anisotropy = 8;
+        grassMat.map = t;
+        grassMat.needsUpdate = true;
+      },
+      undefined,
+      () => {} // si falla, queda el canvas
+    );
 
-    // sol exterior
+    // ---- sol exterior ----
     const sun = new THREE.DirectionalLight(0xfff3da, 2.2);
-    sun.position.set(8, 14, 6);
+    sun.position.set(-10, 16, -8);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 60;
-    sun.shadow.camera.left = -18;
-    sun.shadow.camera.right = 18;
-    sun.shadow.camera.top = 18;
-    sun.shadow.camera.bottom = -18;
+    sun.shadow.camera.far = 70;
+    sun.shadow.camera.left = -24;
+    sun.shadow.camera.right = 24;
+    sun.shadow.camera.top = 24;
+    sun.shadow.camera.bottom = -24;
     sun.shadow.bias = -0.0004;
     sun.shadow.normalBias = 0.03;
     this.add(sun);
     this.add(sun.target);
     this.lights.push(sun);
 
-    // cerca perimetral
-    this._cerca(0, -HD, 2 * HW, true);
-    this._cerca(0, HD, 2 * HW, true);
-    this._cerca(-HW, 0, 2 * HD, false);
-    this._cerca(HW, 0, 2 * HD, false);
+    // ---- entorno lejano (colinas, árboles de fondo, montañas) ----
+    this._entorno();
 
-    // ---- lago (centro-fondo, no pisa cacharros ni spawn) ----
-    this._lago(-5, -3.5, 3.0, 2.4);
+    // ---- límite invisible (el espacio sigue, pero no avanzás) ----
+    this.colliders.push(boxCollider(0, -HD, 2 * HW + 4, 1.5));
+    this.colliders.push(boxCollider(0, HD, 2 * HW + 4, 1.5));
+    this.colliders.push(boxCollider(-HW, 0, 1.5, 2 * HD + 4));
+    this.colliders.push(boxCollider(HW, 0, 1.5, 2 * HD + 4));
 
-    // ---- árboles altos (~3.2 m), proporcionales al personaje ----
-    const arboles = [[HW - 2.5, -HD + 3], [HW - 3, HD - 3], [-HW + 3, HD - 3.5], [4.5, 4.5]];
-    arboles.forEach(([x, z]) => {
-      if (!this._placeGLB('arbol', { x, z, height: 3.2, ry: Math.random() * 6.28, collide: true, colliderR: 0.45, jitter: 0.18 }))
-        this._arbolPrim(x, z, 3.2);
+    // ---- senderos de piedra ----
+    this._sendero(0, 13, -2, 1, 9);
+    this._sendero(-2, 1, -8, -5, 6);
+    this._sendero(-2, 1, 9, -1, 7);
+
+    // ---- cobertizo + árbol grande al lado (rincón) ----
+    if (!this._placeGLB('cobertizo', { x: -9, z: -7, height: 2.7, ry: 0.5, collide: true, colliderR: 1.8 })) {
+      this._box2(3.2, 2.2, 2.6, 0xc06a4a, -9, -7);
+    }
+    this._tree(-13.5, -8.5, 4.2, ['arbol_frond', 'arbol'], 0.6);
+
+    // ---- canteros / huerta (verduras) en el centro ----
+    const huertaSpots = [[0, 0], [3.6, -2], [-3.2, 1.5]];
+    huertaSpots.forEach(([x, z], i) => {
+      if (!this._placeGLB('huerta', { x, z, footprint: 2.4, ry: (i % 2) * Math.PI / 2, collide: true, colliderR: 1.2 })) {
+        // fallback: cantero de madera con "verduras"
+        this._box2(2.2, 0.4, 1.4, 0x8a5a32, x, z);
+        this.colliders.push({ type: 'circle', x, z, r: 1.2 });
+        for (let k = 0; k < 5; k++) {
+          const v = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), mat([0xff7a3d, 0x6fbf4a, 0xff5e5b][k % 3]));
+          v.position.set(x + (Math.random() - 0.5) * 1.6, 0.5, z + (Math.random() - 0.5) * 1.0);
+          this.add(v);
+        }
+      }
     });
-    // pinos
-    [[-HW + 2.5, -HD + 2.5], [HW - 2.5, 6]].forEach(([x, z]) => {
-      if (!this._placeGLB('pino', { x, z, height: 3.6, ry: Math.random() * 6.28, collide: true, colliderR: 0.4, jitter: 0.15 }))
-        this._arbolPrim(x, z, 3.4);
-    });
-    // palmera junto al lago
-    if (!this._placeGLB('palmera', { x: -8.5, z: -5.5, height: 3.8, ry: 0.4, collide: true, colliderR: 0.4 }))
-      this._arbolPrim(-8.5, -5.5, 3.4);
 
-    // ---- arbustos (~0.7 m) ----
-    [[6, -6], [-8.5, 4], [9, 8], [2, -8.5], [-2, 7], [11, -1], [-11, -7]].forEach(([x, z]) => {
-      if (!this._placeGLB('arbusto', { x, z, height: 0.7, ry: Math.random() * 6.28, jitter: 0.25 }))
-        this._arbustoPrim(x, z, 0.7);
+    // ---- fuente de piedra ----
+    if (!this._placeGLB('fuente_jardin', { x: 9, z: -1, height: 1.4, collide: true, colliderR: 1.0 }) &&
+        !this._placeGLB('fuente', { x: 9, z: -1, height: 1.3, collide: true, colliderR: 1.0 })) {
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.5, 16), mat(0xbfc6cc, 0.7));
+      base.position.set(9, 0.25, -1);
+      base.castShadow = true;
+      base.receiveShadow = true;
+      this.add(base);
+      this.colliders.push({ type: 'circle', x: 9, z: -1, r: 1.0 });
+    }
+
+    // ---- carretilla ----
+    if (!this._placeGLB('carretilla', { x: -6, z: 8, height: 0.8, ry: 0.6, collide: true, colliderR: 0.9 }))
+      this._box2(1.2, 0.5, 0.6, 0x3aa0a0, -6, 8);
+
+    // ---- banco ----
+    if (!this._placeGLB('banco', { x: 8, z: 9, height: 0.85, ry: Math.PI, collide: true, colliderR: 0.9 }))
+      this._box2(1.4, 0.5, 0.5, 0x6b4a2f, 8, 9);
+
+    // ---- macetas / maceteros ----
+    [[6, 3], [-2, -4.5], [10.5, 4], [1.5, 11]].forEach(([x, z]) => {
+      if (!this._placeGLB('macetero', { x, z, height: 0.6, ry: Math.random() * 6.28, collide: true, colliderR: 0.4 }) &&
+          !this._placeGLB('cantero', { x, z, footprint: 0.9, collide: true, colliderR: 0.4 })) {
+        this._flores(x, z, 5);
+      }
     });
 
-    // ---- canteros de flores (~0.5 m de alto, huella ~1.4 m) ----
-    [[6.5, 2.5], [-3.5, 8.5]].forEach(([x, z]) => {
-      if (!this._placeGLB('cantero', { x, z, footprint: 1.5, ry: 0, collide: true, colliderR: 0.7 }))
-        this._flores(x, z);
-    });
-    [[0, -7.5], [8, -8.5]].forEach(([x, z]) => this._flores(x, z));
+    // ---- árboles grandes en los bordes ----
+    this._tree(13, -9, 4.0, ['arbol_flor', 'arbol'], 0.6);
+    this._tree(15, 9, 3.6, ['arbol', 'arbol_frond'], 0.55);
+    this._tree(-15.5, 9.5, 3.8, ['arbol_frond', 'arbol'], 0.6);
+    [[-16, -2], [16, 1]].forEach(([x, z]) => this._tree(x, z, 3.6, ['pino'], 0.45));
 
-    // ---- rocas (~0.5 m) ----
-    [[-10.5, 0.5, 0.55], [8.5, -8.5, 0.5], [10.5, 4.5, 0.45]].forEach(([x, z, h]) => {
+    // ---- arbustos florecidos ----
+    [[12, -4], [-12, 5], [13, 6], [-11, -3], [4, -8], [-5, 12]].forEach(([x, z]) => {
+      if (!this._placeGLB('arbusto_red', { x, z, height: 0.85, ry: Math.random() * 6.28, jitter: 0.2 }) &&
+          !this._placeGLB('arbusto', { x, z, height: 0.8, ry: Math.random() * 6.28, jitter: 0.2 }))
+        this._arbustoPrim(x, z, 0.8);
+      // florcitas alrededor
+      this._flores(x + (Math.random() - 0.5) * 1.2, z + (Math.random() - 0.5) * 1.2, 4);
+    });
+
+    // ---- rocas ----
+    if (!this._placeGLB('roca_grande', { x: -15, z: -12, height: 1.1, ry: 1, collide: true, colliderR: 0.9 }))
+      this._rocaPrim(-15, -12, 1.0);
+    [[14, -12, 0.5], [11, 11, 0.45], [-9, 6, 0.4]].forEach(([x, z, h]) => {
       if (!this._placeGLB('roca', { x, z, height: h, ry: Math.random() * 6.28, collide: true, colliderR: h * 0.8 }))
         this._rocaPrim(x, z, h);
     });
 
-    // ---- banco (~0.85 m) ----
-    if (!this._placeGLB('banco', { x: 3.5, z: 9, height: 0.85, ry: Math.PI, collide: true, colliderR: 0.8 }))
-      this._box(1.4, 0.5, 0.5, 0x9a6b45, 3.5, 0.25, 9, { collide: true });
-
-    // ---- fuente decorativa (~1.3 m) cerca del centro ----
-    if (!this._placeGLB('fuente', { x: 4, z: -2.5, height: 1.3, collide: true, colliderR: 0.9 })) {
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.4, 16), mat(0xbfc6cc, 0.7));
-      base.position.set(4, 0.2, -2.5);
-      base.castShadow = true;
-      base.receiveShadow = true;
-      this.add(base);
-      this.colliders.push({ type: 'circle', x: 4, z: -2.5, r: 0.95 });
+    // ---- pasto alto / matas dispersas ----
+    for (let i = 0; i < 14; i++) {
+      const x = (Math.random() - 0.5) * 2 * (HW - 2);
+      const z = (Math.random() - 0.5) * 2 * (HD - 2);
+      if (Math.hypot(x, z - 13) < 3) continue; // libre cerca del spawn
+      this._placeGLB('pasto_alto', { x, z, height: 0.5 + Math.random() * 0.3, ry: Math.random() * 6.28, jitter: 0.3 });
     }
 
-    // ---- perrito (animal) ----
-    const dog = this._placeGLB('perro', { x: -2, z: 4.5, height: 0.55, ry: -0.6 });
+    // ---- flores sueltas en el pasto ----
+    for (let i = 0; i < 10; i++) {
+      this._flores((Math.random() - 0.5) * 2 * (HW - 2), (Math.random() - 0.5) * 2 * (HD - 2), 4);
+    }
+
+    // ---- estanque chico + vida (perro, mariposas) ----
+    this._lago(-13, 11, 2.6, 2.0);
+
+    const dog = this._placeGLB('perro', { x: 4, z: 5, height: 0.55, ry: -0.6 });
     if (dog) this.critters.push({ g: dog, y0: dog.position.y, phase: 0 });
-    else {
-      // fallback: perrito primitivo simple
-      const dg = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.4, 4, 8), mat(0xb07a44, 0.85));
-      body.rotation.z = Math.PI / 2;
-      body.position.y = 0.32;
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), mat(0xb07a44, 0.85));
-      head.position.set(0.32, 0.42, 0);
-      dg.add(body, head);
-      [[-0.18, 0.12], [0.18, 0.12], [-0.18, -0.12], [0.18, -0.12]].forEach(([lx, lz]) => {
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.28, 6), mat(0x8a5e34));
-        leg.position.set(lx, 0.14, lz);
-        dg.add(leg);
-      });
-      dg.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
-      dg.position.set(-2, 0, 4.5);
-      dg.rotation.y = -0.6;
-      this.add(dg);
-      this.critters.push({ g: dg, y0: 0, phase: 0 });
-    }
 
-    // ---- mariposas (animales que revolotean) ----
     const colsMar = [0xff8ac2, 0xffc93c, 0x7ad1ff, 0xff6b6b, 0xb388ff];
-    [[2, 2], [-4, 6], [7, -3], [-6, -1], [5, 6]].forEach(([x, z], i) => this._mariposa(x, z, colsMar[i % colsMar.length]));
+    [[2, 3], [-4, 7], [9, -2], [-7, 0], [6, 7], [0, -6]].forEach(([x, z], i) =>
+      this._mariposa(x, z, colsMar[i % colsMar.length])
+    );
+  }
 
-    // plantas GLB del pack base si están (relleno)
-    if (this.models.plant) {
-      [[-9, 7], [10, -5]].forEach(([x, z]) => {
-        if (!this._placeGLB('plant', { x, z, height: 0.9, ry: Math.random() * 6.28 })) {
-          this._arbustoPrim(x, z, 0.7);
-        }
-      });
-    }
+  /** Caja simple con sombra (fallback de muebles). */
+  _box2(w, h, d, color, x, z) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, 0.85));
+    m.position.set(x, h / 2, z);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    this.add(m);
+    return m;
   }
 
   /** Anima agua, mariposas y bichos. La llama el loop principal. */

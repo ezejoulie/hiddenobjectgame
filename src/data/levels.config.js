@@ -44,19 +44,21 @@ export const JARDIN = {
   interior: false,
   bg: '#9bd6f0',
   gate: 0, // sin portón: juntás los 10 al aire libre
-  spawn: { x: 0, z: 9 },
-  // 10 criaderos repartidos por el patio (sin colliders, se juntan por cercanía)
+  // jardín abierto en una loma. Área jugable amplia (sin cerca, límite invisible).
+  room: { width: 40, depth: 34 },
+  spawn: { x: 0, z: 14 },
+  // 10 criaderos repartidos por todo el jardín (sin colliders, se juntan por cercanía)
   cacharros: [
-    ['balde', 3, 7.5],
-    ['regadera', -4, 7.5],
-    ['botella', 7, 0],
-    ['lata', -7, 0],
-    ['maceta', 0, 2.5],
-    ['tacho', 10, -3.5],
-    ['frasco', -10, -4],
-    ['vaso', 1.5, -7],
-    ['florero', -1.5, 9.5],
-    ['bebedero', 6, -7],
+    ['balde', 8, 11],
+    ['regadera', -9, 12],
+    ['botella', 14, 2],
+    ['lata', -14, 1],
+    ['maceta', 2, 4],
+    ['tacho', 16, -7],
+    ['frasco', -15, -8],
+    ['vaso', 4, -11],
+    ['florero', -4, 14],
+    ['bebedero', 11, -12],
   ],
 };
 

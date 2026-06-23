@@ -63,6 +63,64 @@ export function woodFloorTexture(repeatX = 4, repeatY = 4) {
   return tex;
 }
 
+/** Pasto: verde con manchas y briznas. Tileable, para el piso del jardín. */
+export function grassTexture(repeat = 14) {
+  const s = 512;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = s;
+  const ctx = cv.getContext('2d');
+
+  // base con leve degradé
+  const g = ctx.createLinearGradient(0, 0, s, s);
+  g.addColorStop(0, '#6fb84a');
+  g.addColorStop(0.5, '#67b258');
+  g.addColorStop(1, '#74c25a');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, s, s);
+
+  // manchas de tono (parches de pasto)
+  const tones = ['#5da43f', '#7cc85e', '#83d066', '#5fae4c', '#6cbf52'];
+  for (let i = 0; i < 220; i++) {
+    ctx.fillStyle = tones[i % tones.length];
+    ctx.globalAlpha = 0.10 + Math.random() * 0.18;
+    const r = 6 + Math.random() * 26;
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * s, Math.random() * s, r, r * 0.6, Math.random() * 3, 0, 7);
+    ctx.fill();
+  }
+
+  // briznas finas
+  ctx.globalAlpha = 0.5;
+  for (let i = 0; i < 900; i++) {
+    const x = Math.random() * s;
+    const y = Math.random() * s;
+    const len = 3 + Math.random() * 5;
+    ctx.strokeStyle = Math.random() < 0.5 ? '#4f9a38' : '#86d268';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (Math.random() - 0.5) * 2, y - len);
+    ctx.stroke();
+  }
+
+  // florcitas blancas/amarillas dispersas
+  for (let i = 0; i < 60; i++) {
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = ['#ffffff', '#fff0a8', '#ffd5e8'][i % 3];
+    ctx.beginPath();
+    ctx.arc(Math.random() * s, Math.random() * s, 1.6 + Math.random() * 1.4, 0, 7);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repeat, repeat);
+  tex.anisotropy = 8;
+  return tex;
+}
+
 /** "Pinturas" para los cuadros. `index` elige el estilo (determinista). */
 export function artTexture(index = 0) {
   const w = 256;
