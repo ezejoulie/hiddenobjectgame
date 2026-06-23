@@ -33,17 +33,17 @@ export class Game {
     this.denguin = new Denguin(bounds || { x: 3.5, z: 3.5 }, denguinModel);
     this.scene.add(this.denguin.mesh);
 
-    // burbuja de escudo (sigue al jugador, visible al defender)
+    // burbuja de escudo ROJA (sigue al jugador, visible al defender)
     this.shieldBubble = new THREE.Mesh(
       new THREE.SphereGeometry(0.85, 20, 16),
       new THREE.MeshStandardMaterial({
-        color: 0x7fd4f5,
+        color: 0xff3b30,
         transparent: true,
         opacity: 0,
         roughness: 0.1,
         metalness: 0,
-        emissive: 0x2f86c8,
-        emissiveIntensity: 0.4,
+        emissive: 0xff2a1f,
+        emissiveIntensity: 0.7,
         depthWrite: false,
       })
     );

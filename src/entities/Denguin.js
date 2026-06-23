@@ -83,7 +83,7 @@ export class Denguin {
       this.isGLB = true;
     } else {
       this.mesh = buildMosquito();
-      this.mesh.scale.setScalar(1.1);
+      this.mesh.scale.setScalar(0.75);
       this.isGLB = false;
     }
     this.pos = new THREE.Vector3(2, 1.8, 2);
@@ -104,7 +104,7 @@ export class Denguin {
     const size = new THREE.Vector3();
     box.getSize(size);
     const maxd = Math.max(size.x, size.y, size.z) || 1;
-    model.scale.multiplyScalar(0.85 / maxd); // ~0.85 m
+    model.scale.multiplyScalar(0.55 / maxd); // ~0.55 m (más chico)
     const box2 = new THREE.Box3().setFromObject(model);
     const c = new THREE.Vector3();
     box2.getCenter(c);
@@ -117,11 +117,20 @@ export class Denguin {
     return g;
   }
 
-  _pickRoam(t) {
-    const bx = this.bounds.x - 1.5;
-    const bz = this.bounds.z - 1.5;
-    this.roam.set((Math.random() * 2 - 1) * bx, 1.5 + Math.random() * 1.0, (Math.random() * 2 - 1) * bz);
-    this.roamT = t + 2.5 + Math.random() * 2;
+  _pickRoam(t, target) {
+    // ronda CERCA del jugador (queda en su ambiente, no se traba lejos)
+    const r = 2.5 + Math.random() * 2;
+    const a = Math.random() * Math.PI * 2;
+    const x = Math.max(-this.bounds.x, Math.min(this.bounds.x, target.x + Math.cos(a) * r));
+    const z = Math.max(-this.bounds.z, Math.min(this.bounds.z, target.z + Math.sin(a) * r));
+    this.roam.set(x, 1.6 + Math.random() * 0.7, z);
+    this.roamT = t + 1.6 + Math.random() * 1.6;
+  }
+
+  _flee(t) {
+    this.mode = 'huye';
+    this.invuln = t + 2.5;
+    this._fleeTarget = null;
   }
 
   update(dt, t, target, shieldActive) {
@@ -129,42 +138,44 @@ export class Denguin {
     const dPj = this.pos.distanceTo(target);
 
     if (this.mode === 'rondar') {
-      if (t > this.roamT) this._pickRoam(t);
-      this.pos.lerp(this.roam, Math.min(1, dt * 1.2));
+      if (t > this.roamT) this._pickRoam(t, target);
+      this.pos.lerp(this.roam, Math.min(1, dt * 1.6));
       if (t > this.nextAtk && t > this.invuln) {
         this.mode = 'ataque';
         this.atkT = t;
       }
     } else if (this.mode === 'ataque') {
-      this._tmp.set(target.x, target.y + 1.3, target.z);
+      // EMBESTIDA rápida (hit & run): no se queda pegado al jugador
+      this._tmp.set(target.x, target.y + 1.1, target.z);
       const v = this._tmp.sub(this.pos);
       const d = v.length();
       if (d > 0.001) {
-        v.normalize().multiplyScalar(Math.min(d, 4.6 * dt));
+        v.normalize().multiplyScalar(Math.min(d, 6 * dt));
         this.pos.add(v);
       }
-      if (shieldActive && dPj < 1.5) {
-        this.mode = 'huye';
-        this.invuln = t + 3;
-        this.nextAtk = t + 11 + Math.random() * 4;
+      if (shieldActive && dPj < 1.6) {
+        this._flee(t);
+        this.nextAtk = t + 7 + Math.random() * 3;
         event = 'repelled';
-      } else if (!shieldActive && dPj < 0.95) {
-        this.mode = 'huye';
-        this.invuln = t + 3;
-        this.nextAtk = t + 12 + Math.random() * 4;
+      } else if (!shieldActive && dPj < 1.0) {
+        this._flee(t);
+        this.nextAtk = t + 8 + Math.random() * 3;
         event = 'bite';
-      } else if (t - this.atkT > 9) {
-        this.mode = 'huye';
-        this.nextAtk = t + 9 + Math.random() * 3;
+      } else if (t - this.atkT > 2.2) {
+        this._flee(t); // falló la picada
+        this.nextAtk = t + 6 + Math.random() * 3;
       }
     } else {
-      // huye
+      // huye un toque y vuelve a rondar
       if (!this._fleeTarget) {
-        const sx = Math.sign(this.pos.x - target.x) || 1;
-        const sz = Math.sign(this.pos.z - target.z) || 1;
-        this._fleeTarget = new THREE.Vector3(sx * this.bounds.x, 2.6, sz * this.bounds.z);
+        const a = Math.random() * Math.PI * 2;
+        this._fleeTarget = new THREE.Vector3(
+          Math.max(-this.bounds.x, Math.min(this.bounds.x, target.x + Math.cos(a) * 4)),
+          2.4,
+          Math.max(-this.bounds.z, Math.min(this.bounds.z, target.z + Math.sin(a) * 4))
+        );
       }
-      this.pos.lerp(this._fleeTarget, Math.min(1, dt * 2));
+      this.pos.lerp(this._fleeTarget, Math.min(1, dt * 2.5));
       if (this.pos.distanceTo(this._fleeTarget) < 0.6) {
         this.mode = 'rondar';
         this._fleeTarget = null;

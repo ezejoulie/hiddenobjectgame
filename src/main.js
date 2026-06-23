@@ -200,7 +200,7 @@ async function boot() {
     tpCam.applyLook(input.consumeLook());
     const move = input.moveVector();
     player.update(dt, move, tpCam.yaw, casa.colliders);
-    if (input.shieldPressed()) player.triggerShield(now);
+    if (input.shieldPressed() && player.triggerShield(now)) hud.dobleDefensa();
     tpCam.update(player.position, dt);
 
     game.update(dt, now);
