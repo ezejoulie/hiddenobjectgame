@@ -108,7 +108,7 @@ export class Casa extends Level {
   }
 
   _plant(x, z, h = 1.2) {
-    if (this.models.plant) return this._placeModel(this.models.plant.clone(true), { footprint: 1.0, x, z });
+    if (this.models.plant) return this._placeModel(this.models.plant.clone(true), { footprint: 1.0, x, z, collide: false });
     this._box(0.4, 0.4, 0.4, 0xb5651d, x, 0.2, z, { collide: true });
     const f = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 1), mat(0x3f8e58, 0.9));
     f.position.set(x, 0.4 + h * 0.45, z);
@@ -221,8 +221,9 @@ export class Casa extends Level {
   openGate() {
     if (this._gateOpen) return;
     this._gateOpen = true;
-    this.colliders = this.colliders.filter((c) => c !== this.gateCollider);
+    if (this.gateCollider) this.colliders = this.colliders.filter((c) => c !== this.gateCollider);
     const m = this.gateMesh;
+    if (!m) return;
     const t0 = performance.now();
     const tick = () => {
       const k = Math.min(1, (performance.now() - t0) / 600);

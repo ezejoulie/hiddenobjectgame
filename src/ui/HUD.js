@@ -15,6 +15,7 @@ export class HUD {
         </div>
         <div class="hud-count">0/${items.length}</div>
       </div>
+      <div class="hud-gate"></div>
       <div class="hud-tray"></div>
       <div class="hud-tip"><span class="hud-tip-ic">💧</span><span class="hud-tip-tx"></span></div>
       <div class="hud-alert">🦟 ¡Denguín te quiere picar! ¡Escudo! (Espacio)</div>
@@ -33,6 +34,7 @@ export class HUD {
     this.defense = el.querySelector('.hud-defense');
     this.doble = el.querySelector('.hud-doble');
     this.flashEl = el.querySelector('.hud-flash');
+    this.gateEl = el.querySelector('.hud-gate');
     this.total = items.length;
 
     this.chips = items.map((it, i) => {
@@ -86,6 +88,17 @@ export class HUD {
     this.doble.classList.remove('show');
     void this.doble.offsetWidth;
     this.doble.classList.add('show');
+  }
+
+  setGate(found, threshold, open) {
+    if (!this.gateEl) return;
+    if (open) {
+      this.gateEl.textContent = '🔓 Portón abierto — pasá al norte';
+      this.gateEl.classList.add('open');
+    } else {
+      this.gateEl.textContent = `🔒 Portón: faltan ${Math.max(0, threshold - found)}`;
+      this.gateEl.classList.remove('open');
+    }
   }
 
   showTip(nombre, tip) {

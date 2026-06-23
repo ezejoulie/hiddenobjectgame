@@ -117,6 +117,9 @@ export class Game {
       this.hud.defensePopup('¡Defensa! +50');
     }
 
+    // indicador del portón (diagnóstico en vivo)
+    this.hud.setGate(this.found, this.gateAt, this._gateOpened);
+
     // timer
     this.time = Math.max(0, this.time - dt);
     this.hud.setTime(this.time);
