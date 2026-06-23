@@ -193,9 +193,9 @@ export class Casa extends Level {
       this._wall(x, 1.0, T, 4.4); // z[-1.2,3.2]
       this._wall(x, 7.4, T, 3.2); // z[5.8,9]
     });
-    // paredes z=0 que separan norte/sur en los laterales
-    this._wall(-6.75, 0, 2 * (HW - HALL), T);
-    this._wall(6.75, 0, 2 * (HW - HALL), T);
+    // paredes z=0 que separan norte/sur SOLO en los laterales (no en el pasillo)
+    this._wall(-6.75, 0, HW - HALL, T); // x[-11,-2.5]
+    this._wall(6.75, 0, HW - HALL, T); // x[2.5,11]
 
     // PORTÓN con llave en el pasillo (z=0): bloquea hasta juntar los primeros 5
     const gate = new THREE.Mesh(
