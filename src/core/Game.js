@@ -14,7 +14,7 @@ const DURACION = 120;
 const RADIO_PICKUP = 1.15;
 
 export class Game {
-  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels, level, gate, onWin, audio, educa }) {
+  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels, level, gate, onWin, onComplete, audio, educa }) {
     this.scene = scene;
     this.getPlayer = getPlayer;
     this.spawns = spawns; // [[tipo,x,z], ...]
@@ -24,6 +24,7 @@ export class Game {
     this.level = level; // para abrir el portón
     this.gateAt = gate || 0; // 0 = sin portón
     this.onWin = onWin; // volver al mapa
+    this.onComplete = onComplete; // registrar nivel ganado (medalla)
     this.audio = audio || null;
     this.educa = !!educa; // pausa educativa al juntar (nivel tutorial)
     this.bounds = bounds || { x: 8, z: 8 };
@@ -292,6 +293,7 @@ export class Game {
   _win() {
     this.state = 'won';
     if (this.audio) this.audio.win();
+    if (this.onComplete) this.onComplete();
     const restante = Math.floor(this.time);
     const stars = restante >= 60 ? 3 : restante >= 30 ? 2 : 1;
     const score = this.score + 500 + restante * 10;
@@ -327,7 +329,10 @@ export class Game {
   }
 }
 
-/** Construye la lista de ítems (nombres) para el HUD, en orden de spawn. */
+/** Construye la lista de ítems (emoji + nombre) para el HUD, en orden de spawn. */
 export function itemsDeSpawns(spawns) {
-  return spawns.map(([tipo]) => ({ nombre: (CACHARRO_TIPOS[tipo] || {}).nombre || tipo }));
+  return spawns.map(([tipo]) => {
+    const c = CACHARRO_TIPOS[tipo] || {};
+    return { nombre: c.nombre || tipo, emoji: c.emoji || '💧' };
+  });
 }

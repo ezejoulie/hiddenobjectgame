@@ -15,6 +15,10 @@ export class HUD {
         </div>
         <div class="hud-count">0/${items.length}</div>
       </div>
+      <div class="hud-arrow">
+        <div class="hud-arrow-dial"><div class="hud-arrow-needle"></div></div>
+        <span class="hud-arrow-tx">🦟 ¡Viene Denguín!</span>
+      </div>
       <div class="hud-gate"></div>
       <div class="hud-tray"></div>
       <div class="hud-tip"><span class="hud-tip-ic">💧</span><span class="hud-tip-tx"></span></div>
@@ -37,16 +41,25 @@ export class HUD {
     this.flashEl = el.querySelector('.hud-flash');
     this.dangerEl = el.querySelector('.hud-danger');
     this.gateEl = el.querySelector('.hud-gate');
+    this.arrowEl = el.querySelector('.hud-arrow');
+    this.arrowNeedle = el.querySelector('.hud-arrow-needle');
     this.total = items.length;
 
     this.chips = items.map((it, i) => {
       const c = document.createElement('div');
       c.className = 'hud-chip';
-      c.innerHTML = `<span class="hud-chip-nm">${it.nombre}</span>`;
+      c.innerHTML = `<span class="hud-chip-em">${it.emoji || '💧'}</span><span class="hud-chip-nm">${it.nombre}</span>`;
       c.dataset.i = i;
       this.tray.appendChild(c);
       return c;
     });
+  }
+
+  /** Flecha que apunta hacia Denguín (relativa a la cámara). angle en rad. */
+  setDenguinArrow(angle, show) {
+    if (!this.arrowEl) return;
+    this.arrowEl.classList.toggle('show', !!show);
+    if (show) this.arrowNeedle.style.transform = `rotate(${angle}rad)`;
   }
 
   setTime(seconds) {

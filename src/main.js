@@ -328,6 +328,16 @@ async function boot() {
     return models;
   }
 
+  // progreso: niveles completados (medalla al descacharrar todos), persistido
+  const STORE_KEY = 'pad-completed-v1';
+  const completed = (() => {
+    try { return new Set(JSON.parse(localStorage.getItem(STORE_KEY) || '[]')); } catch { return new Set(); }
+  })();
+  function markCompleted(id) {
+    completed.add(id);
+    try { localStorage.setItem(STORE_KEY, JSON.stringify([...completed])); } catch (e) { /* sin storage */ }
+  }
+
   let level = null;
   let game = null;
   let hud = null;
@@ -373,6 +383,7 @@ async function boot() {
     game = new Game({
       scene, getPlayer: () => player, spawns: cfg.cacharros, hud, screens,
       bounds, denguinModel, cacharroModels, level, gate: cfg.gate, onWin: showMap,
+      onComplete: () => markCompleted(id),
       audio, educa: !!cfg.educa,
     });
     screens.intro({
@@ -388,14 +399,19 @@ async function boot() {
   function showMap() {
     disposeLevel();
     player.mesh.visible = false;
-    screens.map(NIVELES, (id) => startLevel(id));
+    screens.map(NIVELES, (id) => startLevel(id), { completed, onMedal: showDiploma });
+  }
+
+  function showDiploma() {
+    screens.diploma({ onMap: showMap });
   }
 
   overlay.done();
-  showMap();
+  screens.home({ onPlay: showMap });
 
   // ---------- Loop ----------
   const clock = new THREE.Clock();
+  const _v = new THREE.Vector3();
   function loop() {
     requestAnimationFrame(loop);
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -415,6 +431,21 @@ async function boot() {
         if (level.update) level.update(dt, now);
       }
       game.update(dt, now);
+
+      // flecha que apunta hacia Denguín (ayuda para los chicos)
+      const dgn = game.denguin;
+      if (dgn && game.state === 'playing' && !paused) {
+        const dist = Math.hypot(dgn.pos.x - player.position.x, dgn.pos.z - player.position.z);
+        if (dist < 12) {
+          _v.copy(dgn.pos);
+          camera.worldToLocal(_v); // pasa a espacio cámara: +x derecha, -z adelante
+          hud.setDenguinArrow(Math.atan2(_v.x, -_v.z), true);
+        } else {
+          hud.setDenguinArrow(0, false);
+        }
+      } else if (hud) {
+        hud.setDenguinArrow(0, false);
+      }
     }
 
     postfx.render(dt);

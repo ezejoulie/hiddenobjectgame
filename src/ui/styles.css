@@ -748,3 +748,122 @@ body {
 #loading.level-load .load-title {
   margin-bottom: 16px;
 }
+
+/* ================= Flecha indicadora de Denguín ================= */
+.hud-arrow {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 14;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.hud-arrow.show { opacity: 1; }
+.hud-arrow-dial {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(206, 28, 22, 0.85);
+  border: 3px solid #fff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  display: grid;
+  place-items: center;
+  animation: dangerPulse 0.7s ease-in-out infinite;
+}
+.hud-arrow-needle {
+  width: 0;
+  height: 0;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-bottom: 22px solid #fff;
+  transform-origin: 50% 68%;
+}
+.hud-arrow-tx {
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: #fff;
+  background: rgba(206, 28, 22, 0.85);
+  padding: 2px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* emoji del cacharro en la bandeja (más visual para los chicos) */
+.hud-chip-em {
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1.1;
+}
+
+/* ================= Medalla / certificado en el mapa ================= */
+.isla-medal {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: default;
+}
+.isla-medal .medal-ic {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  border-radius: 50%;
+  background: #cfd3d6;
+  border: 4px dashed #8a8f93;
+  filter: grayscale(1);
+  opacity: 0.7;
+}
+.isla-medal .medal-nm {
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: #5a6066;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+.isla-medal .medal-sub {
+  font-weight: 800;
+  font-size: 0.64rem;
+  color: #7a8086;
+}
+.isla-medal.on { cursor: pointer; }
+.isla-medal.on .medal-ic {
+  background: linear-gradient(180deg, #ffe07a, #f4b72e);
+  border: 4px solid #15324b;
+  filter: none;
+  opacity: 1;
+  box-shadow: 0 4px 0 #15324b, 0 0 18px rgba(244, 183, 46, 0.7);
+  animation: dangerPulse 1s ease-in-out infinite;
+}
+.isla-medal.on .medal-nm { color: #15324b; }
+.isla-medal.on .medal-sub { color: #b5701a; }
+
+/* tilde de nivel completado */
+.isla-done {
+  position: absolute;
+  bottom: 18px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  color: #fff;
+  background: linear-gradient(180deg, #6fd962, #379a2c);
+  border: 2px solid #15324b;
+  border-radius: 50%;
+  z-index: 3;
+}

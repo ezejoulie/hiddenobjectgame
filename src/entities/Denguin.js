@@ -90,7 +90,7 @@ export class Denguin {
     this.mesh.position.copy(this.pos);
 
     this.mode = 'rondar';
-    this.nextAtk = 8;
+    this.nextAtk = 6; // primera picada ~6 s; luego cada 15 s
     this.invuln = 0;
     this.atkT = 0;
     this.roam = new THREE.Vector3(0, 1.8, 0);
@@ -135,13 +135,16 @@ export class Denguin {
   }
 
   _pickRoam(t, target) {
-    // ronda CERCA del jugador (queda en su ambiente, no se traba lejos)
-    const r = 2.5 + Math.random() * 2;
-    const a = Math.random() * Math.PI * 2;
-    const x = Math.max(-this.bounds.x, Math.min(this.bounds.x, target.x + Math.cos(a) * r));
-    const z = Math.max(-this.bounds.z, Math.min(this.bounds.z, target.z + Math.sin(a) * r));
-    this.roam.set(x, 1.6 + Math.random() * 0.7, z);
-    this.roamT = t + 1.6 + Math.random() * 1.6;
+    // merodea DISPERSO por la escena, LEJOS del jugador (no lo tiene pegado).
+    const minDist = Math.min(9, Math.max(this.bounds.x, this.bounds.z) * 0.55);
+    let x = 0, z = 0;
+    for (let k = 0; k < 8; k++) {
+      x = (Math.random() * 2 - 1) * this.bounds.x;
+      z = (Math.random() * 2 - 1) * this.bounds.z;
+      if (Math.hypot(x - target.x, z - target.z) > minDist) break;
+    }
+    this.roam.set(x, 1.6 + Math.random() * 0.9, z);
+    this.roamT = t + 2 + Math.random() * 2;
   }
 
   _flee(t) {
@@ -154,46 +157,49 @@ export class Denguin {
     let event = null;
     const dPj = this.pos.distanceTo(target);
 
+    const ATK_EVERY = 15; // pica cada 15 s
+
     if (this.mode === 'rondar') {
       if (t > this.roamT) this._pickRoam(t, target);
-      this.pos.lerp(this.roam, Math.min(1, dt * 1.6));
+      this.pos.lerp(this.roam, Math.min(1, dt * 1.1)); // merodeo calmo
       if (t > this.nextAtk && t > this.invuln) {
-        this.mode = 'ataque';
+        this.mode = 'ataque'; // sale a buscar al jugador para picarlo
         this.atkT = t;
       }
     } else if (this.mode === 'ataque') {
-      // EMBESTIDA rápida (hit & run): no se queda pegado al jugador
+      // viene VOLANDO desde donde estaba hacia el jugador (se va oyendo el zumbido)
       this._tmp.set(target.x, target.y + 1.1, target.z);
       const v = this._tmp.sub(this.pos);
       const d = v.length();
       if (d > 0.001) {
-        v.normalize().multiplyScalar(Math.min(d, 6 * dt));
+        v.normalize().multiplyScalar(Math.min(d, 6.5 * dt));
         this.pos.add(v);
       }
       if (shieldActive && dPj < 1.6) {
         this._flee(t);
-        this.nextAtk = t + 7 + Math.random() * 3;
+        this.nextAtk = t + ATK_EVERY;
         event = 'repelled';
       } else if (!shieldActive && dPj < 1.0) {
         this._flee(t);
-        this.nextAtk = t + 8 + Math.random() * 3;
+        this.nextAtk = t + ATK_EVERY;
         event = 'bite';
-      } else if (t - this.atkT > 2.2) {
-        this._flee(t); // falló la picada
-        this.nextAtk = t + 6 + Math.random() * 3;
+      } else if (t - this.atkT > 4.5) {
+        this._flee(t); // no llegó / falló la picada
+        this.nextAtk = t + ATK_EVERY;
       }
     } else {
-      // huye un toque y vuelve a rondar
+      // huye LEJOS (se dispersa por la escena) y vuelve a rondar
       if (!this._fleeTarget) {
         const a = Math.random() * Math.PI * 2;
+        const r = 9 + Math.random() * 4;
         this._fleeTarget = new THREE.Vector3(
-          Math.max(-this.bounds.x, Math.min(this.bounds.x, target.x + Math.cos(a) * 4)),
+          Math.max(-this.bounds.x, Math.min(this.bounds.x, target.x + Math.cos(a) * r)),
           2.4,
-          Math.max(-this.bounds.z, Math.min(this.bounds.z, target.z + Math.sin(a) * 4))
+          Math.max(-this.bounds.z, Math.min(this.bounds.z, target.z + Math.sin(a) * r))
         );
       }
-      this.pos.lerp(this._fleeTarget, Math.min(1, dt * 2.5));
-      if (this.pos.distanceTo(this._fleeTarget) < 0.6) {
+      this.pos.lerp(this._fleeTarget, Math.min(1, dt * 2.2));
+      if (this.pos.distanceTo(this._fleeTarget) < 0.8) {
         this.mode = 'rondar';
         this._fleeTarget = null;
         this.roamT = 0;
@@ -220,7 +226,7 @@ export class Denguin {
 
   reset() {
     this.mode = 'rondar';
-    this.nextAtk = 8;
+    this.nextAtk = 6;
     this.invuln = 0;
     this._fleeTarget = null;
     this.pos.set(2, 1.8, 2);

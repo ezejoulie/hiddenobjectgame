@@ -96,6 +96,38 @@ export class Screens {
     });
   }
 
+  /** Portada: nombre del juego, historia y objetivo. Antes del mapa. */
+  home({ onPlay }) {
+    this._show({
+      emoji: '🦟🛡️',
+      title: 'Patrulla Doble Defensa',
+      descHtml: `
+        <p class="scr-lead">El mosquito <b>Denguín</b> llenó los barrios de <b>cacharros</b> con
+        agua estancada, donde nacen sus crías. 🦟💧</p>
+        <p class="scr-lead">¡Vos sos un <b>agente de la Patrulla</b>! Tu misión: recorrer la casa,
+        el jardín, la escuela, el parque y la playa, y <b>eliminar los 10 cacharros</b> de cada
+        lugar antes de que se acabe el tiempo.</p>
+        <p class="scr-note">🛡️ Denguín te va a buscar para picarte: activá tu escudo con
+        <b>Espacio</b> para la <b>¡DOBLE DEFENSA!</b> Limpiá todos los lugares y ganá la
+        <b>medalla</b> de campeón anti-dengue. 🏅</p>`,
+      buttons: [{ label: '¡Comenzar misión! 🧤', cls: 'verde', onClick: onPlay }],
+    });
+  }
+
+  /** Diploma/medalla final: se gana al descacharrar todas las escenas. */
+  diploma({ onMap }) {
+    this._show({
+      emoji: '🏅',
+      title: '¡Sos Agente Patrulla Doble Defensa!',
+      descHtml: `
+        <p class="scr-lead">¡Felicitaciones! Descacharraste <b>todos los lugares</b> y dejaste a
+        Denguín sin criaderos. 🦟🚫</p>
+        <p class="scr-note">Sin agua estancada, el mosquito no puede tener crías.
+        <b>¡Sos un campeón anti-dengue!</b> 🛡️🏆</p>`,
+      buttons: [{ label: '🗺️ Volver al mapa', cls: 'verde', onClick: onMap }],
+    });
+  }
+
   /** Pausa educativa (nivel tutorial): muestra el cacharro y cómo prevenir. */
   educa({ info, n, total, onContinue }) {
     this._show({
@@ -111,7 +143,10 @@ export class Screens {
   }
 
   /** Mapa de niveles tipo "mundo de islas": pines sobre un camino serpenteante. */
-  map(niveles, onPick) {
+  map(niveles, onPick, opts = {}) {
+    const completed = opts.completed || new Set();
+    const allDone = niveles.length > 0 && niveles.every((n) => completed.has(n.id));
+
     if (this.card) this.card.classList.add('modal-mapa');
     this.emoji.textContent = '🗺️';
     this.title.textContent = 'Elegí tu misión';
@@ -121,7 +156,7 @@ export class Screens {
     this.row.innerHTML = '';
     this.row.classList.remove('scr-mapa');
 
-    const pos = [[14, 74], [33, 42], [52, 70], [71, 38], [88, 64]];
+    const pos = [[14, 76], [33, 46], [52, 72], [71, 42], [88, 66]];
     const pts = niveles.map((_, i) => pos[i] || [50, 50]);
     const d = pts.map((p, i) => `${i ? 'L' : 'M'} ${p[0]} ${p[1]}`).join(' ');
 
@@ -133,8 +168,9 @@ export class Screens {
 
     niveles.forEach((n, i) => {
       const [x, y] = pos[i] || [50, 50];
+      const done = completed.has(n.id);
       const b = document.createElement('button');
-      b.className = 'isla' + (n.locked ? ' lock' : '');
+      b.className = 'isla' + (n.locked ? ' lock' : '') + (done ? ' done' : '');
       b.style.left = x + '%';
       b.style.top = y + '%';
       b.style.setProperty('--d', `${i * 0.08}s`);
@@ -142,10 +178,23 @@ export class Screens {
         `<span class="isla-num">${i + 1}</span>` +
         `<span class="isla-pin">${n.emoji}</span>` +
         `<span class="isla-nm">${n.nombre}</span>` +
+        (done ? '<span class="isla-done">✓</span>' : '') +
         (n.locked ? '<span class="isla-lock">🔒</span>' : '');
       if (!n.locked) b.addEventListener('click', () => onPick(n.id));
       wrap.appendChild(b);
     });
+
+    // medalla/certificado: gris hasta descacharrar TODAS las escenas
+    const medal = document.createElement('button');
+    medal.className = 'isla-medal' + (allDone ? ' on' : '');
+    medal.style.left = '50%';
+    medal.style.top = '15%';
+    medal.innerHTML =
+      `<span class="medal-ic">🏅</span>` +
+      `<span class="medal-nm">${allDone ? '¡Medalla!' : 'Medalla'}</span>` +
+      `<span class="medal-sub">${[...completed].filter((id) => niveles.some((n) => n.id === id)).length}/${niveles.length}</span>`;
+    if (allDone && opts.onMedal) medal.addEventListener('click', opts.onMedal);
+    wrap.appendChild(medal);
 
     this.row.appendChild(wrap);
     this.el.classList.add('on');
