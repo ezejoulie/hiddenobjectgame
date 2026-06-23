@@ -14,7 +14,7 @@ const DURACION = 120;
 const RADIO_PICKUP = 1.15;
 
 export class Game {
-  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels, level, gate, onWin }) {
+  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels, level, gate, onWin, audio, educa }) {
     this.scene = scene;
     this.getPlayer = getPlayer;
     this.spawns = spawns; // [[tipo,x,z], ...]
@@ -24,9 +24,15 @@ export class Game {
     this.level = level; // para abrir el portón
     this.gateAt = gate || 0; // 0 = sin portón
     this.onWin = onWin; // volver al mapa
+    this.audio = audio || null;
+    this.educa = !!educa; // pausa educativa al juntar (nivel tutorial)
     this._gateOpened = false;
+    this.paused = false;
 
     this.cacharros = [];
+    this.fx = []; // partículas de efecto al juntar
+    this.fxGroup = new THREE.Group();
+    this.scene.add(this.fxGroup);
     this.state = 'intro';
     this.time = DURACION;
     this.found = 0;
@@ -79,6 +85,7 @@ export class Game {
     this._clear();
     this._spawn();
     this._gateOpened = false;
+    this.paused = false;
     if (this.level && this.level.resetGate) this.level.resetGate();
     this.denguin.reset();
     this.time = DURACION;
@@ -88,17 +95,28 @@ export class Game {
     this.hud.setAlert(false);
   }
 
+  isPaused() {
+    return this.paused;
+  }
+
   update(dt, t) {
     const player = this.getPlayer();
     const pp = player ? player.position : new THREE.Vector3();
     const shieldActive = !!player && player.shieldUntil > t;
 
     for (const c of this.cacharros) c.update(dt, t, pp);
+    this._updateFx(dt);
 
     // burbuja de escudo
     this.shieldBubble.position.set(pp.x, pp.y + 0.95, pp.z);
     const targetOp = shieldActive ? 0.32 + Math.sin(t * 10) * 0.08 : 0;
     this.shieldBubble.material.opacity += (targetOp - this.shieldBubble.material.opacity) * Math.min(1, dt * 8);
+
+    // pausa educativa: congela timer/Denguín mientras se lee la info
+    if (this.paused) {
+      this.hud.setAlert(false);
+      return;
+    }
 
     if (this.state !== 'playing') {
       this.denguin.update(dt, t, pp, shieldActive); // sigue volando de fondo
@@ -113,9 +131,11 @@ export class Game {
       this.hud.setAlert(false);
       this.hud.flash();
       this._disperse(3);
+      if (this.audio) this.audio.bite();
     } else if (ev === 'repelled') {
       this.score += 50;
       this.hud.defensePopup('¡Defensa! +50');
+      if (this.audio) this.audio.shield();
     }
 
     // indicador del portón (solo si el nivel tiene)
@@ -136,12 +156,83 @@ export class Game {
         this.hud.setCount(this.found);
         this.hud.markCollected(c.index);
         this.hud.showTip(c.info.nombre, c.info.tip);
+        this._fxBurst(c.position, c.info.color || 0x6fd962);
+        if (this.audio) this.audio.pick();
         if (this.gateAt > 0 && !this._gateOpened && this.found >= this.gateAt && this.level && this.level.openGate) {
           this._gateOpened = true;
           this.level.openGate();
           this.hud.showTip('¡Portón abierto! 🔓', 'Volvé al pasillo y seguí hacia el norte (cocina, baño, living).');
         }
-        if (this.found >= this.cacharros.length) return this._win();
+        const last = this.found >= this.cacharros.length;
+        // pausa educativa (nivel tutorial): muestra el elemento + cómo prevenir
+        if (this.educa && this.screens.educa) {
+          this.paused = true;
+          this.screens.educa({
+            info: c.info,
+            n: this.found,
+            total: this.cacharros.length,
+            onContinue: () => {
+              this.paused = false;
+              this.screens.hide();
+              if (last) this._win();
+            },
+          });
+          return;
+        }
+        if (last) return this._win();
+      }
+    }
+  }
+
+  /** Estallido de partículas al juntar un cacharro. */
+  _fxBurst(pos, color) {
+    const n = 12;
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(0.06, 6, 5),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 })
+      );
+      m.position.set(pos.x, 0.5, pos.z);
+      const ang = (i / n) * Math.PI * 2;
+      const sp = 1.5 + Math.random() * 1.5;
+      this.fxGroup.add(m);
+      this.fx.push({
+        mesh: m, life: 0.6, max: 0.6,
+        vx: Math.cos(ang) * sp, vy: 2 + Math.random() * 1.5, vz: Math.sin(ang) * sp,
+      });
+    }
+    // anillo expansivo
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.1, 0.18, 20),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(pos.x, 0.08, pos.z);
+    this.fxGroup.add(ring);
+    this.fx.push({ mesh: ring, life: 0.5, max: 0.5, ring: true });
+  }
+
+  _updateFx(dt) {
+    for (let i = this.fx.length - 1; i >= 0; i--) {
+      const p = this.fx[i];
+      p.life -= dt;
+      const k = Math.max(0, p.life / p.max);
+      if (p.ring) {
+        const s = 1 + (1 - k) * 10;
+        p.mesh.scale.set(s, s, s);
+        p.mesh.material.opacity = 0.9 * k;
+      } else {
+        p.vy -= 6 * dt;
+        p.mesh.position.x += p.vx * dt;
+        p.mesh.position.y += p.vy * dt;
+        p.mesh.position.z += p.vz * dt;
+        p.mesh.material.opacity = k;
+      }
+      if (p.life <= 0) {
+        this.fxGroup.remove(p.mesh);
+        p.mesh.geometry.dispose();
+        p.mesh.material.dispose();
+        this.fx.splice(i, 1);
       }
     }
   }
@@ -168,6 +259,7 @@ export class Game {
 
   _win() {
     this.state = 'won';
+    if (this.audio) this.audio.win();
     const restante = Math.floor(this.time);
     const stars = restante >= 60 ? 3 : restante >= 30 ? 2 : 1;
     const score = this.score + 500 + restante * 10;
@@ -177,6 +269,7 @@ export class Game {
 
   _lose() {
     this.state = 'lost';
+    if (this.audio) this.audio.lose();
     this.hud.hide();
     this.screens.lose({ encontrados: this.found, onRetry: () => this._replay(), onMap: this.onWin });
   }
@@ -185,6 +278,14 @@ export class Game {
     this._clear();
     if (this.denguin) this.scene.remove(this.denguin.mesh);
     if (this.shieldBubble) this.scene.remove(this.shieldBubble);
+    if (this.fxGroup) {
+      this.fx.forEach((p) => {
+        p.mesh.geometry.dispose();
+        p.mesh.material.dispose();
+      });
+      this.fx = [];
+      this.scene.remove(this.fxGroup);
+    }
   }
 
   _replay() {

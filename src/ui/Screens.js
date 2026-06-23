@@ -17,6 +17,7 @@ export class Screens {
       </div>`;
     document.body.appendChild(el);
     this.el = el;
+    this.card = el.querySelector('#scr-card');
     this.emoji = el.querySelector('.scr-emoji');
     this.title = el.querySelector('.scr-title');
     this.desc = el.querySelector('.scr-desc');
@@ -34,6 +35,7 @@ export class Screens {
   }
 
   _show({ emoji, title, desc, descHtml, stars = '', score = '', buttons }) {
+    if (this.card) this.card.classList.remove('modal-mapa');
     this.emoji.textContent = emoji || '';
     this.title.textContent = title || '';
     if (descHtml) this.desc.innerHTML = descHtml;
@@ -94,23 +96,58 @@ export class Screens {
     });
   }
 
-  /** Mapa de niveles: una tarjeta por nivel; los bloqueados no se eligen. */
+  /** Pausa educativa (nivel tutorial): muestra el cacharro y cómo prevenir. */
+  educa({ info, n, total, onContinue }) {
+    this._show({
+      emoji: info.emoji || '💧',
+      title: `¡Encontraste un ${info.nombre.toLowerCase()}!`,
+      descHtml: `
+        <p class="scr-lead">${info.tip}</p>
+        <p class="scr-note">💧 <b>Sin agua acumulada no hay mosquito:</b> el dengue se previene
+        eliminando los cacharros donde el agua se queda quieta.</p>
+        <div class="edu-prog">Cacharro <b>${n}</b> de <b>${total}</b> 🧤</div>`,
+      buttons: [{ label: '¡Seguir buscando! 🔎', cls: 'verde', onClick: onContinue }],
+    });
+  }
+
+  /** Mapa de niveles tipo "mundo de islas": pines sobre un camino serpenteante. */
   map(niveles, onPick) {
+    if (this.card) this.card.classList.add('modal-mapa');
     this.emoji.textContent = '🗺️';
     this.title.textContent = 'Elegí tu misión';
-    this.desc.textContent = 'Recorré cada mundo y eliminá los 10 cacharros con agua.';
+    this.desc.textContent = 'Tocá una isla y eliminá los 10 cacharros con agua.';
     this.stars.textContent = '';
     this.score.textContent = '';
     this.row.innerHTML = '';
-    this.row.classList.add('scr-mapa');
-    niveles.forEach((n) => {
+    this.row.classList.remove('scr-mapa');
+
+    const pos = [[14, 74], [33, 42], [52, 70], [71, 38], [88, 64]];
+    const pts = niveles.map((_, i) => pos[i] || [50, 50]);
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'} ${p[0]} ${p[1]}`).join(' ');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'mapa-mundo';
+    wrap.innerHTML =
+      `<svg class="mapa-path" viewBox="0 0 100 90" preserveAspectRatio="none">` +
+      `<path d="${d}" /></svg>`;
+
+    niveles.forEach((n, i) => {
+      const [x, y] = pos[i] || [50, 50];
       const b = document.createElement('button');
-      b.className = 'nivel-card' + (n.locked ? ' lock' : '');
-      b.innerHTML = `<span class="nivel-emoji">${n.emoji}</span><span class="nivel-nombre">${n.nombre}</span>` +
-        (n.locked ? '<span class="nivel-lock">🔒</span>' : '');
+      b.className = 'isla' + (n.locked ? ' lock' : '');
+      b.style.left = x + '%';
+      b.style.top = y + '%';
+      b.style.setProperty('--d', `${i * 0.08}s`);
+      b.innerHTML =
+        `<span class="isla-num">${i + 1}</span>` +
+        `<span class="isla-pin">${n.emoji}</span>` +
+        `<span class="isla-nm">${n.nombre}</span>` +
+        (n.locked ? '<span class="isla-lock">🔒</span>' : '');
       if (!n.locked) b.addEventListener('click', () => onPick(n.id));
-      this.row.appendChild(b);
+      wrap.appendChild(b);
     });
+
+    this.row.appendChild(wrap);
     this.el.classList.add('on');
   }
 }

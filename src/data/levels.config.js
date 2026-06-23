@@ -12,6 +12,7 @@ export const CASA_LIVING = {
   interior: true,
   bg: '#c9d6e3',
   gate: 5,
+  educa: true, // nivel tutorial: pausa educativa al juntar cada cacharro
   // casa grande con pasillo central. x∈[-11,11], z∈[-9,9]
   room: { width: 22, depth: 18, height: 3.0 },
   spawn: { x: 0, z: 7.5 }, // pasillo, junto a la entrada (sur)

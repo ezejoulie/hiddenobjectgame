@@ -5,6 +5,7 @@ import { setupEnvironment, setupLighting } from './core/Lighting.js';
 import { createPostFX } from './core/PostFX.js';
 import { Input } from './core/Input.js';
 import { AssetLoader } from './core/AssetLoader.js';
+import { Audio } from './core/Audio.js';
 
 import { Player } from './entities/Player.js';
 import { ThirdPersonCamera } from './systems/Camera.js';
@@ -152,7 +153,8 @@ function makeLoadingOverlay() {
   el.id = 'loading';
   el.innerHTML = `
     <div class="load-card">
-      <div class="load-title">Cargando el living…</div>
+      <div class="load-title">Cargando videojuego…</div>
+      <div class="load-sub">🦟 Patrulla Doble Defensa</div>
       <div class="load-bar"><div class="load-fill"></div></div>
       <div class="load-pct">0%</div>
     </div>`;
@@ -240,6 +242,19 @@ async function boot() {
   const screens = new Screens();
   const postfx = createPostFX(renderer, scene, camera, { bloomStrength: 0.1, vignetteDark: 0.6 });
 
+  // ---------- Audio (música + SFX) + botón de silencio ----------
+  const audio = new Audio();
+  const muteBtn = document.createElement('button');
+  muteBtn.id = 'btn-mute';
+  muteBtn.textContent = '🔊';
+  muteBtn.title = 'Silenciar';
+  muteBtn.addEventListener('click', () => {
+    const m = audio.toggleMute();
+    muteBtn.textContent = m ? '🔇' : '🔊';
+    muteBtn.classList.toggle('off', m);
+  });
+  document.body.appendChild(muteBtn);
+
   function onResize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -289,8 +304,15 @@ async function boot() {
     game = new Game({
       scene, getPlayer: () => player, spawns: cfg.cacharros, hud, screens,
       bounds, denguinModel, cacharroModels, level, gate: cfg.gate, onWin: showMap,
+      audio, educa: !!cfg.educa,
     });
-    screens.intro({ onStart: () => game.start() });
+    screens.intro({
+      onStart: () => {
+        audio.resume();
+        audio.startMusic();
+        game.start();
+      },
+    });
   }
 
   function showMap() {
@@ -310,12 +332,18 @@ async function boot() {
     const now = clock.elapsedTime;
 
     if (level && game) {
-      tpCam.applyLook(input.consumeLook());
-      const move = input.moveVector();
-      player.update(dt, move, tpCam.yaw, level.colliders);
-      if (input.shieldPressed() && player.triggerShield(now)) hud.dobleDefensa();
-      tpCam.update(player.position, dt);
-      if (level.update) level.update(dt, now);
+      const paused = game.isPaused();
+      if (!paused) {
+        tpCam.applyLook(input.consumeLook());
+        const move = input.moveVector();
+        player.update(dt, move, tpCam.yaw, level.colliders);
+        if (input.shieldPressed() && player.triggerShield(now)) {
+          hud.dobleDefensa();
+          audio.shield();
+        }
+        tpCam.update(player.position, dt);
+        if (level.update) level.update(dt, now);
+      }
       game.update(dt, now);
     }
 
