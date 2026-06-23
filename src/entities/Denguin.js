@@ -90,6 +90,7 @@ export class Denguin {
     this.mesh.position.copy(this.pos);
 
     this.mode = 'rondar';
+    this.localT = 0; // reloj propio: NO avanza mientras el juego está en pausa
     this.nextAtk = 6; // primera picada ~6 s; luego cada 15 s
     this.invuln = 0;
     this.atkT = 0;
@@ -155,6 +156,9 @@ export class Denguin {
 
   update(dt, t, target, shieldActive) {
     let event = null;
+    // reloj propio: solo avanza cuando de verdad se actualiza (no en pausa),
+    // así la cuenta para picar no "corre" mientras se lee el pop-up educativo.
+    t = this.localT += dt;
     // distancia HORIZONTAL (ignora la altura: Denguín vuela sobre el jugador)
     const dH = Math.hypot(this.pos.x - target.x, this.pos.z - target.z);
 
@@ -227,8 +231,10 @@ export class Denguin {
 
   reset() {
     this.mode = 'rondar';
+    this.localT = 0;
     this.nextAtk = 6;
     this.invuln = 0;
+    this.roamT = 0;
     this._fleeTarget = null;
     this.pos.set(2, 1.8, 2);
   }

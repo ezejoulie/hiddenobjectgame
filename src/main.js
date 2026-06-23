@@ -536,6 +536,10 @@ async function boot() {
         }
         tpCam.update(player.position, dt);
         if (level.update) level.update(dt, now);
+      } else {
+        // en pausa (pop-up educativo): descartar el arrastre acumulado para que
+        // la cámara NO pegue un salto al cerrar el pop-up.
+        input.consumeLook();
       }
       game.update(dt, now);
 
