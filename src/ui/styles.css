@@ -468,6 +468,52 @@ body {
   margin-top: 6px;
 }
 
+/* Mapa de niveles */
+.scr-mapa {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.nivel-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border: 3px solid #15324b;
+  border-radius: 18px;
+  padding: 14px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 0 #15324b;
+  transition: transform 0.08s;
+  position: relative;
+}
+.nivel-card:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #15324b;
+}
+.nivel-emoji {
+  font-size: 2.2rem;
+}
+.nivel-nombre {
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #15324b;
+}
+.nivel-card.lock {
+  filter: grayscale(1);
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: 0 4px 0 #888;
+}
+.nivel-lock {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.9rem;
+}
+
 /* Selector de personaje */
 .hero-lbl {
   font-weight: 800;
