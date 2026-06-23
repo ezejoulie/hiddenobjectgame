@@ -86,13 +86,13 @@ body {
 }
 .hud-top {
   position: absolute;
-  top: 10px;
+  top: calc(8px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 12px;
-  width: min(520px, 92vw);
+  width: min(460px, 80vw);
 }
 .hud-timer {
   flex: 1;
@@ -143,17 +143,17 @@ body {
 }
 .hud-gate {
   position: absolute;
-  top: 70px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: calc(70px + env(safe-area-inset-top, 0px));
+  left: 14px;
   font-weight: 800;
   font-size: 0.82rem;
   color: #fff;
-  background: rgba(176, 90, 42, 0.85);
+  background: rgba(176, 90, 42, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
-  padding: 4px 14px;
+  padding: 5px 14px;
   white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(13, 34, 52, 0.3);
 }
 .hud-gate.open {
   background: rgba(55, 154, 44, 0.9);
@@ -752,7 +752,7 @@ body {
 /* ================= Flecha indicadora de Denguín ================= */
 .hud-arrow {
   position: fixed;
-  top: 64px;
+  top: calc(66px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 14;
@@ -763,6 +763,25 @@ body {
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
+}
+/* cuenta regresiva de la próxima picada (arriba a la derecha) */
+.hud-nextbite {
+  position: absolute;
+  top: calc(70px + env(safe-area-inset-top, 0px));
+  right: 14px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #fff;
+  background: rgba(21, 50, 75, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 5px 14px;
+  white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(13, 34, 52, 0.3);
+}
+.hud-nextbite.soon {
+  background: rgba(206, 28, 22, 0.9);
+  animation: dangerPulse 0.7s ease-in-out infinite;
 }
 .hud-arrow.show { opacity: 1; }
 .hud-arrow-dial {

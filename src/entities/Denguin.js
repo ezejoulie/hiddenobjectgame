@@ -155,7 +155,8 @@ export class Denguin {
 
   update(dt, t, target, shieldActive) {
     let event = null;
-    const dPj = this.pos.distanceTo(target);
+    // distancia HORIZONTAL (ignora la altura: Denguín vuela sobre el jugador)
+    const dH = Math.hypot(this.pos.x - target.x, this.pos.z - target.z);
 
     const ATK_EVERY = 15; // pica cada 15 s
 
@@ -167,23 +168,23 @@ export class Denguin {
         this.atkT = t;
       }
     } else if (this.mode === 'ataque') {
-      // viene VOLANDO desde donde estaba hacia el jugador (se va oyendo el zumbido)
-      this._tmp.set(target.x, target.y + 1.1, target.z);
+      // se lanza en PICADA hacia el jugador (baja a la altura del cuerpo)
+      this._tmp.set(target.x, target.y + 0.8, target.z);
       const v = this._tmp.sub(this.pos);
       const d = v.length();
       if (d > 0.001) {
-        v.normalize().multiplyScalar(Math.min(d, 7.8 * dt)); // más rápido que el jugador: alcanza a picar
+        v.normalize().multiplyScalar(Math.min(d, 7.8 * dt)); // más rápido que el jugador
         this.pos.add(v);
       }
-      if (shieldActive && dPj < 1.7) {
+      if (shieldActive && dH < 1.8) {
         this._flee(t);
         this.nextAtk = t + ATK_EVERY;
-        event = 'repelled'; // con escudo NO pica
-      } else if (!shieldActive && dPj < 1.05) {
+        event = 'repelled'; // con escudo NO pica, lo frena
+      } else if (!shieldActive && dH < 1.0) {
         this._flee(t);
         this.nextAtk = t + ATK_EVERY;
-        event = 'bite'; // pica y te saca cacharros
-      } else if (t - this.atkT > 7) {
+        event = 'bite'; // ¡pica! y se va (te saca cacharros)
+      } else if (t - this.atkT > 6) {
         this._flee(t); // se cansó de perseguir
         this.nextAtk = t + ATK_EVERY;
       }

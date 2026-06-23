@@ -446,6 +446,7 @@ async function boot() {
     player.mesh.rotation.y = Math.PI;
     player.mesh.visible = true;
     tpCam.setObstacles(level.wallMeshes);
+    tpCam.distance = cfg.interior ? 3.0 : 4.3; // adentro, cámara más cerca (menos clipping)
     tpCam.yaw = Math.PI;
     tpCam.update(player.position, 0);
 

@@ -15,6 +15,7 @@ export class HUD {
         </div>
         <div class="hud-count">0/${items.length}</div>
       </div>
+      <div class="hud-nextbite">🦟 Pica en --</div>
       <div class="hud-arrow">
         <div class="hud-arrow-dial"><div class="hud-arrow-needle"></div></div>
         <span class="hud-arrow-tx">🦟 ¡Viene Denguín!</span>
@@ -43,6 +44,7 @@ export class HUD {
     this.gateEl = el.querySelector('.hud-gate');
     this.arrowEl = el.querySelector('.hud-arrow');
     this.arrowNeedle = el.querySelector('.hud-arrow-needle');
+    this.nextBiteEl = el.querySelector('.hud-nextbite');
     this.total = items.length;
 
     this.chips = items.map((it, i) => {
@@ -63,6 +65,19 @@ export class HUD {
     if (!this.arrowEl) return;
     this.arrowEl.classList.toggle('show', !!show);
     if (show) this.arrowNeedle.style.transform = `rotate(${angle}rad)`;
+  }
+
+  /** Cuenta regresiva hasta la próxima picada de Denguín. */
+  setNextBite(secs, attacking) {
+    if (!this.nextBiteEl) return;
+    if (attacking) {
+      this.nextBiteEl.textContent = '🦟 ¡Te ataca!';
+      this.nextBiteEl.classList.add('soon');
+    } else {
+      const s = Math.max(0, Math.ceil(secs));
+      this.nextBiteEl.textContent = `🦟 Pica en ${s}s`;
+      this.nextBiteEl.classList.toggle('soon', s <= 4);
+    }
   }
 
   setTime(seconds) {

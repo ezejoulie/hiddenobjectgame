@@ -142,6 +142,7 @@ export class Game {
     if (shieldActive) danger *= 0.25; // con escudo, menos tensión
     this.hud.setDanger(danger);
     if (this.audio) this.audio.setBuzz(dD < 8 ? 1 - dD / 8 : 0);
+    this.hud.setNextBite(this.denguin.nextAtk - t, this.denguin.mode === 'ataque');
     if (ev === 'bite') {
       this.hud.setAlert(false);
       this.hud.flash();
