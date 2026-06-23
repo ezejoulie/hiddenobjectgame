@@ -134,30 +134,34 @@ export class Casa extends Level {
       clearcoat: 0.2,
       clearcoatRoughness: 0.5,
     });
-    this._floor(0, 0, 2 * XI + 0.4, 2 * HD, wood); // living (centro)
-    this._floor(-5.5, -3, 5.2, 6.2, mat(0xe8d7b8, 0.8)); // cocina
-    this._floor(5.5, -3, 5.2, 6.2, mat(0xbfe0e6, 0.7)); // baño
-    this._floor(-5.5, 3, 5.2, 6.2, mat(0xd8c9a6, 0.8)); // lavadero
-    this._floor(5.5, 3, 5.2, 6.2, mat(0xdcc8da, 0.8)); // dormitorio
+    // pisos que se tocan SIN solaparse (evita el z-fighting / parpadeo)
+    this._floor(0, 0, 2 * XI, 2 * HD, wood); // living (centro) x[-3,3]
+    this._floor(-5.5, -3, 5, 6, mat(0xe8d7b8, 0.8)); // cocina
+    this._floor(5.5, -3, 5, 6, mat(0xbfe0e6, 0.7)); // baño
+    this._floor(-5.5, 3, 5, 6, mat(0xd8c9a6, 0.8)); // lavadero
+    this._floor(5.5, 3, 5, 6, mat(0xdcc8da, 0.8)); // dormitorio
   }
 
   _buildWalls() {
+    const DG = 2.6; // ancho de puerta (todas iguales)
+
     // perímetro
     this._wall(0, -HD, 2 * HW, T); // norte
     this._wall(-HW, 0, T, 2 * HD); // oeste
     this._wall(HW, 0, T, 2 * HD); // este
-    // sur con puerta de entrada (gap x∈[-1,1])
-    this._wall(-4.5, HD, 7, T);
-    this._wall(4.5, HD, 7, T);
-    this._box(2, 0.5, T, this.cfg.paleta.pared, 0, H - 0.25, HD, {}); // dintel
+    // sur con puerta de entrada central
+    const sideW = (2 * HW - DG) / 2;
+    this._wall(-(DG / 2 + sideW / 2), HD, sideW, T);
+    this._wall(DG / 2 + sideW / 2, HD, sideW, T);
+    this._box(DG, 0.5, T, this.cfg.paleta.pared, 0, H - 0.25, HD, {}); // dintel
 
-    // paredes internas verticales (x=±3) con 2 puertas cada una (z≈-3 y z≈3)
+    // paredes internas verticales (x=±3) con 2 puertas (z=±3), todas de ancho DG
     [-XI, XI].forEach((x) => {
-      this._wall(x, -5, T, 2); // z[-6,-4]
-      this._wall(x, 0, T, 4); // z[-2,2]
-      this._wall(x, 5, T, 2); // z[4,6]
+      this._wall(x, -5.15, T, 1.7); // z[-6, -4.3]
+      this._wall(x, 0, T, 3.4); // z[-1.7, 1.7]
+      this._wall(x, 5.15, T, 1.7); // z[4.3, 6]
     });
-    // paredes internas horizontales (z=0) que separan arriba/abajo en los laterales
+    // paredes internas horizontales (z=0) en los laterales
     this._wall(-5.5, 0, 2 * (HW - XI), T);
     this._wall(5.5, 0, 2 * (HW - XI), T);
   }
@@ -210,8 +214,8 @@ export class Casa extends Level {
     else this._box(2.6, 0.7, 1.0, 0x4a7ea8, 0, 0.4, -3.7, { collide: true });
 
     // mesa ratona + alfombra
-    const rug = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.03, 2.0), mat(0xcf5b54, 0.95));
-    rug.position.set(0, 0.02, -4.6);
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.04, 2.0), mat(0xcf5b54, 0.95));
+    rug.position.set(0, 0.05, -4.6);
     rug.receiveShadow = true;
     this.add(rug);
     this._box(1.2, 0.08, 0.7, 0x6b4226, 0, 0.42, -4.7, { collide: true, rough: 0.4 });
@@ -237,16 +241,22 @@ export class Casa extends Level {
   }
 
   _cocina() {
-    // mesada en L contra norte y oeste
-    this._box(4, 0.9, 0.6, 0xbfa98a, -5.3, 0.45, -HD + 0.5, { collide: true });
-    this._box(0.6, 0.9, 3.2, 0xbfa98a, -HW + 0.45, 0.45, -3.4, { collide: true });
-    // bacha
-    this._box(0.5, 0.05, 0.4, 0x9aa7b2, -4.4, 0.92, -HD + 0.5, { cast: false, metal: 0.4, rough: 0.3 });
-    // alacenas
-    this._box(4, 0.7, 0.4, 0xcfc0a6, -5.3, 2.2, -HD + 0.35, {});
-    // heladera
-    this._box(0.95, 2.0, 0.85, 0xededed, -3.7, 1.0, -HD + 0.6, { collide: true, rough: 0.4 });
-    this._box(0.06, 0.5, 0.04, 0xb0b6bc, -3.3, 1.2, -HD + 1.05, { cast: false, metal: 0.6, rough: 0.3 });
+    // mesada (modelo real o primitiva en L)
+    if (this.models.mesada) {
+      this._placeModel(this.models.mesada.clone(true), { footprint: 4, x: -5.3, z: -HD + 0.55, ry: 0 });
+    } else {
+      this._box(4, 0.9, 0.6, 0xbfa98a, -5.3, 0.45, -HD + 0.5, { collide: true });
+      this._box(0.6, 0.9, 3.2, 0xbfa98a, -HW + 0.45, 0.45, -3.4, { collide: true });
+      this._box(0.5, 0.05, 0.4, 0x9aa7b2, -4.4, 0.92, -HD + 0.5, { cast: false, metal: 0.4, rough: 0.3 });
+      this._box(4, 0.7, 0.4, 0xcfc0a6, -5.3, 2.2, -HD + 0.35, {});
+    }
+    // heladera (modelo real o primitiva)
+    if (this.models.heladera) {
+      this._placeModel(this.models.heladera.clone(true), { footprint: 0.95, x: -3.7, z: -HD + 0.7, ry: 0 });
+    } else {
+      this._box(0.95, 2.0, 0.85, 0xededed, -3.7, 1.0, -HD + 0.6, { collide: true, rough: 0.4 });
+      this._box(0.06, 0.5, 0.04, 0xb0b6bc, -3.3, 1.2, -HD + 1.05, { cast: false, metal: 0.6, rough: 0.3 });
+    }
     // mesa + sillas
     this._box(1.4, 0.08, 0.9, 0xd2885a, -5.5, 0.78, -1.8, { collide: true });
     [[-0.6, -0.3], [0.6, -0.3], [-0.6, 0.3], [0.6, 0.3]].forEach(([dx, dz]) =>
@@ -256,9 +266,13 @@ export class Casa extends Level {
   }
 
   _bano() {
-    // bañadera contra norte
-    this._box(2.8, 0.55, 1.3, 0xf2f2f2, 5.5, 0.28, -HD + 0.75, { collide: true, rough: 0.3 });
-    this._box(2.5, 0.06, 1.0, 0xbfe0e6, 5.5, 0.5, -HD + 0.75, { cast: false }); // agua
+    // bañadera (modelo real o primitiva)
+    if (this.models.banadera) {
+      this._placeModel(this.models.banadera.clone(true), { footprint: 2.6, x: 5.5, z: -HD + 0.9, ry: 0 });
+    } else {
+      this._box(2.8, 0.55, 1.3, 0xf2f2f2, 5.5, 0.28, -HD + 0.75, { collide: true, rough: 0.3 });
+      this._box(2.5, 0.06, 1.0, 0xbfe0e6, 5.5, 0.5, -HD + 0.75, { cast: false });
+    }
     // inodoro
     this._box(0.55, 0.45, 0.7, 0xffffff, HW - 0.6, 0.22, -2.6, { collide: true, rough: 0.4 });
     this._box(0.55, 0.6, 0.25, 0xffffff, HW - 0.6, 0.55, -2.95, { cast: false });
@@ -270,14 +284,22 @@ export class Casa extends Level {
   }
 
   _lavadero() {
-    // lavarropas
-    this._box(0.9, 1.2, 0.9, 0xe8e8e8, -HW + 0.7, 0.6, HD - 0.7, { collide: true, rough: 0.4 });
-    const door = new THREE.Mesh(new THREE.CircleGeometry(0.28, 18), new THREE.MeshStandardMaterial({ color: 0x3a3f44, roughness: 0.2, metalness: 0.5 }));
-    door.position.set(-HW + 0.7, 0.65, HD - 1.16);
-    this.add(door);
-    // pileta
-    this._box(0.9, 0.9, 0.6, 0xd9d2c4, -5.3, 0.45, HD - 0.5, { collide: true });
-    this._box(0.6, 0.06, 0.4, 0x9aa7b2, -5.3, 0.92, HD - 0.5, { cast: false });
+    // lavarropas (modelo real o primitiva)
+    if (this.models.lavarropas) {
+      this._placeModel(this.models.lavarropas.clone(true), { footprint: 0.9, x: -HW + 0.75, z: HD - 0.75, ry: 0 });
+    } else {
+      this._box(0.9, 1.2, 0.9, 0xe8e8e8, -HW + 0.7, 0.6, HD - 0.7, { collide: true, rough: 0.4 });
+      const door = new THREE.Mesh(new THREE.CircleGeometry(0.28, 18), new THREE.MeshStandardMaterial({ color: 0x3a3f44, roughness: 0.2, metalness: 0.5 }));
+      door.position.set(-HW + 0.7, 0.65, HD - 1.16);
+      this.add(door);
+    }
+    // pileta (modelo real o primitiva)
+    if (this.models.pileta) {
+      this._placeModel(this.models.pileta.clone(true), { footprint: 0.9, x: -5.3, z: HD - 0.6, ry: 0 });
+    } else {
+      this._box(0.9, 0.9, 0.6, 0xd9d2c4, -5.3, 0.45, HD - 0.5, { collide: true });
+      this._box(0.6, 0.06, 0.4, 0x9aa7b2, -5.3, 0.92, HD - 0.5, { cast: false });
+    }
     // estante con productos
     this._box(2.0, 0.06, 0.4, 0xcfc0a6, -4.2, 1.7, HD - 0.3, { cast: false });
     [[-4.8, 1.92], [-4.2, 1.92], [-3.6, 1.92]].forEach(([x, y]) =>
@@ -286,18 +308,26 @@ export class Casa extends Level {
   }
 
   _dormitorio() {
-    // cama
-    this._box(2.6, 0.45, 3.4, 0xb7d0e8, 5.5, 0.32, 4.2, { collide: true, rough: 0.85 });
-    this._box(2.6, 0.12, 3.0, 0xeaf2fb, 5.5, 0.56, 4.3, { cast: false }); // acolchado
-    this._box(2.6, 0.7, 0.2, 0x9a6b45, 5.5, 0.5, HD - 0.2, {}); // respaldo
-    this._box(0.9, 0.25, 0.5, 0xffffff, 5.5, 0.62, 2.9, { cast: false }); // almohada
+    // cama (modelo real o primitiva)
+    if (this.models.cama) {
+      this._placeModel(this.models.cama.clone(true), { footprint: 2.8, x: 5.5, z: 4.2, ry: 0 });
+    } else {
+      this._box(2.6, 0.45, 3.4, 0xb7d0e8, 5.5, 0.32, 4.2, { collide: true, rough: 0.85 });
+      this._box(2.6, 0.12, 3.0, 0xeaf2fb, 5.5, 0.56, 4.3, { cast: false });
+      this._box(2.6, 0.7, 0.2, 0x9a6b45, 5.5, 0.5, HD - 0.2, {});
+      this._box(0.9, 0.25, 0.5, 0xffffff, 5.5, 0.62, 2.9, { cast: false });
+    }
     // mesa de luz
     this._box(0.5, 0.5, 0.5, 0xc8a87c, 3.8, 0.25, HD - 0.5, { collide: true });
-    // ropero
-    this._box(0.8, 2.3, 1.4, 0xa88c68, HW - 0.55, 1.15, 1.4, { collide: true, rough: 0.6 });
+    // ropero (modelo real o primitiva)
+    if (this.models.ropero) {
+      this._placeModel(this.models.ropero.clone(true), { footprint: 1.4, x: HW - 0.7, z: 1.4, ry: -Math.PI / 2 });
+    } else {
+      this._box(0.8, 2.3, 1.4, 0xa88c68, HW - 0.55, 1.15, 1.4, { collide: true, rough: 0.6 });
+    }
     // alfombra
-    const rug = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.03, 1.4), mat(0x9b6fb0, 0.95));
-    rug.position.set(4.4, 0.02, 2.6);
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.04, 1.4), mat(0x9b6fb0, 0.95));
+    rug.position.set(4.4, 0.05, 2.6);
     rug.receiveShadow = true;
     this.add(rug);
     // cuadro

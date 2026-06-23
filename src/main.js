@@ -22,11 +22,22 @@ import { CASA_LIVING } from './data/levels.config.js';
 
 const BASE = import.meta.env.BASE_URL; // './' o '/'
 
+// Muebles propios (Higgsfield) del prototipo viejo, servidos desde su CDN.
+const CF = 'https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/';
+
 // Manifiesto de modelos del pack base (drop-in: agregar acá y usar en el nivel)
 const MODELS = {
   sofa: `${BASE}assets/models/base/GlamVelvetSofa.glb`,
   armchair: `${BASE}assets/models/base/SheenChair.glb`,
   chair2: `${BASE}assets/models/base/ChairDamaskPurplegold.glb`,
+  // muebles reales por ambiente (con fallback a primitivas si no cargan)
+  heladera: `${CF}a3cf4c30-d531-4ac5-87b4-a9da99cec845.glb`,
+  mesada: `${CF}03ace918-cec4-4f89-87d3-8e3db42e1622.glb`,
+  banadera: `${CF}7e217d98-653e-41f9-ba8b-a9e2ce3b2b52.glb`,
+  lavarropas: `${CF}4fefb51d-a3b2-4363-b3ee-564333133ea9.glb`,
+  pileta: `${CF}6488016f-f663-40af-a78a-2607634fd150.glb`,
+  cama: `${CF}a5fb8855-06c1-4302-be77-68445deadb38.glb`,
+  ropero: `${CF}f4c9a58d-0aee-438f-ab0e-a4d5c6ba6dbb.glb`,
   vase: `${BASE}assets/models/base/GlassVaseFlowers.glb`,
   plant: `${BASE}assets/models/base/DiffuseTransmissionPlant.glb`,
   lamp: `${BASE}assets/models/base/IridescenceLamp.glb`,
