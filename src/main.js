@@ -17,6 +17,8 @@ import { Playa } from './levels/Playa.js';
 import { HUD } from './ui/HUD.js';
 import { Screens } from './ui/Screens.js';
 import { Game, itemsDeSpawns } from './core/Game.js';
+import { Cacharro } from './entities/Cacharro.js';
+import { CACHARRO_TIPOS } from './data/cacharros.js';
 import { CASA_LIVING, JARDIN, ESCUELA, PARQUE, PLAYA, NIVELES } from './data/levels.config.js';
 
 /**
@@ -207,6 +209,44 @@ function makeLevelLoader() {
   };
 }
 
+// Genera miniaturas PNG de los cacharros reales (para la bandeja y la pausa
+// educativa). Usa un mini-renderer aparte y lo descarta al terminar.
+function makeCacharroThumbs(cacharroModels) {
+  const r = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+  r.setSize(110, 110);
+  r.setPixelRatio(1);
+  r.setClearColor(0x000000, 0);
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x55606a, 1.5));
+  const dir = new THREE.DirectionalLight(0xffffff, 1.6);
+  dir.position.set(2, 4, 3);
+  scene.add(dir);
+  const cam = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+  const box = new THREE.Box3();
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+
+  const thumbs = {};
+  for (const tipo of Object.keys(CACHARRO_TIPOS)) {
+    const c = new Cacharro(tipo, 0, 0, cacharroModels[tipo]);
+    const obj = c.body;
+    scene.add(obj);
+    box.setFromObject(obj);
+    box.getSize(size);
+    box.getCenter(center);
+    const maxd = Math.max(size.x, size.y, size.z) || 0.5;
+    const dist = maxd * 2.4;
+    cam.position.set(center.x + dist * 0.55, center.y + dist * 0.5, center.z + dist * 0.95);
+    cam.lookAt(center);
+    r.render(scene, cam);
+    thumbs[tipo] = r.domElement.toDataURL('image/png');
+    scene.remove(obj);
+  }
+  r.dispose();
+  return thumbs;
+}
+
 async function boot() {
   const overlay = makeLoadingOverlay();
 
@@ -243,6 +283,9 @@ async function boot() {
     const s = loader.instance(url);
     if (s) cacharroModels[tipo] = s;
   }
+  // miniaturas de los cacharros reales para la bandeja del HUD
+  let cacharroThumbs = {};
+  try { cacharroThumbs = makeCacharroThumbs(cacharroModels); } catch (e) { cacharroThumbs = {}; }
   overlay.set(1);
 
   // ---------- Jugador (persiste entre niveles) ----------
@@ -379,11 +422,12 @@ async function boot() {
 
     const dims = cfg.room || { width: 24, depth: 22 };
     const bounds = { x: dims.width / 2 - 1, z: dims.depth / 2 - 1 };
-    hud = new HUD(itemsDeSpawns(cfg.cacharros));
+    const items = itemsDeSpawns(cfg.cacharros).map((it) => ({ ...it, thumb: cacharroThumbs[it.tipo] }));
+    hud = new HUD(items);
     game = new Game({
       scene, getPlayer: () => player, spawns: cfg.cacharros, hud, screens,
       bounds, denguinModel, cacharroModels, level, gate: cfg.gate, onWin: showMap,
-      onComplete: () => markCompleted(id),
+      onComplete: () => markCompleted(id), thumbs: cacharroThumbs,
       audio, educa: !!cfg.educa,
     });
     screens.intro({

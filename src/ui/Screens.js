@@ -129,11 +129,13 @@ export class Screens {
   }
 
   /** Pausa educativa (nivel tutorial): muestra el cacharro y cómo prevenir. */
-  educa({ info, n, total, onContinue }) {
+  educa({ info, thumb, n, total, onContinue }) {
+    const head = thumb ? `<img class="edu-img" src="${thumb}" alt="">` : '';
     this._show({
-      emoji: info.emoji || '💧',
+      emoji: thumb ? '' : (info.emoji || '💧'),
       title: `¡Encontraste un ${info.nombre.toLowerCase()}!`,
       descHtml: `
+        ${head}
         <p class="scr-lead">${info.tip}</p>
         <p class="scr-note">💧 <b>Sin agua acumulada no hay mosquito:</b> el dengue se previene
         eliminando los cacharros donde el agua se queda quieta.</p>

@@ -867,3 +867,22 @@ body {
   border-radius: 50%;
   z-index: 3;
 }
+
+/* miniatura del cacharro real en la bandeja */
+.hud-chip-img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  margin: 0 auto;
+  image-rendering: auto;
+}
+/* imagen del elemento real en la pausa educativa */
+.edu-img {
+  display: block;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  margin: 0 auto 6px;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.2));
+}

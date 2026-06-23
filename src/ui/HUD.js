@@ -48,7 +48,10 @@ export class HUD {
     this.chips = items.map((it, i) => {
       const c = document.createElement('div');
       c.className = 'hud-chip';
-      c.innerHTML = `<span class="hud-chip-em">${it.emoji || '💧'}</span><span class="hud-chip-nm">${it.nombre}</span>`;
+      const visual = it.thumb
+        ? `<img class="hud-chip-img" src="${it.thumb}" alt="">`
+        : `<span class="hud-chip-em">${it.emoji || '💧'}</span>`;
+      c.innerHTML = `${visual}<span class="hud-chip-nm">${it.nombre}</span>`;
       c.dataset.i = i;
       this.tray.appendChild(c);
       return c;
