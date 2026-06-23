@@ -114,6 +114,23 @@ export class Denguin {
     g.traverse((o) => {
       if (o.isMesh) o.castShadow = false;
     });
+    // alas procedurales que baten (el GLB venía "duro")
+    const alaMat = new THREE.MeshStandardMaterial({
+      color: 0xdcecfb, transparent: true, opacity: 0.5, roughness: 0.2, side: THREE.DoubleSide,
+    });
+    const wing = (x) => {
+      const piv = new THREE.Group();
+      const w = new THREE.Mesh(new THREE.CircleGeometry(0.2, 12), alaMat);
+      w.scale.set(1.5, 0.7, 1);
+      w.position.x = x * 0.2;
+      piv.add(w);
+      piv.position.set(0, 0.16, -0.05);
+      return piv;
+    };
+    const wL = wing(-1), wR = wing(1);
+    g.add(wL, wR);
+    g.userData.wL = wL;
+    g.userData.wR = wR;
     return g;
   }
 
@@ -183,12 +200,17 @@ export class Denguin {
       }
     }
 
-    // aplicar posición + orientar SOLO en horizontal (yaw), siempre derecho
-    this.mesh.position.copy(this.pos);
+    // aplicar posición + vibración de mosquito (más vivo) + yaw
+    const buzz = (this.mode === 'ataque' ? 0.02 : 0.012);
+    this.mesh.position.set(
+      this.pos.x + Math.sin(t * 47) * buzz,
+      this.pos.y + Math.sin(t * 60) * buzz + Math.sin(t * 3) * 0.04,
+      this.pos.z + Math.cos(t * 53) * buzz
+    );
     const ang = Math.atan2(target.x - this.pos.x, target.z - this.pos.z);
-    this.mesh.rotation.set(0, ang, 0);
+    this.mesh.rotation.set(Math.sin(t * 6) * 0.06, ang, Math.sin(t * 7) * 0.05);
     if (this.mesh.userData.wL) {
-      const flap = Math.sin(t * (this.mode === 'ataque' ? 55 : 38)) * 0.9;
+      const flap = Math.sin(t * (this.mode === 'ataque' ? 60 : 42)) * 1.0;
       this.mesh.userData.wL.rotation.z = 0.5 + flap;
       this.mesh.userData.wR.rotation.z = -0.5 - flap;
     }

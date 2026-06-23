@@ -26,6 +26,7 @@ export class Game {
     this.onWin = onWin; // volver al mapa
     this.audio = audio || null;
     this.educa = !!educa; // pausa educativa al juntar (nivel tutorial)
+    this.bounds = bounds || { x: 8, z: 8 };
     this._gateOpened = false;
     this.paused = false;
 
@@ -115,18 +116,30 @@ export class Game {
     // pausa educativa: congela timer/Denguín mientras se lee la info
     if (this.paused) {
       this.hud.setAlert(false);
+      this.hud.setDanger(0);
+      if (this.audio) this.audio.setBuzz(0);
       return;
     }
 
     if (this.state !== 'playing') {
       this.denguin.update(dt, t, pp, shieldActive); // sigue volando de fondo
       this.hud.setAlert(false);
+      this.hud.setDanger(0);
+      if (this.audio) this.audio.setBuzz(0);
       return;
     }
 
     // ----- Denguín -----
     const ev = this.denguin.update(dt, t, pp, shieldActive);
     this.hud.setAlert(this.denguin.mode === 'ataque' && !shieldActive);
+
+    // peligro (viñeta roja) + zumbido según cercanía del Denguín
+    const dD = Math.hypot(this.denguin.pos.x - pp.x, this.denguin.pos.z - pp.z);
+    let danger = dD < 6 ? 1 - dD / 6 : 0;
+    if (this.denguin.mode === 'ataque') danger = Math.max(danger, 0.55);
+    if (shieldActive) danger *= 0.25; // con escudo, menos tensión
+    this.hud.setDanger(danger);
+    if (this.audio) this.audio.setBuzz(dD < 8 ? 1 - dD / 8 : 0);
     if (ev === 'bite') {
       this.hud.setAlert(false);
       this.hud.flash();
@@ -237,8 +250,10 @@ export class Game {
     }
   }
 
-  /** Picadura: devuelve hasta n cacharros ya juntados (penalización). */
+  /** Picadura: dispersa hasta n cacharros ya juntados a nuevos lugares
+   *  (penalización: hay que volver a buscarlos). */
   _disperse(n) {
+    const pp = this.getPlayer() ? this.getPlayer().position : new THREE.Vector3();
     let done = 0;
     for (let i = this.cacharros.length - 1; i >= 0 && done < n; i--) {
       const c = this.cacharros[i];
@@ -248,13 +263,30 @@ export class Game {
         c.group.visible = true;
         c.body.scale.setScalar(1);
         c.body.position.y = 0.04;
+        // reubicar lejos del jugador para que tenga que buscarlo de nuevo
+        const [nx, nz] = this._scatterSpot(pp);
+        c.position.set(nx, 0, nz);
+        c.group.position.set(nx, 0, nz);
         this.found = Math.max(0, this.found - 1);
         this.hud.unmarkCollected(c.index);
         done += 1;
       }
     }
     this.hud.setCount(this.found);
-    if (done > 0) this.hud.showTip('¡Te picó Denguín!', 'Algunos cacharros se dispersaron. ¡Usá el escudo (Espacio)!');
+    if (done > 0) this.hud.showTip('¡Te picó Denguín!', '¡Se te volaron cacharros y se escondieron! Buscalos de nuevo. Usá el escudo (Espacio).');
+  }
+
+  /** Elige un punto dentro de los límites, lejos del jugador. */
+  _scatterSpot(pp) {
+    const bx = Math.max(2, this.bounds.x - 1);
+    const bz = Math.max(2, this.bounds.z - 1);
+    let nx = 0, nz = 0;
+    for (let k = 0; k < 12; k++) {
+      nx = (Math.random() * 2 - 1) * bx;
+      nz = (Math.random() * 2 - 1) * bz;
+      if (Math.hypot(nx - pp.x, nz - pp.z) > 5) break;
+    }
+    return [nx, nz];
   }
 
   _win() {
@@ -275,6 +307,7 @@ export class Game {
   }
 
   dispose() {
+    if (this.audio) this.audio.setBuzz(0);
     this._clear();
     if (this.denguin) this.scene.remove(this.denguin.mesh);
     if (this.shieldBubble) this.scene.remove(this.shieldBubble);

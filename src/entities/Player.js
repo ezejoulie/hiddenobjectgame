@@ -298,7 +298,7 @@ export class Player {
   triggerShield(now) {
     if (now < (this.shieldCd || 0)) return false; // en cooldown
     this.shieldUntil = now + 1.7;
-    this.shieldCd = now + 4.0;
+    this.shieldCd = now + 8.0; // tarda 8 s en recuperarse (más difícil)
     return true;
   }
 

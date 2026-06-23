@@ -722,3 +722,21 @@ body {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 #btn-mute.off { opacity: 0.6; }
+
+/* ================= Peligro: viñeta roja que se acerca ================= */
+.hud-danger {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  background: radial-gradient(ellipse at center, rgba(232, 60, 48, 0) 52%, rgba(206, 28, 22, 0.62) 100%);
+}
+.hud-danger.pulse {
+  animation: dangerPulse 0.7s ease-in-out infinite;
+}
+@keyframes dangerPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5); }
+}

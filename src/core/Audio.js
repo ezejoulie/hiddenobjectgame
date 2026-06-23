@@ -133,9 +133,62 @@ export class Audio {
     this._ensure();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    this._tone(880, t, 0.07, { type: 'sawtooth', gain: 0.12 });
-    this._tone(1320, t + 0.06, 0.1, { type: 'sawtooth', gain: 0.12 });
-    this._noise(t, 0.12, { gain: 0.08, freq: 2000 });
+    // "escudo arriba": barrido ascendente + brillo (power-up protector)
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(440, t);
+    o.frequency.exponentialRampToValueAtTime(1320, t + 0.18);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+    o.connect(g);
+    g.connect(this.master);
+    o.start(t);
+    o.stop(t + 0.35);
+    // armónico shimmer + chispa
+    this._tone(1760, t + 0.05, 0.12, { type: 'sine', gain: 0.07 });
+    this._tone(2640, t + 0.12, 0.14, { type: 'sine', gain: 0.05 });
+    this._noise(t, 0.1, { gain: 0.05, freq: 3000 });
+  }
+
+  // ---------- zumbido del mosquito (loop, controlado por proximidad) ----------
+  _ensureBuzz() {
+    if (this.buzz || !this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 560;
+    // vibrato (le da el "zzzz" del mosquito)
+    const lfo = this.ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 14;
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 45;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    const bp = this.ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 900;
+    bp.Q.value = 4;
+    const g = this.ctx.createGain();
+    g.gain.value = 0;
+    osc.connect(bp);
+    bp.connect(g);
+    g.connect(this.master);
+    osc.start();
+    lfo.start();
+    this.buzz = osc;
+    this.buzzLfo = lfo;
+    this.buzzGain = g;
+  }
+
+  /** v: 0..1 cercanía del Denguín → volumen del zumbido. */
+  setBuzz(v) {
+    this._ensure();
+    this._ensureBuzz();
+    if (!this.buzzGain) return;
+    const target = Math.max(0, Math.min(1, v)) * 0.07;
+    this.buzzGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.12);
   }
   bite() {
     this._ensure();

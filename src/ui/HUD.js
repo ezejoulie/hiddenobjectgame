@@ -21,7 +21,8 @@ export class HUD {
       <div class="hud-alert">🦟 ¡Denguín te quiere picar! ¡Escudo! (Espacio)</div>
       <div class="hud-defense"></div>
       <div class="hud-doble">⚡ ¡DOBLE DEFENSA! ⚡</div>
-      <div class="hud-flash"></div>`;
+      <div class="hud-flash"></div>
+      <div class="hud-danger"></div>`;
     document.body.appendChild(el);
     this.el = el;
     this.timerTxt = el.querySelector('.hud-timer-txt');
@@ -34,6 +35,7 @@ export class HUD {
     this.defense = el.querySelector('.hud-defense');
     this.doble = el.querySelector('.hud-doble');
     this.flashEl = el.querySelector('.hud-flash');
+    this.dangerEl = el.querySelector('.hud-danger');
     this.gateEl = el.querySelector('.hud-gate');
     this.total = items.length;
 
@@ -69,6 +71,14 @@ export class HUD {
 
   setAlert(on) {
     this.alert.classList.toggle('show', !!on);
+  }
+
+  /** Nivel de peligro 0..1 (Denguín cerca): tiñe los bordes de rojo y pulsa. */
+  setDanger(v) {
+    if (!this.dangerEl) return;
+    const k = Math.max(0, Math.min(1, v));
+    this.dangerEl.style.opacity = k.toFixed(2);
+    this.dangerEl.classList.toggle('pulse', k > 0.45);
   }
 
   flash() {
