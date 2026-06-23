@@ -23,6 +23,7 @@ export class Game {
     this.cacharroModels = cacharroModels || {};
     this.level = level; // para abrir el portón
     this.gateAt = 5;
+    this._gateOpened = false;
 
     this.cacharros = [];
     this.state = 'intro';
@@ -76,6 +77,7 @@ export class Game {
   reset() {
     this._clear();
     this._spawn();
+    this._gateOpened = false;
     if (this.level && this.level.resetGate) this.level.resetGate();
     this.denguin.reset();
     this.time = DURACION;
@@ -130,9 +132,10 @@ export class Game {
         this.hud.setCount(this.found);
         this.hud.markCollected(c.index);
         this.hud.showTip(c.info.nombre, c.info.tip);
-        if (this.found === this.gateAt && this.level && this.level.openGate) {
+        if (!this._gateOpened && this.found >= this.gateAt && this.level && this.level.openGate) {
+          this._gateOpened = true;
           this.level.openGate();
-          this.hud.showTip('¡Portón abierto! 🔓', 'Ya podés pasar a los otros cuartos por el pasillo.');
+          this.hud.showTip('¡Portón abierto! 🔓', 'Volvé al pasillo y seguí hacia el norte (cocina, baño, living).');
         }
         if (this.found >= this.cacharros.length) return this._win();
       }
