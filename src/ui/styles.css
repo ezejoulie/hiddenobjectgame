@@ -73,6 +73,41 @@ body {
   color: #9be88e;
 }
 
+/* Selector nene/nena */
+#hero-sel {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(13, 34, 52, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+#hero-sel button {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.92);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.08s;
+}
+#hero-sel button:active {
+  transform: translateY(1px);
+}
+#hero-sel button.on {
+  background: linear-gradient(180deg, #6fd962, #379a2c);
+  color: #fff;
+}
+
 /* Etiqueta discreta de look-dev (Sprint 0) */
 #lookdev-tag {
   position: fixed;
