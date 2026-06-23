@@ -14,7 +14,7 @@ const DURACION = 120;
 const RADIO_PICKUP = 1.15;
 
 export class Game {
-  constructor({ scene, getPlayer, spawns, hud, screens, bounds }) {
+  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel }) {
     this.scene = scene;
     this.getPlayer = getPlayer;
     this.spawns = spawns; // [[tipo,x,z], ...]
@@ -30,7 +30,7 @@ export class Game {
     this._spawn();
 
     // Denguín
-    this.denguin = new Denguin(bounds || { x: 3.5, z: 3.5 });
+    this.denguin = new Denguin(bounds || { x: 3.5, z: 3.5 }, denguinModel);
     this.scene.add(this.denguin.mesh);
 
     // burbuja de escudo (sigue al jugador, visible al defender)

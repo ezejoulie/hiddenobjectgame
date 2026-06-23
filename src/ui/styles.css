@@ -376,7 +376,48 @@ body {
   box-shadow: 0 1px 0 #a8302d;
 }
 
-/* Selector nene/nena */
+/* Intro: cómo se juega */
+.scr-lead {
+  font-weight: 600;
+  color: #2a4a66;
+  line-height: 1.45;
+  margin: 8px 0;
+}
+.scr-how {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 14px 0;
+  text-align: left;
+}
+.scr-how > div {
+  background: #f1ece0;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  color: #15324b;
+}
+.scr-how > div span {
+  display: block;
+  font-weight: 600;
+  opacity: 0.8;
+  font-size: 0.76rem;
+}
+.scr-note {
+  font-size: 0.82rem;
+  color: #5b7088;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+
+/* Selector de personaje */
+.hero-lbl {
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 0 4px 0 8px;
+  align-self: center;
+}
 #hero-sel {
   position: fixed;
   top: 12px;

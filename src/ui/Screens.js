@@ -33,10 +33,11 @@ export class Screens {
     return b;
   }
 
-  _show({ emoji, title, desc, stars = '', score = '', buttons }) {
+  _show({ emoji, title, desc, descHtml, stars = '', score = '', buttons }) {
     this.emoji.textContent = emoji || '';
     this.title.textContent = title || '';
-    this.desc.textContent = desc || '';
+    if (descHtml) this.desc.innerHTML = descHtml;
+    else this.desc.textContent = desc || '';
     this.stars.textContent = stars;
     this.score.textContent = score;
     this.row.innerHTML = '';
@@ -48,11 +49,22 @@ export class Screens {
     this.el.classList.remove('on');
   }
 
-  intro({ nombre, onStart }) {
+  intro({ onStart }) {
     this._show({
-      emoji: '🏠',
-      title: nombre,
-      desc: 'Encontrá los 10 cacharros con agua antes de que se acabe el tiempo. ¡Acercate y los juntás!',
+      emoji: '🦟',
+      title: 'Patrulla Anti-Dengue',
+      descHtml: `
+        <p class="scr-lead">Sos un <b>agente anti-dengue</b>. Recorré los ambientes y eliminá los
+        <b>10 cacharros</b> con agua estancada antes de que se acabe el tiempo (2:00).
+        Sin agua acumulada, no hay mosquito.</p>
+        <div class="scr-how">
+          <div>🕹️ <b>Moverte</b><span>WASD o flechas</span></div>
+          <div>🖱️ <b>Cámara</b><span>arrastrá para girar</span></div>
+          <div>🛡️ <b>Escudo</b><span>Espacio</span></div>
+          <div>🦟 <b>Denguín</b><span>si te pica, dispersa cacharros</span></div>
+        </div>
+        <p class="scr-note">Nivel 1: <b>La Casa</b> 🏠 — próximamente El Jardín, La Escuela, El Parque y La Playa.
+        Elegí tu personaje arriba a la derecha.</p>`,
       buttons: [{ label: '¡Empezar!', cls: 'verde', onClick: onStart }],
     });
   }
