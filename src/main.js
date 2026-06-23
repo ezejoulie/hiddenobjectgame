@@ -9,6 +9,10 @@ import { AssetLoader } from './core/AssetLoader.js';
 import { Player } from './entities/Player.js';
 import { ThirdPersonCamera } from './systems/Camera.js';
 import { Casa } from './levels/Casa.js';
+import { HUD } from './ui/HUD.js';
+import { Screens } from './ui/Screens.js';
+import { Game, itemsDeSpawns } from './core/Game.js';
+import { CASA_LIVING } from './data/levels.config.js';
 
 /**
  * main.js — Sprint 1 + integración del pack de assets.
@@ -141,6 +145,13 @@ async function boot() {
   // ---------- Input ----------
   const input = new Input(renderer.domElement);
 
+  // ---------- Juego (cacharros + timer + HUD + pantallas) ----------
+  const spawns = CASA_LIVING.cacharros;
+  const hud = new HUD(itemsDeSpawns(spawns));
+  const screens = new Screens();
+  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens });
+  screens.intro({ nombre: CASA_LIVING.nombre, onStart: () => game.start() });
+
   // ---------- Post-procesado ----------
   const postfx = createPostFX(renderer, scene, camera, {
     bloomStrength: 0.1,
@@ -172,6 +183,8 @@ async function boot() {
     player.update(dt, move, tpCam.yaw, casa.colliders);
     if (input.shieldPressed()) player.triggerShield(now);
     tpCam.update(player.position, dt);
+
+    game.update(dt, now);
 
     postfx.render(dt);
   }

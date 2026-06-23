@@ -18,4 +18,17 @@ export const CASA_LIVING = {
     piso: 0xb98c5a,
     alfombra: 0xcf5b54,
   },
+  // 10 criaderos en piso libre (evitando muebles). [tipo, x, z]
+  cacharros: [
+    ['balde', 1.7, 2.5],
+    ['florero', -1.7, 2.7],
+    ['botella', 2.9, 0.8],
+    ['lata', -2.9, 1.0],
+    ['bebedero', 0.7, -0.5],
+    ['maceta', -1.5, -2.6],
+    ['regadera', 1.5, -2.6],
+    ['tacho', 3.0, -2.4],
+    ['vaso', -3.0, 2.4],
+    ['frasco', 0.0, 3.2],
+  ],
 };

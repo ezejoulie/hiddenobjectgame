@@ -73,6 +73,228 @@ body {
   color: #9be88e;
 }
 
+/* ================= HUD de juego ================= */
+#hud {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  display: none;
+}
+#hud.on {
+  display: block;
+}
+.hud-top {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(520px, 92vw);
+}
+.hud-timer {
+  flex: 1;
+  text-align: center;
+}
+.hud-timer-txt {
+  font-weight: 900;
+  font-size: 1.5rem;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(13, 34, 52, 0.7);
+  line-height: 1;
+}
+.hud-timer-bar {
+  height: 11px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+.hud-timer-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #6fd962, #379a2c);
+  transition: width 0.3s linear;
+}
+#hud.low .hud-timer-fill {
+  background: linear-gradient(180deg, #ff7a77, #e84b48);
+}
+#hud.low .hud-timer-txt {
+  color: #ffd0cf;
+  animation: hudPulse 0.6s infinite;
+}
+@keyframes hudPulse {
+  50% {
+    transform: scale(1.12);
+  }
+}
+.hud-count {
+  font-weight: 900;
+  font-size: 1.25rem;
+  color: #4a3203;
+  background: linear-gradient(180deg, #ffd968, #f4b72e);
+  border-radius: 999px;
+  padding: 5px 16px;
+  box-shadow: 0 3px 10px rgba(13, 34, 52, 0.3);
+}
+.hud-tray {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0 10px;
+}
+.hud-chip {
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: #15324b;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(21, 50, 75, 0.2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  box-shadow: 0 2px 6px rgba(13, 34, 52, 0.18);
+  transition: all 0.2s;
+}
+.hud-chip.done {
+  background: #d9f5d3;
+  border-color: #3e9a38;
+  color: #2f7a28;
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+.hud-tip {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-180%);
+  background: #fff;
+  border: 3px solid #15324b;
+  border-radius: 16px;
+  padding: 9px 16px;
+  max-width: 90vw;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  box-shadow: 0 8px 22px rgba(13, 34, 52, 0.3);
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.hud-tip.show {
+  transform: translateX(-50%) translateY(0);
+}
+.hud-tip-ic {
+  font-size: 1.4rem;
+}
+.hud-tip-tx {
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  color: #15324b;
+}
+.hud-tip-tx b {
+  color: #2f7a28;
+}
+
+/* ================= Pantallas (modales) ================= */
+#screens {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 34, 52, 0.55);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  padding: 16px;
+}
+#screens.on {
+  display: flex;
+}
+.scr-modal {
+  background: #fffdf5;
+  border-radius: 24px;
+  padding: 26px 28px;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(13, 34, 52, 0.4);
+  animation: scrPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes scrPop {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.scr-emoji {
+  font-size: 3rem;
+}
+.scr-title {
+  font-size: 1.7rem;
+  color: #15324b;
+  margin: 4px 0;
+}
+.scr-desc {
+  font-weight: 600;
+  color: #2a4a66;
+  margin: 8px 0;
+  line-height: 1.4;
+}
+.scr-stars {
+  font-size: 2.4rem;
+  letter-spacing: 5px;
+  color: #f4b72e;
+  min-height: 1.2em;
+}
+.scr-score {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #15324b;
+}
+.scr-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.scr-btn {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 13px 28px;
+  cursor: pointer;
+  background: #46b23a;
+  box-shadow: 0 5px 0 #2f7a28;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.scr-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #2f7a28;
+}
+.scr-btn.coral {
+  background: #e84b48;
+  box-shadow: 0 5px 0 #a8302d;
+}
+.scr-btn.coral:active {
+  box-shadow: 0 1px 0 #a8302d;
+}
+
 /* Selector nene/nena */
 #hero-sel {
   position: fixed;
