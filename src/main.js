@@ -38,24 +38,30 @@ const MODELS = {
   pileta: `${CF}6488016f-f663-40af-a78a-2607634fd150.glb`,
   cama: `${CF}a5fb8855-06c1-4302-be77-68445deadb38.glb`,
   ropero: `${CF}f4c9a58d-0aee-438f-ab0e-a4d5c6ba6dbb.glb`,
+  alacena: `${CF}03634343-930e-4d02-9a28-d804d2ce78e3.glb`,
+  tele: `${CF}82d48ff8-617f-4a73-bb7b-a127721bb1c0.glb`,
+  mesa_ratona: `${CF}e5107612-6450-4585-be48-98d6f8d63889.glb`,
+  mesa_luz: `${CF}1c5bc0b5-c8d5-4c3e-9bb9-7fcd641a3078.glb`,
   vase: `${BASE}assets/models/base/GlassVaseFlowers.glb`,
   plant: `${BASE}assets/models/base/DiffuseTransmissionPlant.glb`,
   lamp: `${BASE}assets/models/base/IridescenceLamp.glb`,
 };
 
-// Personajes jugables (Mixamo → glTF, optimizados): nene y nena
+// Personajes jugables (Mixamo → glTF, optimizados)
 const HEROES = {
   nene: `${BASE}assets/models/heroes/nene.glb`,
   nena: `${BASE}assets/models/heroes/nena.glb`,
 };
+const DENGUIN_URL = `${CF}6f01a442-57d2-41f0-be11-587d0ffe4f80.glb`;
 
-// Selector nene/nena (UI mínima arriba a la derecha)
+// Selector de personaje (sin etiquetas de género)
 function buildHeroSelector(onPick) {
   const el = document.createElement('div');
   el.id = 'hero-sel';
   el.innerHTML = `
-    <button data-h="nene">🧢 Nene</button>
-    <button data-h="nena">🎀 Nena</button>`;
+    <span class="hero-lbl">Personaje</span>
+    <button data-h="nene">1</button>
+    <button data-h="nena">2</button>`;
   document.body.appendChild(el);
   el.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-h]');
@@ -118,10 +124,11 @@ async function boot() {
     if (s) models[key] = s;
   }
 
-  // ---------- Cargar personajes (nene + nena, Mixamo→glTF) ----------
+  // ---------- Cargar personajes + Denguín ----------
   const heroes = {};
   heroes.nene = await loader.loadGLTF(HEROES.nene).catch(() => null);
   heroes.nena = await loader.loadGLTF(HEROES.nena).catch(() => null);
+  const denguinModel = await loader.loadGLTF(DENGUIN_URL).then((g) => g.scene).catch(() => null);
   overlay.set(1);
 
   // ---------- Nivel ----------
@@ -161,8 +168,8 @@ async function boot() {
   const hud = new HUD(itemsDeSpawns(spawns));
   const screens = new Screens();
   const bounds = { x: CASA_LIVING.room.width / 2 - 1, z: CASA_LIVING.room.depth / 2 - 1 };
-  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens, bounds });
-  screens.intro({ nombre: CASA_LIVING.nombre, onStart: () => game.start() });
+  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens, bounds, denguinModel });
+  screens.intro({ onStart: () => game.start() });
 
   // ---------- Post-procesado ----------
   const postfx = createPostFX(renderer, scene, camera, {

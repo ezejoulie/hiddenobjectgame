@@ -76,10 +76,16 @@ function buildMosquito() {
 }
 
 export class Denguin {
-  constructor(bounds) {
+  constructor(bounds, model) {
     this.bounds = bounds; // { x: halfX, z: halfZ }
-    this.mesh = buildMosquito();
-    this.mesh.scale.setScalar(1.1);
+    if (model) {
+      this.mesh = this._fromModel(model);
+      this.isGLB = true;
+    } else {
+      this.mesh = buildMosquito();
+      this.mesh.scale.setScalar(1.1);
+      this.isGLB = false;
+    }
     this.pos = new THREE.Vector3(2, 1.8, 2);
     this.mesh.position.copy(this.pos);
 
@@ -90,6 +96,25 @@ export class Denguin {
     this.roam = new THREE.Vector3(0, 1.8, 0);
     this.roamT = 0;
     this._tmp = new THREE.Vector3();
+  }
+
+  _fromModel(src) {
+    const model = src.clone(true);
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxd = Math.max(size.x, size.y, size.z) || 1;
+    model.scale.multiplyScalar(0.85 / maxd); // ~0.85 m
+    const box2 = new THREE.Box3().setFromObject(model);
+    const c = new THREE.Vector3();
+    box2.getCenter(c);
+    model.position.sub(c); // centrar
+    const g = new THREE.Group();
+    g.add(model);
+    g.traverse((o) => {
+      if (o.isMesh) o.castShadow = false;
+    });
+    return g;
   }
 
   _pickRoam(t) {
@@ -150,9 +175,15 @@ export class Denguin {
     // aplicar + mirar al jugador + batir alas
     this.mesh.position.copy(this.pos);
     this.mesh.lookAt(target.x, this.pos.y, target.z);
-    const flap = Math.sin(t * (this.mode === 'ataque' ? 55 : 38)) * 0.9;
-    this.mesh.userData.wL.rotation.z = 0.5 + flap;
-    this.mesh.userData.wR.rotation.z = -0.5 - flap;
+    if (this.mesh.userData.wL) {
+      const flap = Math.sin(t * (this.mode === 'ataque' ? 55 : 38)) * 0.9;
+      this.mesh.userData.wL.rotation.z = 0.5 + flap;
+      this.mesh.userData.wR.rotation.z = -0.5 - flap;
+    } else {
+      // modelo GLB: leve cabeceo para que no quede estático
+      this.mesh.rotation.z = Math.sin(t * 8) * 0.06;
+      this.mesh.position.y += Math.sin(t * 6) * 0.03;
+    }
 
     return event;
   }
