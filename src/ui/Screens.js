@@ -115,17 +115,71 @@ export class Screens {
   }
 
   /** Diploma/medalla final: se gana al descacharrar todas las escenas. */
-  diploma({ onMap }) {
+  diploma({ name, onMap, onDownload }) {
+    const buttons = [];
+    if (onDownload) buttons.push({ label: '📜 Descargar certificado', cls: 'verde', onClick: onDownload });
+    buttons.push({ label: '🗺️ Volver al mapa', cls: '', onClick: onMap });
     this._show({
       emoji: '🏅',
-      title: '¡Sos Agente Patrulla Doble Defensa!',
+      title: `¡${name || 'Agente'}, sos Defensor Anti-Dengue!`,
       descHtml: `
         <p class="scr-lead">¡Felicitaciones! Descacharraste <b>todos los lugares</b> y dejaste a
         Denguín sin criaderos. 🦟🚫</p>
         <p class="scr-note">Sin agua estancada, el mosquito no puede tener crías.
         <b>¡Sos un campeón anti-dengue!</b> 🛡️🏆</p>`,
-      buttons: [{ label: '🗺️ Volver al mapa', cls: 'verde', onClick: onMap }],
+      buttons,
     });
+  }
+
+  /** Selección de personaje + nombre (una vez por sesión). */
+  heroSelect({ thumbs, onChosen }) {
+    if (this.card) this.card.classList.remove('modal-mapa');
+    this.emoji.textContent = '🕵️';
+    this.title.textContent = 'Elegí tu personaje';
+    this.desc.textContent = 'Te va a acompañar en toda la aventura.';
+    this.stars.textContent = '';
+    this.score.textContent = '';
+    this.row.innerHTML = '';
+    this.row.classList.remove('scr-mapa');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'hero-pick';
+    let chosen = 'nene';
+    const cards = {};
+    const cardsRow = document.createElement('div');
+    cardsRow.className = 'hero-cards';
+    ['nene', 'nena'].forEach((k, i) => {
+      const b = document.createElement('button');
+      b.className = 'hero-card' + (k === chosen ? ' on' : '');
+      const vis = thumbs && thumbs[k]
+        ? `<img src="${thumbs[k]}" alt="">`
+        : `<span class="hero-av">${i === 0 ? '🧒' : '🧒'}</span>`;
+      b.innerHTML = `${vis}<span class="hero-card-nm">Personaje ${i + 1}</span>`;
+      b.addEventListener('click', () => {
+        chosen = k;
+        Object.values(cards).forEach((c) => c.classList.remove('on'));
+        b.classList.add('on');
+      });
+      cards[k] = b;
+      cardsRow.appendChild(b);
+    });
+    wrap.appendChild(cardsRow);
+
+    const nameRow = document.createElement('div');
+    nameRow.className = 'hero-name-row';
+    nameRow.innerHTML = `<label>Tu nombre de agente</label>
+      <input class="hero-name-in" type="text" maxlength="14" placeholder="Escribí tu nombre">`;
+    wrap.appendChild(nameRow);
+
+    const go = this._btn('¡Comenzar la aventura! 🚀', 'verde', () => {
+      const name = nameRow.querySelector('input').value.trim();
+      onChosen(chosen, name);
+    });
+    go.classList.add('hero-go');
+    wrap.appendChild(go);
+
+    this.row.appendChild(wrap);
+    this.el.classList.add('on');
   }
 
   /** Pausa educativa (nivel tutorial): muestra el cacharro y cómo prevenir. */
@@ -151,8 +205,8 @@ export class Screens {
 
     if (this.card) this.card.classList.add('modal-mapa');
     this.emoji.textContent = '🗺️';
-    this.title.textContent = 'Elegí tu misión';
-    this.desc.textContent = 'Tocá una isla y eliminá los 10 cacharros con agua.';
+    this.title.textContent = 'Elegí un mapa para descacharrar';
+    this.desc.textContent = '¡Necesitamos tu ayuda para que Denguín no siga evolucionando! Tocá un lugar y eliminá los 10 cacharros con agua.';
     this.stars.textContent = '';
     this.score.textContent = '';
     this.row.innerHTML = '';

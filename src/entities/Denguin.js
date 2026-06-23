@@ -172,19 +172,19 @@ export class Denguin {
       const v = this._tmp.sub(this.pos);
       const d = v.length();
       if (d > 0.001) {
-        v.normalize().multiplyScalar(Math.min(d, 6.5 * dt));
+        v.normalize().multiplyScalar(Math.min(d, 7.8 * dt)); // más rápido que el jugador: alcanza a picar
         this.pos.add(v);
       }
-      if (shieldActive && dPj < 1.6) {
+      if (shieldActive && dPj < 1.7) {
         this._flee(t);
         this.nextAtk = t + ATK_EVERY;
-        event = 'repelled';
-      } else if (!shieldActive && dPj < 1.0) {
+        event = 'repelled'; // con escudo NO pica
+      } else if (!shieldActive && dPj < 1.05) {
         this._flee(t);
         this.nextAtk = t + ATK_EVERY;
-        event = 'bite';
-      } else if (t - this.atkT > 4.5) {
-        this._flee(t); // no llegó / falló la picada
+        event = 'bite'; // pica y te saca cacharros
+      } else if (t - this.atkT > 7) {
+        this._flee(t); // se cansó de perseguir
         this.nextAtk = t + ATK_EVERY;
       }
     } else {

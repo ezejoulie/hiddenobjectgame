@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 
 import { createRenderer } from './core/Renderer.js';
 import { setupEnvironment, setupLighting } from './core/Lighting.js';
@@ -134,21 +135,6 @@ const CACHARRO_URLS = {
   frasco: `${CF}590439a9-f32c-4a13-9727-8d81c8a1f5a0.glb`, // bidón
 };
 
-// Selector de personaje (sin etiquetas de género)
-function buildHeroSelector(onPick) {
-  const el = document.createElement('div');
-  el.id = 'hero-sel';
-  el.innerHTML = `
-    <span class="hero-lbl">Personaje</span>
-    <button data-h="nene">1</button>
-    <button data-h="nena">2</button>`;
-  document.body.appendChild(el);
-  el.addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-h]');
-    if (b) onPick(b.dataset.h);
-  });
-}
-
 // ---------- Overlay de carga ----------
 function makeLoadingOverlay() {
   const el = document.createElement('div');
@@ -209,11 +195,10 @@ function makeLevelLoader() {
   };
 }
 
-// Genera miniaturas PNG de los cacharros reales (para la bandeja y la pausa
-// educativa). Usa un mini-renderer aparte y lo descarta al terminar.
-function makeCacharroThumbs(cacharroModels) {
+// Mini-renderer para generar miniaturas PNG de modelos (cacharros, personajes).
+function makeThumbRenderer(size = 120) {
   const r = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
-  r.setSize(110, 110);
+  r.setSize(size, size);
   r.setPixelRatio(1);
   r.setClearColor(0x000000, 0);
   r.outputColorSpace = THREE.SRGBColorSpace;
@@ -224,32 +209,63 @@ function makeCacharroThumbs(cacharroModels) {
   scene.add(dir);
   const cam = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
   const box = new THREE.Box3();
-  const size = new THREE.Vector3();
+  const sz = new THREE.Vector3();
   const center = new THREE.Vector3();
+  return {
+    shot(obj3d, front = 0.95, top = 0.45) {
+      scene.add(obj3d);
+      box.setFromObject(obj3d);
+      box.getSize(sz);
+      box.getCenter(center);
+      const maxd = Math.max(sz.x, sz.y, sz.z) || 0.5;
+      const dist = maxd * 2.3;
+      cam.position.set(center.x + dist * 0.5, center.y + dist * top, center.z + dist * front);
+      cam.lookAt(center);
+      r.render(scene, cam);
+      const url = r.domElement.toDataURL('image/png');
+      scene.remove(obj3d);
+      return url;
+    },
+    dispose() {
+      r.dispose();
+    },
+  };
+}
 
-  const thumbs = {};
-  for (const tipo of Object.keys(CACHARRO_TIPOS)) {
-    const c = new Cacharro(tipo, 0, 0, cacharroModels[tipo]);
-    const obj = c.body;
-    scene.add(obj);
-    box.setFromObject(obj);
-    box.getSize(size);
-    box.getCenter(center);
-    const maxd = Math.max(size.x, size.y, size.z) || 0.5;
-    const dist = maxd * 2.4;
-    cam.position.set(center.x + dist * 0.55, center.y + dist * 0.5, center.z + dist * 0.95);
-    cam.lookAt(center);
-    r.render(scene, cam);
-    thumbs[tipo] = r.domElement.toDataURL('image/png');
-    scene.remove(obj);
-  }
-  r.dispose();
-  return thumbs;
+// Certificado descargable (PNG) con el nombre del jugador.
+function downloadCertificate(name) {
+  const w = 1100, h = 780;
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const x = cv.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#eaf6ff'); g.addColorStop(1, '#dff3d6');
+  x.fillStyle = g; x.fillRect(0, 0, w, h);
+  x.strokeStyle = '#1f9550'; x.lineWidth = 14; x.strokeRect(26, 26, w - 52, h - 52);
+  x.strokeStyle = '#f4b72e'; x.lineWidth = 5; x.strokeRect(46, 46, w - 92, h - 92);
+  x.textAlign = 'center'; x.fillStyle = '#15324b';
+  x.font = 'bold 64px Georgia, serif';
+  x.fillText('Certificado', w / 2, 170);
+  x.font = 'bold 40px Georgia, serif';
+  x.fillText('Defensor Anti-Dengue', w / 2, 230);
+  x.font = '28px Georgia, serif';
+  x.fillText('Se otorga a', w / 2, 330);
+  x.fillStyle = '#1f9550'; x.font = 'bold 70px Georgia, serif';
+  x.fillText((name || 'Agente').slice(0, 18), w / 2, 410);
+  x.fillStyle = '#15324b'; x.font = '26px Georgia, serif';
+  x.fillText('por descacharrar todos los lugares y dejar a Denguín', w / 2, 480);
+  x.fillText('sin criaderos. ¡Sin agua estancada no hay mosquito!', w / 2, 520);
+  x.font = '120px serif';
+  x.fillText('🏅', w / 2, 650);
+  x.font = '22px Georgia, serif';
+  x.fillText('Patrulla Doble Defensa', w / 2, 710);
+  const a = document.createElement('a');
+  a.download = `certificado-${(name || 'agente').toLowerCase().replace(/\s+/g, '-')}.png`;
+  a.href = cv.toDataURL('image/png');
+  a.click();
 }
 
 async function boot() {
-  const overlay = makeLoadingOverlay();
-
   const canvas = document.getElementById('app');
   const renderer = createRenderer(canvas);
 
@@ -267,29 +283,22 @@ async function boot() {
   });
   lights.key.castShadow = false;
 
-  // ---------- Carga ESENCIAL (rápida): personajes, Denguín y cacharros ----------
-  // Los props de cada nivel se cargan al entrar (lazy load), no todos al inicio.
+  // ---------- Estado de sesión (assets se cargan al apretar "Jugar") ----------
   const loader = new AssetLoader();
   const heroes = {};
-  heroes.nene = await loader.loadGLTF(HEROES.nene).catch(() => null);
-  heroes.nena = await loader.loadGLTF(HEROES.nena).catch(() => null);
-  overlay.set(0.12);
-  const denguinModel = await loader.loadGLTF(DENGUIN_URL).then((g) => g.scene).catch(() => null);
-  overlay.set(0.2);
-
-  await loader.preload(Object.values(CACHARRO_URLS), (p) => overlay.set(0.2 + p * 0.8));
+  let denguinModel = null;
   const cacharroModels = {};
-  for (const [tipo, url] of Object.entries(CACHARRO_URLS)) {
-    const s = loader.instance(url);
-    if (s) cacharroModels[tipo] = s;
-  }
-  // miniaturas de los cacharros reales para la bandeja del HUD
   let cacharroThumbs = {};
-  try { cacharroThumbs = makeCacharroThumbs(cacharroModels); } catch (e) { cacharroThumbs = {}; }
-  overlay.set(1);
-
-  // ---------- Jugador (persiste entre niveles) ----------
+  const heroThumbs = {};
   let player = null;
+  let essentialsLoaded = false;
+  let sessionName = 'Agente';
+
+  const tpCam = new ThirdPersonCamera(camera, { distance: 4.3, height: 1.4 });
+  const input = new Input(renderer.domElement);
+  const screens = new Screens();
+  const postfx = createPostFX(renderer, scene, camera, { bloomStrength: 0.1, vignetteDark: 0.6 });
+
   function setHero(which) {
     const prevPos = player ? player.position.clone() : new THREE.Vector3(0, 0, 0);
     const prevHeading = player ? player.heading : Math.PI;
@@ -300,17 +309,37 @@ async function boot() {
     player.mesh.position.copy(prevPos);
     player.mesh.rotation.y = prevHeading;
     scene.add(player.mesh);
-    document.querySelectorAll('#hero-sel button').forEach((b) =>
-      b.classList.toggle('on', b.dataset.h === which)
-    );
   }
-  buildHeroSelector(setHero);
-  setHero('nene');
 
-  const tpCam = new ThirdPersonCamera(camera, { distance: 4.3, height: 1.4 });
-  const input = new Input(renderer.domElement);
-  const screens = new Screens();
-  const postfx = createPostFX(renderer, scene, camera, { bloomStrength: 0.1, vignetteDark: 0.6 });
+  // Carga esencial (personajes, Denguín, cacharros) + miniaturas.
+  async function loadEssentials(overlay) {
+    heroes.nene = await loader.loadGLTF(HEROES.nene).catch(() => null);
+    heroes.nena = await loader.loadGLTF(HEROES.nena).catch(() => null);
+    overlay.set(0.12);
+    denguinModel = await loader.loadGLTF(DENGUIN_URL).then((g) => g.scene).catch(() => null);
+    overlay.set(0.2);
+    await loader.preload(Object.values(CACHARRO_URLS), (p) => overlay.set(0.2 + p * 0.7));
+    for (const [tipo, url] of Object.entries(CACHARRO_URLS)) {
+      const s = loader.instance(url);
+      if (s) cacharroModels[tipo] = s;
+    }
+    overlay.set(0.92);
+    // miniaturas (cacharros + personajes); opcionales
+    try {
+      const tr = makeThumbRenderer();
+      for (const tipo of Object.keys(CACHARRO_TIPOS)) {
+        const c = new Cacharro(tipo, 0, 0, cacharroModels[tipo]);
+        cacharroThumbs[tipo] = tr.shot(c.body);
+      }
+      for (const k of ['nene', 'nena']) {
+        if (heroes[k] && heroes[k].scene) {
+          try { heroThumbs[k] = tr.shot(skeletonClone(heroes[k].scene), 0.9, 0.25); } catch (e) { /* opcional */ }
+        }
+      }
+      tr.dispose();
+    } catch (e) { /* miniaturas opcionales */ }
+    overlay.set(1);
+  }
 
   // ---------- Audio (música + SFX) + botón de silencio ----------
   const audio = new Audio();
@@ -447,11 +476,28 @@ async function boot() {
   }
 
   function showDiploma() {
-    screens.diploma({ onMap: showMap });
+    screens.diploma({ name: sessionName, onMap: showMap, onDownload: () => downloadCertificate(sessionName) });
   }
 
-  overlay.done();
-  screens.home({ onPlay: showMap });
+  // ---------- Flujo de inicio: portada → carga → personaje → mapa ----------
+  async function onPlay() {
+    if (!essentialsLoaded) {
+      const overlay = makeLoadingOverlay();
+      await loadEssentials(overlay);
+      overlay.done();
+      essentialsLoaded = true;
+    }
+    screens.heroSelect({
+      thumbs: heroThumbs,
+      onChosen: (which, name) => {
+        sessionName = name || 'Agente';
+        setHero(which);
+        showMap();
+      },
+    });
+  }
+
+  screens.home({ onPlay });
 
   // ---------- Loop ----------
   const clock = new THREE.Clock();
