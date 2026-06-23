@@ -133,6 +133,13 @@ export class Casa extends Level {
     this.add(m);
   }
 
+  _rug(x, z, w, d, color) {
+    const r = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, d), mat(color, 0.95));
+    r.position.set(x, 0.05, z);
+    r.receiveShadow = true;
+    this.add(r);
+  }
+
   _build() {
     this._buildFloors();
     this._buildWalls();
@@ -303,11 +310,13 @@ export class Casa extends Level {
         bk.rotation.y = Math.PI / 2;
       }
     }
-    // plantas + cuadros
+    // plantas + cuadros + velador + florero
     this._plant(HW - 0.8, -8.2, 1.4);
     this._plant(-HW + 0.9, -5.6, 1.2);
     this._frame(3.2, 2.0, -HD + T / 2 + 0.03, 0, 0.8, 0.55, 0);
     this._frame(-3.2, 2.0, -HD + T / 2 + 0.03, 0, 0.6, 0.5, 3);
+    this._mueble('lamp', { footprint: 0.4, x: HW - 1.3, z: -5.6, baseY: 0, collide: false });
+    this._mueble('vase', { footprint: 0.4, x: 0.5, z: -7.3, baseY: 0.5, collide: false });
   }
 
   _cocina() {
@@ -328,6 +337,10 @@ export class Casa extends Level {
     [[-0.65, -0.35], [0.65, -0.35], [-0.65, 0.35], [0.65, 0.35]].forEach(([dx, dz]) =>
       this._box(0.08, 0.78, 0.08, 0x9a6b45, -6 + dx, 0.39, -2.3 + dz, { cast: false })
     );
+    // decoración
+    this._rug(-6, -2.3, 2.0, 1.5, 0xd98c5e);
+    this._plant(-9.6, -0.7, 1.2);
+    this._frame(-7, 1.9, -T / 2 - 0.03, Math.PI, 0.6, 0.45, 4);
   }
 
   _bano() {
@@ -344,6 +357,10 @@ export class Casa extends Level {
     const esp = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.7), new THREE.MeshStandardMaterial({ color: 0xbfe3f5, roughness: 0.05, metalness: 0.9 }));
     esp.position.set(4.0, 1.7, -HD + T + 0.03);
     this.add(esp);
+    // decoración
+    this._rug(6, -1.6, 1.4, 1.0, 0x6fb3d9);
+    this._plant(4, -0.9, 1.0);
+    this._frame(7, 1.9, -T / 2 - 0.03, Math.PI, 0.5, 0.45, 3);
   }
 
   _lavadero() {
@@ -358,8 +375,12 @@ export class Casa extends Level {
       this._box(0.6, 0.9, 0.9, 0xd9d2c4, -HW + 0.5, 0.45, 5.5, { collide: true });
       this._box(0.5, 0.06, 0.6, 0x9aa7b2, -HW + 0.5, 0.92, 5.5, { cast: false });
     });
-    // estante
+    // estante + canasto + decoración
     this._box(0.4, 0.06, 2.0, 0xcfc0a6, -HW + 0.3, 1.7, 3.0, { cast: false });
+    this._box(0.5, 0.5, 0.4, 0xc9a06a, -6, 0.25, 7.6, {});
+    this._rug(-6, 4, 1.8, 1.3, 0x8fbf9a);
+    this._plant(-9.6, 8.2, 1.2);
+    this._frame(-7, 1.9, T / 2 + 0.03, 0, 0.5, 0.45, 1);
   }
 
   _dormitorio() {
@@ -378,11 +399,11 @@ export class Casa extends Level {
     this._mueble('ropero', { footprint: 1.4, x: HW - 0.7, z: 1.6, ry: -Math.PI / 2 }, () =>
       this._box(0.8, 2.3, 1.4, 0xa88c68, HW - 0.55, 1.15, 1.6, { collide: true, rough: 0.6 })
     );
-    // alfombra
-    const rug = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.04, 1.6), mat(0x9b6fb0, 0.95));
-    rug.position.set(5.5, 0.05, 3.5);
-    rug.receiveShadow = true;
-    this.add(rug);
+    // alfombra + velador + planta + cuadros
+    this._rug(5.5, 3.5, 2.2, 1.6, 0x9b6fb0);
+    this._mueble('lamp', { footprint: 0.35, x: 3.6, z: 8.0, baseY: 0.5, collide: false });
+    this._plant(3.4, 1.4, 1.2);
     this._frame(6.75, 2.0, HD - T / 2 - 0.03, Math.PI, 0.6, 0.45, 2);
+    this._frame(4.5, 1.9, T / 2 + 0.03, 0, 0.5, 0.45, 0);
   }
 }

@@ -183,17 +183,14 @@ export class Denguin {
       }
     }
 
-    // aplicar + mirar al jugador + batir alas
+    // aplicar posición + orientar SOLO en horizontal (yaw), siempre derecho
     this.mesh.position.copy(this.pos);
-    this.mesh.lookAt(target.x, this.pos.y, target.z);
+    const ang = Math.atan2(target.x - this.pos.x, target.z - this.pos.z);
+    this.mesh.rotation.set(0, ang, 0);
     if (this.mesh.userData.wL) {
       const flap = Math.sin(t * (this.mode === 'ataque' ? 55 : 38)) * 0.9;
       this.mesh.userData.wL.rotation.z = 0.5 + flap;
       this.mesh.userData.wR.rotation.z = -0.5 - flap;
-    } else {
-      // modelo GLB: leve cabeceo para que no quede estático
-      this.mesh.rotation.z = Math.sin(t * 8) * 0.06;
-      this.mesh.position.y += Math.sin(t * 6) * 0.03;
     }
 
     return event;
