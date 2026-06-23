@@ -8,30 +8,30 @@
 
 export const CASA_LIVING = {
   nombre: 'La Casa',
-  // envolvente de la casa (5 ambientes). x∈[-8,8], z∈[-6,6]
-  room: { width: 16, depth: 12, height: 3.0 },
-  spawn: { x: 0, z: 4.4 }, // living, junto a la puerta de entrada
+  // casa grande con pasillo central. x∈[-11,11], z∈[-9,9]
+  room: { width: 22, depth: 18, height: 3.0 },
+  spawn: { x: 0, z: 7.5 }, // pasillo, junto a la entrada (sur)
   paleta: {
     pared: 0xeadfce,
     paredInt: 0xf0e6d6,
     paredZocalo: 0x9a6b45,
   },
-  // 10 criaderos repartidos por TODA la casa: [tipo, x, z]
+  // 10 criaderos repartidos: 2 por ambiente. [tipo, x, z]
   cacharros: [
-    // living (centro)
-    ['florero', -1.8, 2.5],
-    ['bebedero', 1.8, 3.6],
-    // cocina (arriba-izq)
-    ['balde', -6.6, -1.4],
-    ['botella', -4.2, -4.6],
-    // baño (arriba-der)
-    ['frasco', 6.6, -1.6],
-    ['vaso', 4.2, -4.6],
-    // lavadero (abajo-izq)
-    ['tacho', -6.6, 1.6],
-    ['regadera', -4.2, 4.6],
-    // dormitorio (abajo-der)
-    ['maceta', 6.6, 1.6],
-    ['lata', 4.2, 4.6],
+    // living (norte, ancho)
+    ['florero', -4, -6.2],
+    ['bebedero', 4, -7],
+    // cocina (oeste-norte)
+    ['balde', -6, -1],
+    ['botella', -9, -3.6],
+    // baño (este-norte)
+    ['frasco', 5, -1],
+    ['vaso', 8.5, -3.6],
+    // lavadero (oeste-sur)
+    ['tacho', -6, 2.6],
+    ['regadera', -9, 6.4],
+    // dormitorio (este-sur)
+    ['maceta', 5, 2.6],
+    ['lata', 9, 6.4],
   ],
 };

@@ -5,23 +5,26 @@ import { CASA_LIVING } from '../data/levels.config.js';
 import { woodFloorTexture, artTexture } from '../core/Textures.js';
 
 /**
- * Casa.js — La Casa completa: 5 ambientes (living, cocina, baño, lavadero,
- * dormitorio) con paredes y puertas, amueblados, bajo el pipeline visual.
- * El living usa GLB reales; el resto, primitivas PBR (placeholders).
+ * Casa.js — La Casa grande, con PASILLO CENTRAL y 5 ambientes separados, para
+ * que el jugador recorra. El living usa GLB reales; el resto, modelos propios
+ * (con fallback a primitivas).
  *
- * Planta:  x ∈ [-8, 8], z ∈ [-6, 6]
- *   COCINA(-)   |  LIVING  |  BAÑO(-)
- *   LAVADERO(+) |  (centro)|  DORMITORIO(+)
+ * Planta (x∈[-11,11], z∈[-9,9]):
+ *   LIVING (norte, ancho, z[-9,-5])
+ *   COCINA(z[-5,0],x<0)  | PASILLO | BAÑO(z[-5,0],x>0)
+ *   LAVADERO(z[0,9],x<0) | (x[-2.5,2.5]) | DORMITORIO(z[0,9],x>0)
+ *   entrada al sur (z=9)
  */
 
 const mat = (color, roughness = 0.85, metalness = 0.0) =>
   new THREE.MeshStandardMaterial({ color, roughness, metalness });
 
-const HW = 8; // medio ancho (x)
-const HD = 6; // media profundidad (z)
+const HW = 11; // medio ancho (x)
+const HD = 9; // media profundidad (z)
 const H = 3; // alto de pared
 const T = 0.2; // grosor de pared
-const XI = 3; // pared interna vertical en x = ±XI
+const HALL = 2.5; // medio ancho del pasillo
+const DG = 2.6; // ancho de puerta
 
 export class Casa extends Level {
   constructor(opts = {}) {
@@ -33,7 +36,6 @@ export class Casa extends Level {
     this._build();
   }
 
-  // ---- helpers ----
   _box(w, h, d, color, x, y, z, opts = {}) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), opts.mat || mat(color, opts.rough, opts.metal));
     m.position.set(x, y, z);
@@ -53,13 +55,12 @@ export class Casa extends Level {
     this.add(f);
   }
 
-  /** pared con grosor + zócalo; registra collider y mesh para anti-clipping. */
   _wall(cx, cz, w, d) {
     this._box(w, H, d, this.cfg.paleta.pared, cx, H / 2, cz, { wall: true, collide: true });
     this._box(w + 0.01, 0.16, d + 0.01, this.cfg.paleta.paredZocalo, cx, 0.08, cz, { cast: false });
   }
 
-  _placeModel(model, { footprint = 1, x = 0, z = 0, ry = 0, baseY = 0, collide = true, colliderPad = 0.06 } = {}) {
+  _placeModel(model, { footprint = 1, x = 0, z = 0, ry = 0, baseY = 0, collide = true, colliderPad = 0.04 } = {}) {
     const box = new THREE.Box3().setFromObject(model);
     const size = new THREE.Vector3();
     box.getSize(size);
@@ -106,13 +107,20 @@ export class Casa extends Level {
     this.add(art);
   }
 
-  _plant(x, z, h = 1.1) {
+  _plant(x, z, h = 1.2) {
     if (this.models.plant) return this._placeModel(this.models.plant.clone(true), { footprint: 1.0, x, z });
     this._box(0.4, 0.4, 0.4, 0xb5651d, x, 0.2, z, { collide: true });
     const f = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 1), mat(0x3f8e58, 0.9));
     f.position.set(x, 0.4 + h * 0.45, z);
     f.castShadow = true;
     this.add(f);
+  }
+
+  /** Mueble real (GLB) si está, con un box de fallback. */
+  _mueble(key, opts, fb) {
+    if (this.models[key]) return this._placeModel(this.models[key].clone(true), opts);
+    if (fb) fb();
+    return null;
   }
 
   _build() {
@@ -128,73 +136,77 @@ export class Casa extends Level {
 
   _buildFloors() {
     const wood = new THREE.MeshPhysicalMaterial({
-      map: woodFloorTexture(3, 4),
+      map: woodFloorTexture(4, 4),
       roughness: 0.55,
       metalness: 0,
       clearcoat: 0.2,
       clearcoatRoughness: 0.5,
     });
-    // pisos que se tocan SIN solaparse (evita el z-fighting / parpadeo)
-    this._floor(0, 0, 2 * XI, 2 * HD, wood); // living (centro) x[-3,3]
-    this._floor(-5.5, -3, 5, 6, mat(0xe8d7b8, 0.8)); // cocina
-    this._floor(5.5, -3, 5, 6, mat(0xbfe0e6, 0.7)); // baño
-    this._floor(-5.5, 3, 5, 6, mat(0xd8c9a6, 0.8)); // lavadero
-    this._floor(5.5, 3, 5, 6, mat(0xdcc8da, 0.8)); // dormitorio
+    this._floor(0, -7, 2 * HW, 4, wood); // living (norte, ancho)
+    this._floor(0, 2, 2 * HALL, 14, mat(0xcbb89a, 0.8)); // pasillo
+    this._floor(-6.75, -2.5, 8.5, 5, mat(0xe8d7b8, 0.8)); // cocina
+    this._floor(6.75, -2.5, 8.5, 5, mat(0xbfe0e6, 0.7)); // baño
+    this._floor(-6.75, 4.5, 8.5, 9, mat(0xd8c9a6, 0.8)); // lavadero
+    this._floor(6.75, 4.5, 8.5, 9, mat(0xdcc8da, 0.8)); // dormitorio
   }
 
   _buildWalls() {
-    const DG = 2.6; // ancho de puerta (todas iguales)
-
     // perímetro
     this._wall(0, -HD, 2 * HW, T); // norte
     this._wall(-HW, 0, T, 2 * HD); // oeste
     this._wall(HW, 0, T, 2 * HD); // este
-    // sur con puerta de entrada central
+    // sur con puerta de entrada
     const sideW = (2 * HW - DG) / 2;
     this._wall(-(DG / 2 + sideW / 2), HD, sideW, T);
     this._wall(DG / 2 + sideW / 2, HD, sideW, T);
     this._box(DG, 0.5, T, this.cfg.paleta.pared, 0, H - 0.25, HD, {}); // dintel
-    // puerta de entrada CERRADA (el juego es adentro; bloquea la salida)
+    // puerta de entrada CERRADA
     this._box(DG - 0.1, 2.25, 0.12, 0x7a4a24, 0, 1.12, HD, { collide: true, pad: 0.05, rough: 0.6 });
-    this._box(DG - 0.3, 2.0, 0.04, 0x8c5a2c, 0, 1.12, HD - 0.08, { cast: false, rough: 0.6 }); // panel
-    this._box(0.08, 0.08, 0.06, 0xf4b72e, 0.85, 1.05, HD - 0.1, { cast: false, metal: 0.6, rough: 0.3 }); // picaporte
+    this._box(DG - 0.3, 2.0, 0.04, 0x8c5a2c, 0, 1.12, HD - 0.08, { cast: false });
+    this._box(0.08, 0.08, 0.06, 0xf4b72e, 0.85, 1.05, HD - 0.1, { cast: false, metal: 0.6, rough: 0.3 });
 
-    // paredes internas verticales (x=±3) con 2 puertas (z=±3), todas de ancho DG
-    [-XI, XI].forEach((x) => {
-      this._wall(x, -5.15, T, 1.7); // z[-6, -4.3]
-      this._wall(x, 0, T, 3.4); // z[-1.7, 1.7]
-      this._wall(x, 5.15, T, 1.7); // z[4.3, 6]
+    // pared living↔pasillo (z=-5) con abertura central (el ancho del pasillo)
+    const lw = (2 * HW - 2 * HALL) / 2;
+    this._wall(-(HALL + lw / 2), -5, lw, T);
+    this._wall(HALL + lw / 2, -5, lw, T);
+
+    // paredes del pasillo (x=±HALL) z[-5,9] con 2 puertas cada una (z=-2.5 y z=4.5)
+    [-HALL, HALL].forEach((x) => {
+      this._wall(x, -4.4, T, 1.2); // z[-5,-3.8]
+      this._wall(x, 1.0, T, 4.4); // z[-1.2,3.2]
+      this._wall(x, 7.4, T, 3.2); // z[5.8,9]
     });
-    // paredes internas horizontales (z=0) en los laterales
-    this._wall(-5.5, 0, 2 * (HW - XI), T);
-    this._wall(5.5, 0, 2 * (HW - XI), T);
+    // paredes z=0 que separan norte/sur en los laterales
+    this._wall(-6.75, 0, 2 * (HW - HALL), T);
+    this._wall(6.75, 0, 2 * (HW - HALL), T);
   }
 
   _buildLights() {
-    // sol por la entrada (único caster de sombras)
     const sun = new THREE.DirectionalLight(0xfff4e0, 1.3);
-    sun.position.set(2, 5, 10);
+    sun.position.set(3, 6, 12);
     sun.target.position.set(0, 0, 0);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 30;
-    sun.shadow.camera.left = -10;
-    sun.shadow.camera.right = 10;
-    sun.shadow.camera.top = 10;
-    sun.shadow.camera.bottom = -10;
+    sun.shadow.camera.far = 40;
+    sun.shadow.camera.left = -13;
+    sun.shadow.camera.right = 13;
+    sun.shadow.camera.top = 13;
+    sun.shadow.camera.bottom = -13;
     sun.shadow.bias = -0.0003;
     sun.shadow.normalBias = 0.03;
     this.add(sun);
     this.add(sun.target);
     this.lights.push(sun);
 
-    // luz cálida de techo por ambiente (relleno, sin sombras)
-    const cuartos = [
-      [0, -3], [0, 3], [-5.5, -3], [5.5, -3], [-5.5, 3], [5.5, 3],
+    const lamps = [
+      [-5, -7], [5, -7], // living
+      [0, -2], [0, 5], // pasillo
+      [-6.75, -2.5], [6.75, -2.5], // cocina, baño
+      [-6.75, 4.5], [6.75, 4.5], // lavadero, dormitorio
     ];
-    cuartos.forEach(([x, z]) => {
-      const p = new THREE.PointLight(0xfff0d0, 9, 8, 2);
+    lamps.forEach(([x, z]) => {
+      const p = new THREE.PointLight(0xfff0d0, 9, 9, 2);
       p.position.set(x, 2.7, z);
       this.add(p);
       this.lights.push(p);
@@ -204,154 +216,114 @@ export class Casa extends Level {
   // ===================== AMBIENTES =====================
 
   _living() {
-    // TV (modelo real o primitiva) contra la pared norte (z=-6), sofá mirándola
-    if (this.models.tele) {
-      this._placeModel(this.models.tele.clone(true), { footprint: 1.8, x: 0, z: -HD + 0.5, ry: 0 });
-    } else {
-      this._box(1.8, 0.5, 0.45, 0x8a8f96, 0, 0.25, -HD + 0.45, { collide: true });
-      this._box(1.7, 0.95, 0.06, 0x101316, 0, 1.15, -HD + 0.3, { rough: 0.25, metal: 0.2 });
-      const screen = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.55, 0.82),
-        new THREE.MeshStandardMaterial({ color: 0x16324a, emissive: 0x1d4e74, emissiveIntensity: 0.5, roughness: 0.3 })
-      );
-      screen.position.set(0, 1.15, -HD + 0.34);
+    // TV contra la pared norte (z=-9)
+    this._mueble('tele', { footprint: 1.9, x: 0, z: -HD + 0.5, ry: 0 }, () => {
+      this._box(1.9, 0.5, 0.45, 0x8a8f96, 0, 0.25, -HD + 0.45, { collide: true });
+      this._box(1.8, 1.0, 0.06, 0x101316, 0, 1.2, -HD + 0.3, { rough: 0.25, metal: 0.2 });
+      const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.85), new THREE.MeshStandardMaterial({ color: 0x16324a, emissive: 0x1d4e74, emissiveIntensity: 0.5, roughness: 0.3 }));
+      screen.position.set(0, 1.2, -HD + 0.34);
       this.add(screen);
-    }
-
-    if (this.models.sofa) this._placeModel(this.models.sofa.clone(true), { footprint: 2.6, x: 0, z: -3.7, ry: Math.PI });
-    else this._box(2.6, 0.7, 1.0, 0x4a7ea8, 0, 0.4, -3.7, { collide: true });
-
-    // alfombra
-    const rug = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.04, 2.0), mat(0xcf5b54, 0.95));
-    rug.position.set(0, 0.05, -4.6);
+    });
+    // sofá mirando la TV
+    this._mueble('sofa', { footprint: 2.8, x: 0, z: -6.4, ry: Math.PI }, () =>
+      this._box(2.8, 0.7, 1.0, 0x4a7ea8, 0, 0.4, -6.4, { collide: true })
+    );
+    // alfombra + mesa ratona
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.04, 2.0), mat(0xcf5b54, 0.95));
+    rug.position.set(0, 0.05, -7.2);
     rug.receiveShadow = true;
     this.add(rug);
-    // mesa ratona (modelo real o primitiva)
-    if (this.models.mesa_ratona) {
-      this._placeModel(this.models.mesa_ratona.clone(true), { footprint: 1.2, x: 0, z: -4.7, ry: 0 });
-    } else {
-      this._box(1.2, 0.08, 0.7, 0x6b4226, 0, 0.42, -4.7, { collide: true, rough: 0.4 });
-    }
-
-    if (this.models.armchair) this._placeModel(this.models.armchair.clone(true), { footprint: 1.0, x: -2.1, z: -4.6, ry: 0.7 });
-    if (this.models.chair2) this._placeModel(this.models.chair2.clone(true), { footprint: 1.0, x: 2.1, z: -4.6, ry: -0.7 });
-
-    // biblioteca en rincón norte
-    this._box(0.5, 2.1, 1.4, 0x7a5230, -2.6, 1.05, -5.3, { collide: true, rough: 0.6 });
+    this._mueble('mesa_ratona', { footprint: 1.3, x: 0, z: -7.3, ry: 0 }, () =>
+      this._box(1.3, 0.08, 0.7, 0x6b4226, 0, 0.42, -7.3, { collide: true, rough: 0.4 })
+    );
+    // sillones
+    this._mueble('armchair', { footprint: 1.1, x: -3.2, z: -6.8, ry: 0.6 });
+    this._mueble('chair2', { footprint: 1.0, x: 3.2, z: -6.8, ry: -0.6 });
+    // biblioteca rincón
+    this._box(0.5, 2.1, 1.6, 0x7a5230, -HW + 0.45, 1.05, -7.5, { collide: true, rough: 0.6 });
     const bookColors = [0xc0432f, 0xe0a93a, 0x3f8e58, 0x2f6fa8, 0x9b59b6];
     for (let s = 0; s < 3; s++) {
       for (let b = 0; b < 4; b++) {
-        const bk = this._box(0.2, 0.32, 0.15, bookColors[(s + b) % 5], -2.42, 0.5 + s * 0.55, -5.85 + b * 0.32, { cast: false });
+        const bk = this._box(0.22, 0.32, 0.16, bookColors[(s + b) % 5], -HW + 0.6, 0.5 + s * 0.55, -8.2 + b * 0.34, { cast: false });
         bk.rotation.y = Math.PI / 2;
       }
     }
-
-    // cuadros pared norte + plantas junto a la entrada
-    this._frame(1.6, 1.9, -HD + T / 2 + 0.03, 0, 0.7, 0.5, 0);
-    this._frame(-1.2, 2.0, -HD + T / 2 + 0.03, 0, 0.5, 0.5, 3);
-    this._plant(-2.5, 5.2, 1.4);
-    this._plant(2.5, 5.2, 1.2);
+    // plantas + cuadros
+    this._plant(HW - 0.8, -8.2, 1.4);
+    this._plant(-HW + 0.9, -5.6, 1.2);
+    this._frame(3.2, 2.0, -HD + T / 2 + 0.03, 0, 0.8, 0.55, 0);
+    this._frame(-3.2, 2.0, -HD + T / 2 + 0.03, 0, 0.6, 0.5, 3);
   }
 
   _cocina() {
-    // mesada (modelo real o primitiva en L)
-    if (this.models.mesada) {
-      this._placeModel(this.models.mesada.clone(true), { footprint: 4, x: -5.3, z: -HD + 0.55, ry: 0 });
-    } else {
-      this._box(4, 0.9, 0.6, 0xbfa98a, -5.3, 0.45, -HD + 0.5, { collide: true });
-      this._box(0.6, 0.9, 3.2, 0xbfa98a, -HW + 0.45, 0.45, -3.4, { collide: true });
-      this._box(0.5, 0.05, 0.4, 0x9aa7b2, -4.4, 0.92, -HD + 0.5, { cast: false, metal: 0.4, rough: 0.3 });
-      this._box(4, 0.7, 0.4, 0xcfc0a6, -5.3, 2.2, -HD + 0.35, {});
-    }
-    // heladera (modelo real o primitiva)
-    if (this.models.heladera) {
-      this._placeModel(this.models.heladera.clone(true), { footprint: 0.95, x: -3.7, z: -HD + 0.7, ry: 0 });
-    } else {
-      this._box(0.95, 2.0, 0.85, 0xededed, -3.7, 1.0, -HD + 0.6, { collide: true, rough: 0.4 });
-      this._box(0.06, 0.5, 0.04, 0xb0b6bc, -3.3, 1.2, -HD + 1.05, { cast: false, metal: 0.6, rough: 0.3 });
-    }
-    // alacena (modelo real, si está)
-    if (this.models.alacena) {
-      this._placeModel(this.models.alacena.clone(true), { footprint: 1.0, x: -HW + 0.5, z: -1.5, ry: Math.PI / 2, collide: true });
-    }
-    // mesa + sillas
-    this._box(1.4, 0.08, 0.9, 0xd2885a, -5.5, 0.78, -1.8, { collide: true });
-    [[-0.6, -0.3], [0.6, -0.3], [-0.6, 0.3], [0.6, 0.3]].forEach(([dx, dz]) =>
-      this._box(0.08, 0.78, 0.08, 0x9a6b45, -5.5 + dx, 0.39, -1.8 + dz, { cast: false })
+    // mesada contra la pared oeste (x=-11)
+    this._mueble('mesada', { footprint: 4, x: -HW + 0.5, z: -2.5, ry: Math.PI / 2 }, () => {
+      this._box(0.6, 0.9, 4, 0xbfa98a, -HW + 0.45, 0.45, -2.5, { collide: true });
+      this._box(0.4, 0.05, 0.5, 0x9aa7b2, -HW + 0.45, 0.92, -2.5, { cast: false, metal: 0.4, rough: 0.3 });
+    });
+    // heladera rincón noroeste
+    this._mueble('heladera', { footprint: 0.95, x: -HW + 0.7, z: -HD + 5.3, ry: 0 }, () =>
+      this._box(0.95, 2.0, 0.85, 0xededed, -HW + 0.7, 1.0, -4.3, { collide: true, rough: 0.4 })
     );
-    [[-1.3, -1.8], [-5.5, -0.6]].forEach(([x, z]) => this._box(0.4, 0.45, 0.4, 0xd2885a, x, 0.22, z, {}));
+    // alacena
+    this._mueble('alacena', { footprint: 1.0, x: -6, z: -HD + 4.2, ry: 0 });
+    // mesa + sillas
+    this._box(1.5, 0.08, 0.95, 0xd2885a, -6, 0.78, -2.3, { collide: true });
+    [[-0.65, -0.35], [0.65, -0.35], [-0.65, 0.35], [0.65, 0.35]].forEach(([dx, dz]) =>
+      this._box(0.08, 0.78, 0.08, 0x9a6b45, -6 + dx, 0.39, -2.3 + dz, { cast: false })
+    );
   }
 
   _bano() {
-    // bañadera (modelo real o primitiva)
-    if (this.models.banadera) {
-      this._placeModel(this.models.banadera.clone(true), { footprint: 2.6, x: 5.5, z: -HD + 0.9, ry: 0 });
-    } else {
-      this._box(2.8, 0.55, 1.3, 0xf2f2f2, 5.5, 0.28, -HD + 0.75, { collide: true, rough: 0.3 });
-      this._box(2.5, 0.06, 1.0, 0xbfe0e6, 5.5, 0.5, -HD + 0.75, { cast: false });
-    }
-    // inodoro
-    this._box(0.55, 0.45, 0.7, 0xffffff, HW - 0.6, 0.22, -2.6, { collide: true, rough: 0.4 });
-    this._box(0.55, 0.6, 0.25, 0xffffff, HW - 0.6, 0.55, -2.95, { cast: false });
-    // bacha + espejo
-    this._box(0.7, 0.85, 0.5, 0xe8e8e8, 3.7, 0.42, -HD + 0.5, { collide: true });
+    // bañadera contra la pared este (x=11)
+    this._mueble('banadera', { footprint: 2.6, x: HW - 0.9, z: -2.5, ry: Math.PI / 2 }, () => {
+      this._box(1.3, 0.55, 2.8, 0xf2f2f2, HW - 0.75, 0.28, -2.5, { collide: true, rough: 0.3 });
+      this._box(1.0, 0.06, 2.5, 0xbfe0e6, HW - 0.75, 0.5, -2.5, { cast: false });
+    });
+    // inodoro + bacha
+    this._box(0.55, 0.45, 0.7, 0xffffff, 3.4, 0.22, -4, { collide: true, rough: 0.4 });
+    this._box(0.55, 0.6, 0.25, 0xffffff, 3.4, 0.55, -4.3, { cast: false });
+    this._box(0.7, 0.85, 0.5, 0xe8e8e8, 4.0, 0.42, -HD + 0.5, { collide: true });
     const esp = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.7), new THREE.MeshStandardMaterial({ color: 0xbfe3f5, roughness: 0.05, metalness: 0.9 }));
-    esp.position.set(3.7, 1.7, -HD + T + 0.03);
+    esp.position.set(4.0, 1.7, -HD + T + 0.03);
     this.add(esp);
   }
 
   _lavadero() {
-    // lavarropas (modelo real o primitiva)
-    if (this.models.lavarropas) {
-      this._placeModel(this.models.lavarropas.clone(true), { footprint: 0.9, x: -HW + 0.75, z: HD - 0.75, ry: 0 });
-    } else {
-      this._box(0.9, 1.2, 0.9, 0xe8e8e8, -HW + 0.7, 0.6, HD - 0.7, { collide: true, rough: 0.4 });
+    this._mueble('lavarropas', { footprint: 0.9, x: -HW + 0.75, z: HD - 0.9, ry: 0 }, () => {
+      this._box(0.9, 1.2, 0.9, 0xe8e8e8, -HW + 0.75, 0.6, HD - 0.9, { collide: true, rough: 0.4 });
       const door = new THREE.Mesh(new THREE.CircleGeometry(0.28, 18), new THREE.MeshStandardMaterial({ color: 0x3a3f44, roughness: 0.2, metalness: 0.5 }));
-      door.position.set(-HW + 0.7, 0.65, HD - 1.16);
+      door.position.set(-HW + 0.75, 0.65, HD - 1.36);
       this.add(door);
-    }
-    // pileta (modelo real o primitiva)
-    if (this.models.pileta) {
-      this._placeModel(this.models.pileta.clone(true), { footprint: 0.9, x: -5.3, z: HD - 0.6, ry: 0 });
-    } else {
-      this._box(0.9, 0.9, 0.6, 0xd9d2c4, -5.3, 0.45, HD - 0.5, { collide: true });
-      this._box(0.6, 0.06, 0.4, 0x9aa7b2, -5.3, 0.92, HD - 0.5, { cast: false });
-    }
-    // estante con productos
-    this._box(2.0, 0.06, 0.4, 0xcfc0a6, -4.2, 1.7, HD - 0.3, { cast: false });
-    [[-4.8, 1.92], [-4.2, 1.92], [-3.6, 1.92]].forEach(([x, y]) =>
-      this._box(0.18, 0.32, 0.18, [0x46b23a, 0x2f86c8, 0xe0a93a][(x * 10) % 3 | 0] || 0x46b23a, x, y, HD - 0.3, { cast: false })
-    );
+    });
+    this._mueble('pileta', { footprint: 0.9, x: -HW + 0.7, z: 5.5, ry: Math.PI / 2 }, () => {
+      this._box(0.6, 0.9, 0.9, 0xd9d2c4, -HW + 0.5, 0.45, 5.5, { collide: true });
+      this._box(0.5, 0.06, 0.6, 0x9aa7b2, -HW + 0.5, 0.92, 5.5, { cast: false });
+    });
+    // estante
+    this._box(0.4, 0.06, 2.0, 0xcfc0a6, -HW + 0.3, 1.7, 3.0, { cast: false });
   }
 
   _dormitorio() {
-    // cama (modelo real o primitiva)
-    if (this.models.cama) {
-      this._placeModel(this.models.cama.clone(true), { footprint: 2.8, x: 5.5, z: 4.2, ry: 0 });
-    } else {
-      this._box(2.6, 0.45, 3.4, 0xb7d0e8, 5.5, 0.32, 4.2, { collide: true, rough: 0.85 });
-      this._box(2.6, 0.12, 3.0, 0xeaf2fb, 5.5, 0.56, 4.3, { cast: false });
-      this._box(2.6, 0.7, 0.2, 0x9a6b45, 5.5, 0.5, HD - 0.2, {});
-      this._box(0.9, 0.25, 0.5, 0xffffff, 5.5, 0.62, 2.9, { cast: false });
-    }
-    // mesa de luz (modelo real o primitiva)
-    if (this.models.mesa_luz) {
-      this._placeModel(this.models.mesa_luz.clone(true), { footprint: 0.5, x: 3.8, z: HD - 0.5, ry: 0 });
-    } else {
-      this._box(0.5, 0.5, 0.5, 0xc8a87c, 3.8, 0.25, HD - 0.5, { collide: true });
-    }
-    // ropero (modelo real o primitiva)
-    if (this.models.ropero) {
-      this._placeModel(this.models.ropero.clone(true), { footprint: 1.4, x: HW - 0.7, z: 1.4, ry: -Math.PI / 2 });
-    } else {
-      this._box(0.8, 2.3, 1.4, 0xa88c68, HW - 0.55, 1.15, 1.4, { collide: true, rough: 0.6 });
-    }
+    // cama
+    this._mueble('cama', { footprint: 2.8, x: HW - 1.8, z: 6.2, ry: -Math.PI / 2 }, () => {
+      this._box(2.6, 0.45, 3.4, 0xb7d0e8, HW - 1.8, 0.32, 6.2, { collide: true, rough: 0.85 });
+      this._box(2.6, 0.12, 3.0, 0xeaf2fb, HW - 1.8, 0.56, 6.3, { cast: false });
+      this._box(0.9, 0.25, 0.5, 0xffffff, HW - 1.8, 0.62, 7.6, { cast: false });
+    });
+    // mesa de luz
+    this._mueble('mesa_luz', { footprint: 0.5, x: 3.6, z: 8.0, ry: 0 }, () =>
+      this._box(0.5, 0.5, 0.5, 0xc8a87c, 3.6, 0.25, 8.0, { collide: true })
+    );
+    // ropero contra la pared este
+    this._mueble('ropero', { footprint: 1.4, x: HW - 0.7, z: 1.6, ry: -Math.PI / 2 }, () =>
+      this._box(0.8, 2.3, 1.4, 0xa88c68, HW - 0.55, 1.15, 1.6, { collide: true, rough: 0.6 })
+    );
     // alfombra
-    const rug = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.04, 1.4), mat(0x9b6fb0, 0.95));
-    rug.position.set(4.4, 0.05, 2.6);
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.04, 1.6), mat(0x9b6fb0, 0.95));
+    rug.position.set(5.5, 0.05, 3.5);
     rug.receiveShadow = true;
     this.add(rug);
-    // cuadro
-    this._frame(5.5, 1.9, HD - T / 2 - 0.03, Math.PI, 0.6, 0.45, 2);
+    this._frame(6.75, 2.0, HD - T / 2 - 0.03, Math.PI, 0.6, 0.45, 2);
   }
 }
