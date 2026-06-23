@@ -28,8 +28,25 @@ const MODELS = {
   lamp: `${BASE}assets/models/base/IridescenceLamp.glb`,
 };
 
-// Personaje riggeado + animado (interino hasta el Mateo custom del Sprint 4)
-const CHARACTER_URL = `${BASE}assets/models/heroes/RobotExpressive.glb`;
+// Personajes jugables (Mixamo → glTF, optimizados): nene y nena
+const HEROES = {
+  nene: `${BASE}assets/models/heroes/nene.glb`,
+  nena: `${BASE}assets/models/heroes/nena.glb`,
+};
+
+// Selector nene/nena (UI mínima arriba a la derecha)
+function buildHeroSelector(onPick) {
+  const el = document.createElement('div');
+  el.id = 'hero-sel';
+  el.innerHTML = `
+    <button data-h="nene">🧢 Nene</button>
+    <button data-h="nena">🎀 Nena</button>`;
+  document.body.appendChild(el);
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-h]');
+    if (b) onPick(b.dataset.h);
+  });
+}
 
 // ---------- Overlay de carga ----------
 function makeLoadingOverlay() {
@@ -86,23 +103,34 @@ async function boot() {
     if (s) models[key] = s;
   }
 
-  // ---------- Cargar personaje riggeado ----------
-  const charGltf = await loader.loadGLTF(CHARACTER_URL).catch((e) => {
-    console.warn('No se pudo cargar el personaje, usando placeholder:', e);
-    return null;
-  });
+  // ---------- Cargar personajes (nene + nena, Mixamo→glTF) ----------
+  const heroes = {};
+  heroes.nene = await loader.loadGLTF(HEROES.nene).catch(() => null);
+  heroes.nena = await loader.loadGLTF(HEROES.nena).catch(() => null);
   overlay.set(1);
 
   // ---------- Nivel ----------
   const casa = new Casa({ models });
   casa.addTo(scene);
 
-  // ---------- Jugador ----------
-  // targetHeight mide la extensión del esqueleto; el robot completo queda algo
-  // más alto, así que un valor ~1.2 lo deja a escala de chico en la sala.
-  const player = new Player({ gltf: charGltf, targetHeight: 1.2 });
-  player.setPosition(casa.spawn.x, 0, casa.spawn.z);
-  scene.add(player.mesh);
+  // ---------- Jugador (con selector nene/nena) ----------
+  let player = null;
+  function setHero(which) {
+    const prevPos = player ? player.position.clone() : new THREE.Vector3(casa.spawn.x, 0, casa.spawn.z);
+    const prevHeading = player ? player.heading : Math.PI;
+    if (player) scene.remove(player.mesh);
+    player = new Player({ gltf: heroes[which], targetHeight: 1.4 });
+    player.position.copy(prevPos);
+    player.heading = prevHeading;
+    player.mesh.position.copy(prevPos);
+    player.mesh.rotation.y = prevHeading;
+    scene.add(player.mesh);
+    document.querySelectorAll('#hero-sel button').forEach((b) =>
+      b.classList.toggle('on', b.dataset.h === which)
+    );
+  }
+  buildHeroSelector(setHero);
+  setHero('nene');
 
   // ---------- Cámara 3ra persona ----------
   const tpCam = new ThirdPersonCamera(camera, { distance: 5.0, height: 1.45 });

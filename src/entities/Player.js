@@ -94,17 +94,49 @@ export class Player {
     g.add(model);
 
     this.mixer = new THREE.AnimationMixer(model);
-    for (const clip of gltf.animations) this.actions[clip.name] = this.mixer.clipAction(clip);
-    this._play('Idle', 0);
+    this._setupAnims(gltf.animations);
     return g;
   }
 
-  _play(name, fade = 0.25) {
-    const next = this.actions[name];
-    if (!next || next === this.current) return;
-    next.reset().fadeIn(fade).play();
+  /** Quita la traslación de la cadera → animación "en el lugar" (no patina). */
+  _stripRootMotion(clip) {
+    const tracks = clip.tracks.filter((t) => !/Hips\.position$/i.test(t.name));
+    return new THREE.AnimationClip(clip.name, clip.duration, tracks);
+  }
+
+  /**
+   * Detecta clips de movimiento e idle por nombre (tolerante: Mixamo los llama
+   * "mixamo.com"). Usa el de movimiento "en el lugar". Si no hay idle, de pie
+   * el personaje queda con la animación congelada (no en T-pose).
+   */
+  _setupAnims(animations) {
+    const names = animations.map((c) => c.name);
+    const find = (re) => names.find((n) => re.test(n));
+    const moveName = find(/walk/i) || find(/run/i) || find(/mixamo/i) || names[0];
+    const idleName = find(/idle/i);
+
+    if (moveName) {
+      const baseClip = animations.find((c) => c.name === moveName);
+      this.moveAction = this.mixer.clipAction(this._stripRootMotion(baseClip));
+      this.moveAction.play();
+    }
+    this.idleAction = idleName ? this.mixer.clipAction(animations.find((c) => c.name === idleName)) : null;
+
+    if (this.idleAction) {
+      this.idleAction.play();
+      this.current = this.idleAction;
+      if (this.moveAction) this.moveAction.setEffectiveWeight(0);
+    } else if (this.moveAction) {
+      this.moveAction.paused = true; // de pie = congelado, no T-pose
+      this.current = this.moveAction;
+    }
+  }
+
+  _crossTo(action, fade = 0.2) {
+    if (!action || action === this.current) return;
+    action.reset().fadeIn(fade).play();
     if (this.current) this.current.fadeOut(fade);
-    this.current = next;
+    this.current = action;
   }
 
   // ---------- Modo primitivas (fallback) ----------
@@ -205,8 +237,11 @@ export class Player {
       this.heading += diff * Math.min(1, dt * 12);
 
       if (this.isGLB) {
-        this._play('Walking');
-        if (this.actions['Walking']) this.actions['Walking'].timeScale = 0.85 + mag * 0.5;
+        if (this.idleAction) this._crossTo(this.moveAction);
+        if (this.moveAction) {
+          this.moveAction.paused = false;
+          this.moveAction.timeScale = 0.7 + mag * 0.7;
+        }
       } else {
         this.walkPhase += dt * 10 * mag;
         const sw = Math.sin(this.walkPhase) * 0.7;
@@ -218,7 +253,8 @@ export class Player {
       }
     } else {
       if (this.isGLB) {
-        this._play('Idle');
+        if (this.idleAction) this._crossTo(this.idleAction);
+        else if (this.moveAction) this.moveAction.paused = true;
       } else {
         const damp = 1 - Math.min(1, dt * 10);
         this.legL.rotation.x *= damp;
