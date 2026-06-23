@@ -41,6 +41,7 @@ export class Screens {
     this.stars.textContent = stars;
     this.score.textContent = score;
     this.row.innerHTML = '';
+    this.row.classList.remove('scr-mapa');
     buttons.forEach((b) => this.row.appendChild(this._btn(b.label, b.cls, b.onClick)));
     this.el.classList.add('on');
   }
@@ -69,23 +70,47 @@ export class Screens {
     });
   }
 
-  win({ restante, score, stars, onReplay }) {
+  win({ restante, score, stars, onReplay, onMap }) {
+    const buttons = [{ label: '🔁 Jugar de nuevo', cls: 'verde', onClick: onReplay }];
+    if (onMap) buttons.push({ label: '🗺️ Mapa', cls: '', onClick: onMap });
     this._show({
       emoji: '🎉',
       title: '¡Misión cumplida!',
       desc: `Juntaste los 10 cacharros con ${restante}s de sobra.`,
       stars: '★'.repeat(stars) + '☆'.repeat(3 - stars),
       score: `${score} puntos`,
-      buttons: [{ label: '🔁 Jugar de nuevo', cls: 'verde', onClick: onReplay }],
+      buttons,
     });
   }
 
-  lose({ encontrados, onRetry }) {
+  lose({ encontrados, onRetry, onMap }) {
+    const buttons = [{ label: '🔁 Reintentar', cls: 'coral', onClick: onRetry }];
+    if (onMap) buttons.push({ label: '🗺️ Mapa', cls: '', onClick: onMap });
     this._show({
       emoji: '🦟',
       title: '¡Se acabó el tiempo!',
       desc: `Juntaste ${encontrados} de 10 cacharros. ¡Denguín sigue suelto! Probá de nuevo.`,
-      buttons: [{ label: '🔁 Reintentar', cls: 'coral', onClick: onRetry }],
+      buttons,
     });
+  }
+
+  /** Mapa de niveles: una tarjeta por nivel; los bloqueados no se eligen. */
+  map(niveles, onPick) {
+    this.emoji.textContent = '🗺️';
+    this.title.textContent = 'Elegí tu misión';
+    this.desc.textContent = 'Recorré cada mundo y eliminá los 10 cacharros con agua.';
+    this.stars.textContent = '';
+    this.score.textContent = '';
+    this.row.innerHTML = '';
+    this.row.classList.add('scr-mapa');
+    niveles.forEach((n) => {
+      const b = document.createElement('button');
+      b.className = 'nivel-card' + (n.locked ? ' lock' : '');
+      b.innerHTML = `<span class="nivel-emoji">${n.emoji}</span><span class="nivel-nombre">${n.nombre}</span>` +
+        (n.locked ? '<span class="nivel-lock">🔒</span>' : '');
+      if (!n.locked) b.addEventListener('click', () => onPick(n.id));
+      this.row.appendChild(b);
+    });
+    this.el.classList.add('on');
   }
 }

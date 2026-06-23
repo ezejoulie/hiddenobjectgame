@@ -9,10 +9,11 @@ import { AssetLoader } from './core/AssetLoader.js';
 import { Player } from './entities/Player.js';
 import { ThirdPersonCamera } from './systems/Camera.js';
 import { Casa } from './levels/Casa.js';
+import { Jardin } from './levels/Jardin.js';
 import { HUD } from './ui/HUD.js';
 import { Screens } from './ui/Screens.js';
 import { Game, itemsDeSpawns } from './core/Game.js';
-import { CASA_LIVING } from './data/levels.config.js';
+import { CASA_LIVING, JARDIN, NIVELES } from './data/levels.config.js';
 
 /**
  * main.js — Sprint 1 + integración del pack de assets.
@@ -153,14 +154,10 @@ async function boot() {
   }
   overlay.set(1);
 
-  // ---------- Nivel ----------
-  const casa = new Casa({ models });
-  casa.addTo(scene);
-
-  // ---------- Jugador (con selector nene/nena) ----------
+  // ---------- Jugador (persiste entre niveles) ----------
   let player = null;
   function setHero(which) {
-    const prevPos = player ? player.position.clone() : new THREE.Vector3(casa.spawn.x, 0, casa.spawn.z);
+    const prevPos = player ? player.position.clone() : new THREE.Vector3(0, 0, 0);
     const prevHeading = player ? player.heading : Math.PI;
     if (player) scene.remove(player.mesh);
     player = new Player({ gltf: heroes[which], targetHeight: 1.4 });
@@ -176,30 +173,11 @@ async function boot() {
   buildHeroSelector(setHero);
   setHero('nene');
 
-  // ---------- Cámara 3ra persona ----------
   const tpCam = new ThirdPersonCamera(camera, { distance: 4.3, height: 1.4 });
-  tpCam.setObstacles(casa.wallMeshes);
-  tpCam.yaw = Math.PI;
-  tpCam.update(player.position, 0);
-
-  // ---------- Input ----------
   const input = new Input(renderer.domElement);
-
-  // ---------- Juego (cacharros + timer + HUD + pantallas) ----------
-  const spawns = CASA_LIVING.cacharros;
-  const hud = new HUD(itemsDeSpawns(spawns));
   const screens = new Screens();
-  const bounds = { x: CASA_LIVING.room.width / 2 - 1, z: CASA_LIVING.room.depth / 2 - 1 };
-  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens, bounds, denguinModel, cacharroModels, level: casa });
-  screens.intro({ onStart: () => game.start() });
+  const postfx = createPostFX(renderer, scene, camera, { bloomStrength: 0.1, vignetteDark: 0.6 });
 
-  // ---------- Post-procesado ----------
-  const postfx = createPostFX(renderer, scene, camera, {
-    bloomStrength: 0.1,
-    vignetteDark: 0.6,
-  });
-
-  // ---------- Resize ----------
   function onResize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -210,7 +188,57 @@ async function boot() {
   }
   window.addEventListener('resize', onResize);
 
+  // ---------- Gestión de niveles ----------
+  const LEVEL_CLASSES = { casa: Casa, jardin: Jardin };
+  const LEVEL_CONFIGS = { casa: CASA_LIVING, jardin: JARDIN };
+  let level = null;
+  let game = null;
+  let hud = null;
+
+  function disposeLevel() {
+    if (game) game.dispose();
+    if (hud) hud.destroy();
+    if (level) level.dispose();
+    game = null;
+    hud = null;
+    level = null;
+  }
+
+  function startLevel(id) {
+    disposeLevel();
+    const Cls = LEVEL_CLASSES[id];
+    const cfg = LEVEL_CONFIGS[id];
+    level = new Cls({ models });
+    level.addTo(scene);
+    scene.background = new THREE.Color(cfg.bg || '#c9d6e3');
+
+    player.position.set(level.spawn.x, 0, level.spawn.z);
+    player.heading = Math.PI;
+    player.mesh.position.copy(player.position);
+    player.mesh.rotation.y = Math.PI;
+    player.mesh.visible = true;
+    tpCam.setObstacles(level.wallMeshes);
+    tpCam.yaw = Math.PI;
+    tpCam.update(player.position, 0);
+
+    const dims = cfg.room || { width: 24, depth: 22 };
+    const bounds = { x: dims.width / 2 - 1, z: dims.depth / 2 - 1 };
+    hud = new HUD(itemsDeSpawns(cfg.cacharros));
+    game = new Game({
+      scene, getPlayer: () => player, spawns: cfg.cacharros, hud, screens,
+      bounds, denguinModel, cacharroModels, level, gate: cfg.gate, onWin: showMap,
+    });
+    screens.intro({ onStart: () => game.start() });
+  }
+
+  function showMap() {
+    disposeLevel();
+    player.mesh.visible = false;
+    screens.map(NIVELES, (id) => startLevel(id));
+  }
+
   overlay.done();
+  showMap();
 
   // ---------- Loop ----------
   const clock = new THREE.Clock();
@@ -219,13 +247,14 @@ async function boot() {
     const dt = Math.min(clock.getDelta(), 0.05);
     const now = clock.elapsedTime;
 
-    tpCam.applyLook(input.consumeLook());
-    const move = input.moveVector();
-    player.update(dt, move, tpCam.yaw, casa.colliders);
-    if (input.shieldPressed() && player.triggerShield(now)) hud.dobleDefensa();
-    tpCam.update(player.position, dt);
-
-    game.update(dt, now);
+    if (level && game) {
+      tpCam.applyLook(input.consumeLook());
+      const move = input.moveVector();
+      player.update(dt, move, tpCam.yaw, level.colliders);
+      if (input.shieldPressed() && player.triggerShield(now)) hud.dobleDefensa();
+      tpCam.update(player.position, dt);
+      game.update(dt, now);
+    }
 
     postfx.render(dt);
   }

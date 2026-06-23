@@ -14,7 +14,7 @@ const DURACION = 120;
 const RADIO_PICKUP = 1.15;
 
 export class Game {
-  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels, level }) {
+  constructor({ scene, getPlayer, spawns, hud, screens, bounds, denguinModel, cacharroModels, level, gate, onWin }) {
     this.scene = scene;
     this.getPlayer = getPlayer;
     this.spawns = spawns; // [[tipo,x,z], ...]
@@ -22,7 +22,8 @@ export class Game {
     this.screens = screens;
     this.cacharroModels = cacharroModels || {};
     this.level = level; // para abrir el portón
-    this.gateAt = 5;
+    this.gateAt = gate || 0; // 0 = sin portón
+    this.onWin = onWin; // volver al mapa
     this._gateOpened = false;
 
     this.cacharros = [];
@@ -117,7 +118,7 @@ export class Game {
       this.hud.defensePopup('¡Defensa! +50');
     }
 
-    // indicador del portón (diagnóstico en vivo)
+    // indicador del portón (solo si el nivel tiene)
     this.hud.setGate(this.found, this.gateAt, this._gateOpened);
 
     // timer
@@ -135,7 +136,7 @@ export class Game {
         this.hud.setCount(this.found);
         this.hud.markCollected(c.index);
         this.hud.showTip(c.info.nombre, c.info.tip);
-        if (!this._gateOpened && this.found >= this.gateAt && this.level && this.level.openGate) {
+        if (this.gateAt > 0 && !this._gateOpened && this.found >= this.gateAt && this.level && this.level.openGate) {
           this._gateOpened = true;
           this.level.openGate();
           this.hud.showTip('¡Portón abierto! 🔓', 'Volvé al pasillo y seguí hacia el norte (cocina, baño, living).');
@@ -171,13 +172,19 @@ export class Game {
     const stars = restante >= 60 ? 3 : restante >= 30 ? 2 : 1;
     const score = this.score + 500 + restante * 10;
     this.hud.hide();
-    this.screens.win({ restante, score, stars, onReplay: () => this._replay() });
+    this.screens.win({ restante, score, stars, onReplay: () => this._replay(), onMap: this.onWin });
   }
 
   _lose() {
     this.state = 'lost';
     this.hud.hide();
-    this.screens.lose({ encontrados: this.found, onRetry: () => this._replay() });
+    this.screens.lose({ encontrados: this.found, onRetry: () => this._replay(), onMap: this.onWin });
+  }
+
+  dispose() {
+    this._clear();
+    if (this.denguin) this.scene.remove(this.denguin.mesh);
+    if (this.shieldBubble) this.scene.remove(this.shieldBubble);
   }
 
   _replay() {

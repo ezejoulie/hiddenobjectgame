@@ -92,6 +92,11 @@ export class HUD {
 
   setGate(found, threshold, open) {
     if (!this.gateEl) return;
+    if (!threshold || threshold <= 0) {
+      this.gateEl.style.display = 'none';
+      return;
+    }
+    this.gateEl.style.display = '';
     if (open) {
       this.gateEl.textContent = '🔓 Portón abierto — pasá al norte';
       this.gateEl.classList.add('open');
@@ -113,6 +118,9 @@ export class HUD {
   }
   hide() {
     this.el.classList.remove('on');
+  }
+  destroy() {
+    this.el.remove();
   }
 
   reset() {
