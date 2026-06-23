@@ -28,6 +28,9 @@ export class Level {
 
   dispose() {
     this.group.traverse((o) => {
+      // No liberar geometría/material clonados del caché GLB (compartidos):
+      // se reutilizan al volver a entrar a un nivel.
+      if (o.userData && o.userData.shared) return;
       if (o.geometry) o.geometry.dispose();
       if (o.material) {
         if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());

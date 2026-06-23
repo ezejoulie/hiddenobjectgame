@@ -174,6 +174,39 @@ function makeLoadingOverlay() {
   };
 }
 
+// Overlay liviano para la transición entre niveles (lazy load de props).
+function makeLevelLoader() {
+  const el = document.createElement('div');
+  el.id = 'loading';
+  el.className = 'level-load';
+  el.innerHTML = `
+    <div class="load-card">
+      <div class="load-title"></div>
+      <div class="load-bar"><div class="load-fill"></div></div>
+    </div>`;
+  document.body.appendChild(el);
+  el.style.display = 'none';
+  const title = el.querySelector('.load-title');
+  const fill = el.querySelector('.load-fill');
+  return {
+    show(cfg) {
+      title.textContent = `Cargando ${cfg?.nombre || 'nivel'} ${cfg?.emoji || ''}…`;
+      fill.style.width = '0%';
+      el.classList.remove('hide');
+      el.style.display = '';
+    },
+    set(p) {
+      fill.style.width = Math.round(p * 100) + '%';
+    },
+    hide() {
+      el.classList.add('hide');
+      setTimeout(() => {
+        if (el.classList.contains('hide')) el.style.display = 'none';
+      }, 400);
+    },
+  };
+}
+
 async function boot() {
   const overlay = makeLoadingOverlay();
 
@@ -194,23 +227,17 @@ async function boot() {
   });
   lights.key.castShadow = false;
 
-  // ---------- Cargar modelos del pack ----------
+  // ---------- Carga ESENCIAL (rápida): personajes, Denguín y cacharros ----------
+  // Los props de cada nivel se cargan al entrar (lazy load), no todos al inicio.
   const loader = new AssetLoader();
-  await loader.preload(Object.values(MODELS), (p) => overlay.set(p * 0.85));
-  const models = {};
-  for (const [key, url] of Object.entries(MODELS)) {
-    const s = loader.instance(url); // clon listo para usar
-    if (s) models[key] = s;
-  }
-
-  // ---------- Cargar personajes + Denguín ----------
   const heroes = {};
   heroes.nene = await loader.loadGLTF(HEROES.nene).catch(() => null);
   heroes.nena = await loader.loadGLTF(HEROES.nena).catch(() => null);
+  overlay.set(0.12);
   const denguinModel = await loader.loadGLTF(DENGUIN_URL).then((g) => g.scene).catch(() => null);
+  overlay.set(0.2);
 
-  // ---------- Cargar cacharros reales ----------
-  await loader.preload(Object.values(CACHARRO_URLS), (p) => overlay.set(0.88 + p * 0.12));
+  await loader.preload(Object.values(CACHARRO_URLS), (p) => overlay.set(0.2 + p * 0.8));
   const cacharroModels = {};
   for (const [tipo, url] of Object.entries(CACHARRO_URLS)) {
     const s = loader.instance(url);
@@ -255,6 +282,8 @@ async function boot() {
   });
   document.body.appendChild(muteBtn);
 
+  const levelLoader = makeLevelLoader();
+
   function onResize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -268,9 +297,41 @@ async function boot() {
   // ---------- Gestión de niveles ----------
   const LEVEL_CLASSES = { casa: Casa, jardin: Jardin, escuela: Escuela, parque: Parque, playa: Playa };
   const LEVEL_CONFIGS = { casa: CASA_LIVING, jardin: JARDIN, escuela: ESCUELA, parque: PARQUE, playa: PLAYA };
+
+  // Props GLB que usa cada nivel (lazy load al entrar). Lo que falte cae a
+  // primitivas, así que no es crítico, pero conviene listarlo bien.
+  const EXT = ['arbol', 'arbol_frond', 'arbol_flor', 'pasto_alto', 'perro']; // comunes a exteriores
+  const LEVEL_MODEL_KEYS = {
+    casa: ['sofa', 'armchair', 'chair2', 'heladera', 'mesada', 'banadera', 'lavarropas', 'pileta',
+      'cama', 'ropero', 'alacena', 'tele', 'mesa_ratona', 'mesa_luz', 'vase', 'plant', 'lamp'],
+    jardin: [...EXT, 'pino', 'arbusto', 'arbusto_red', 'banco', 'cantero', 'macetero', 'huerta',
+      'cobertizo', 'carretilla', 'fuente', 'fuente_jardin', 'roca', 'roca_grande'],
+    escuela: [...EXT, 'escuela', 'mastil', 'tobogan', 'hamacas', 'arenero', 'aro_basquet',
+      'cesto', 'bebedero_esc', 'cartel_esc', 'farol'],
+    parque: [...EXT, 'pino', 'arbusto', 'arbusto_red', 'banco', 'banco_plaza', 'calesita', 'subibaja',
+      'hamacas', 'farol', 'glorieta', 'puente', 'hongo', 'tronco_caido', 'roca', 'roca_grande'],
+    playa: ['perro', 'pasto_alto', 'arbol', 'palmera', 'palmera_cocos', 'bote', 'velero', 'boya',
+      'sombrilla', 'reposera', 'muelle', 'toalla', 'caracol', 'conservadora', 'roca_costera', 'roca_grande'],
+  };
+
+  async function loadLevelModels(id) {
+    const keys = LEVEL_MODEL_KEYS[id] || [];
+    const urls = keys.map((k) => MODELS[k]).filter(Boolean);
+    await loader.preload(urls, (p) => levelLoader.set(p));
+    const models = {};
+    for (const k of keys) {
+      const url = MODELS[k];
+      if (!url) continue;
+      const s = loader.instance(url);
+      if (s) models[k] = s;
+    }
+    return models;
+  }
+
   let level = null;
   let game = null;
   let hud = null;
+  let busy = false;
 
   function disposeLevel() {
     if (game) game.dispose();
@@ -281,8 +342,16 @@ async function boot() {
     level = null;
   }
 
-  function startLevel(id) {
+  async function startLevel(id) {
+    if (busy) return;
+    busy = true;
     disposeLevel();
+    player.mesh.visible = false;
+    screens.hide();
+    levelLoader.show(LEVEL_CONFIGS[id]);
+    const models = await loadLevelModels(id);
+    levelLoader.hide();
+
     const Cls = LEVEL_CLASSES[id];
     const cfg = LEVEL_CONFIGS[id];
     level = new Cls({ models });
@@ -313,6 +382,7 @@ async function boot() {
         game.start();
       },
     });
+    busy = false;
   }
 
   function showMap() {

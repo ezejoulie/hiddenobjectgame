@@ -59,10 +59,17 @@ export class AssetLoader {
     });
   }
 
-  /** Devuelve una instancia clonada lista para agregar a la escena, o null. */
+  /** Devuelve una instancia clonada lista para agregar a la escena, o null.
+   *  Marca las mallas como `shared` (geometría/material del caché) para que el
+   *  dispose de los niveles no libere recursos compartidos con el caché. */
   instance(url) {
     const base = this.cache.get(url);
-    return base ? base.clone(true) : null;
+    if (!base) return null;
+    const clone = base.clone(true);
+    clone.traverse((o) => {
+      if (o.isMesh) o.userData.shared = true;
+    });
+    return clone;
   }
 
   /**

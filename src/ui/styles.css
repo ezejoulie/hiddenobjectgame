@@ -740,3 +740,11 @@ body {
   0%, 100% { filter: brightness(1); }
   50% { filter: brightness(1.5); }
 }
+
+/* Loader de transición entre niveles (lazy load) */
+#loading.level-load {
+  background: linear-gradient(180deg, #15324a 0%, #1c4030 100%);
+}
+#loading.level-load .load-title {
+  margin-bottom: 16px;
+}
