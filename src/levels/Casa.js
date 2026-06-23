@@ -83,15 +83,18 @@ export class Casa extends Level {
       }
     });
     this.add(wrap);
+    // Collider de caja ajustado a la huella real (en XZ), un poco inset para no
+    // trabar al jugador en las esquinas.
     if (collide) {
       const fb = new THREE.Box3().setFromObject(wrap);
-      this.colliders.push({
-        type: 'box',
-        min: { x: fb.min.x - colliderPad, z: fb.min.z - colliderPad },
-        max: { x: fb.max.x + colliderPad, z: fb.max.z + colliderPad },
-      });
+      const inset = 0.08;
+      const minx = fb.min.x + inset, maxx = fb.max.x - inset;
+      const minz = fb.min.z + inset, maxz = fb.max.z - inset;
+      if (maxx > minx && maxz > minz) {
+        this.colliders.push({ type: 'box', min: { x: minx, z: minz }, max: { x: maxx, z: maxz } });
+      }
     }
-    // huella del mueble (aunque no tenga colisión) para no spawnear cacharros encima
+    // huella del mueble para no spawnear cacharros encima
     this.occupied.push({ x, z, r: Math.max(0.4, footprint * 0.5) });
     return wrap;
   }
@@ -118,10 +121,11 @@ export class Casa extends Level {
     this.add(f);
   }
 
-  /** Mueble real (GLB) si está, con un box de fallback. Los GLB NO colisionan
-   *  (evita muros invisibles por bounding boxes grandes); las primitivas sí. */
+  /** Mueble real (GLB) si está, con un box de fallback. Por defecto COLISIONA
+   *  (el jugador no atraviesa los muebles); para decoración chica pasar
+   *  collide:false en opts (veladores, floreros, etc.). */
   _mueble(key, opts, fb) {
-    if (this.models[key]) return this._placeModel(this.models[key].clone(true), { collide: false, ...opts });
+    if (this.models[key]) return this._placeModel(this.models[key].clone(true), { collide: true, ...opts });
     if (fb) fb();
     return null;
   }
@@ -199,23 +203,53 @@ export class Casa extends Level {
     this._wall(-6.75, 0, HW - HALL, T); // x[-11,-2.5]
     this._wall(6.75, 0, HW - HALL, T); // x[2.5,11]
 
-    // PORTÓN con llave en el pasillo (z=0): bloquea hasta juntar los primeros 5
-    const gate = new THREE.Mesh(
-      new THREE.BoxGeometry(2 * HALL, 2.4, 0.16),
-      new THREE.MeshStandardMaterial({ color: 0xb05a2a, roughness: 0.5, metalness: 0.1 })
-    );
-    gate.position.set(0, 1.2, 0);
-    gate.castShadow = true;
-    gate.receiveShadow = true;
-    const lock = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 0.36, 0.1),
-      new THREE.MeshStandardMaterial({ color: 0xf4b72e, metalness: 0.5, roughness: 0.3 })
-    );
-    lock.position.set(0, 0.1, 0.13);
-    gate.add(lock);
+    // PORTÓN con rejas y candado en el pasillo (z=0): bloquea hasta juntar 5.
+    // Es un grupo con origen en el piso; al abrirse se desliza hacia arriba.
+    const gate = new THREE.Group();
+    const GW = 2 * HALL; // ancho del portón
+    const GH = 2.6;      // alto
+    const wood = new THREE.MeshStandardMaterial({ color: 0x8a4f24, roughness: 0.55, metalness: 0.05 });
+    const bar = new THREE.MeshStandardMaterial({ color: 0xc07a3a, roughness: 0.4, metalness: 0.15 });
+    const mkBox = (w, h, d, m, x, y, z) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+      b.position.set(x, y, z);
+      b.castShadow = true;
+      b.receiveShadow = true;
+      gate.add(b);
+      return b;
+    };
+    // marco (postes + dintel + base)
+    mkBox(0.2, GH, 0.24, wood, -GW / 2 + 0.1, GH / 2, 0);
+    mkBox(0.2, GH, 0.24, wood, GW / 2 - 0.1, GH / 2, 0);
+    mkBox(GW, 0.22, 0.24, wood, 0, GH - 0.11, 0);
+    mkBox(GW, 0.18, 0.24, wood, 0, 0.09, 0);
+    // travesaños horizontales
+    mkBox(GW - 0.4, 0.12, 0.14, bar, 0, GH * 0.62, 0);
+    mkBox(GW - 0.4, 0.12, 0.14, bar, 0, GH * 0.3, 0);
+    // barrotes verticales (rejas)
+    const nbars = 6;
+    for (let i = 0; i < nbars; i++) {
+      const x = -GW / 2 + 0.5 + (i * (GW - 1)) / (nbars - 1);
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, GH - 0.4, 8), bar);
+      b.position.set(x, GH / 2, 0);
+      b.castShadow = true;
+      gate.add(b);
+    }
+    // candado dorado al centro
+    const lockMat = new THREE.MeshStandardMaterial({ color: 0xf4b72e, metalness: 0.6, roughness: 0.25, emissive: 0x6a4a00, emissiveIntensity: 0.25 });
+    const lockBody = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.46, 0.18), lockMat);
+    lockBody.position.set(0, GH * 0.46, 0.12);
+    lockBody.castShadow = true;
+    gate.add(lockBody);
+    const shackle = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.04, 8, 16, Math.PI), lockMat);
+    shackle.position.set(0, GH * 0.46 + 0.24, 0.12);
+    gate.add(shackle);
+    this.gateLock = lockBody;
+
+    gate.position.set(0, 0, 0);
     this.add(gate);
     this.gateMesh = gate;
-    this.gateCollider = boxCollider(0, 0, 2 * HALL, 0.4);
+    this.gateCollider = boxCollider(0, 0, GW, 0.4);
     this.colliders.push(this.gateCollider);
   }
 
@@ -229,7 +263,7 @@ export class Casa extends Level {
     const t0 = performance.now();
     const tick = () => {
       const k = Math.min(1, (performance.now() - t0) / 600);
-      m.position.y = 1.2 + k * 2.5;
+      m.position.y = k * 3.0; // se desliza hacia arriba y desaparece
       if (k < 1) requestAnimationFrame(tick);
       else m.visible = false;
     };
@@ -240,7 +274,7 @@ export class Casa extends Level {
     this._gateOpen = false;
     if (this.gateMesh) {
       this.gateMesh.visible = true;
-      this.gateMesh.position.y = 1.2;
+      this.gateMesh.position.y = 0;
     }
     if (this.gateCollider && !this.colliders.includes(this.gateCollider)) this.colliders.push(this.gateCollider);
   }

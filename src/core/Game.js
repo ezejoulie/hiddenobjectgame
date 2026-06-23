@@ -130,10 +130,11 @@ export class Game {
     for (const c of this.cacharros) c.update(dt, t, pp);
     this._updateFx(dt);
 
-    // burbuja de escudo
+    // burbuja de escudo: SOLO visible al defender (doble defensa)
     this.shieldBubble.position.set(pp.x, pp.y + 0.95, pp.z);
     const targetOp = shieldActive ? 0.32 + Math.sin(t * 10) * 0.08 : 0;
     this.shieldBubble.material.opacity += (targetOp - this.shieldBubble.material.opacity) * Math.min(1, dt * 8);
+    this.shieldBubble.visible = shieldActive || this.shieldBubble.material.opacity > 0.02;
 
     // pausa educativa: congela timer/Denguín mientras se lee la info
     if (this.paused) {

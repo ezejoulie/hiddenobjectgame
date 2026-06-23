@@ -21,7 +21,6 @@ export class HUD {
       </div>
       <div class="hud-arrow">
         <div class="hud-arrow-dial"><div class="hud-arrow-needle"></div></div>
-        <span class="hud-arrow-tx">🦟 ¡Viene Denguín!</span>
       </div>
       <div class="hud-tray"></div>
       <div class="hud-tip"><span class="hud-tip-ic">💧</span><span class="hud-tip-tx"></span></div>

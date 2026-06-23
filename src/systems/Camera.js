@@ -53,24 +53,29 @@ export class ThirdPersonCamera {
     // anti-clipping: raycast objetivo → cámara deseada
     if (this.obstacles.length) {
       this._ray.set(this._target, this._dir);
-      this._ray.far = this.distance;
+      this._ray.far = this.distance + 0.5;
       const hits = this._ray.intersectObjects(this.obstacles, true);
       if (hits.length) {
-        // dejar un margen para que la cámara no quede pegada a la pared
-        dist = Math.max(1.2, hits[0].distance - 0.3);
+        // margen amplio: la cámara entra bien antes de la pared
+        dist = Math.max(0.9, hits[0].distance - 0.45);
       }
     }
 
-    // suavizar el cambio de distancia (evita "saltos" al cruzar paredes)
-    const k = dt ? Math.min(1, dt * 12) : 1;
-    this._currentDist += (dist - this._currentDist) * k;
+    // al ACERCAR (anti-clip) entra de una para no quedar detrás de la pared;
+    // solo se suaviza al alejarse.
+    if (dist < this._currentDist) {
+      this._currentDist = dist;
+    } else {
+      const k = dt ? Math.min(1, dt * 10) : 1;
+      this._currentDist += (dist - this._currentDist) * k;
+    }
 
     this._desired
       .copy(this._target)
       .addScaledVector(this._dir, this._currentDist);
 
     // seguridad: que la cámara nunca baje del piso (evita ver "por abajo")
-    if (this._desired.y < 0.4) this._desired.y = 0.4;
+    if (this._desired.y < 0.5) this._desired.y = 0.5;
 
     this.camera.position.copy(this._desired);
     this.camera.lookAt(this._target);
