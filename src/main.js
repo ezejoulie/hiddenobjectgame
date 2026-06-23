@@ -447,10 +447,11 @@ async function boot() {
     player.mesh.rotation.y = Math.PI;
     player.mesh.visible = true;
     tpCam.setObstacles(level.wallMeshes);
-    // adentro: cámara más cerca y más en picada (menos clipping con paredes)
-    tpCam.distance = cfg.interior ? 2.6 : 4.3;
-    tpCam.minPitch = cfg.interior ? 0.5 : 0.12;
-    tpCam.pitch = cfg.interior ? 0.7 : 0.5;
+    // adentro un poco más cerca; rango de giro amplio (se puede mirar más abajo)
+    tpCam.distance = cfg.interior ? 2.9 : 4.3;
+    tpCam.minPitch = cfg.interior ? 0.22 : 0.12;
+    tpCam.maxPitch = 1.45;
+    tpCam.pitch = 0.5;
     tpCam.yaw = Math.PI;
     tpCam.update(player.position, 0);
 

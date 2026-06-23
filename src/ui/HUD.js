@@ -1,26 +1,28 @@
 /**
- * HUD.js — interfaz de juego: timer (barra + texto), contador 0/10, bandeja de
- * ítems a encontrar (en orden de spawn, se marcan al juntarlos) y un toast con
- * el tip educativo.
+ * HUD.js — interfaz de juego. Panel superior en UNA sola línea (vidas, timer,
+ * contador, portón y cuenta de picada); el resto son notificaciones flotantes
+ * (flecha de Denguín, tips, alertas, flash, doble defensa, viñeta de peligro).
  */
 export class HUD {
-  constructor(items) {
+  constructor(items, opts = {}) {
+    this.maxLives = opts.lives || 3;
     const el = document.createElement('div');
     el.id = 'hud';
     el.innerHTML = `
-      <div class="hud-top">
+      <div class="hud-bar">
+        <div class="hud-lives"></div>
         <div class="hud-timer">
           <div class="hud-timer-txt">2:00</div>
           <div class="hud-timer-bar"><div class="hud-timer-fill"></div></div>
         </div>
         <div class="hud-count">0/${items.length}</div>
+        <div class="hud-gate"></div>
+        <div class="hud-nextbite">🦟 --</div>
       </div>
-      <div class="hud-nextbite">🦟 Pica en --</div>
       <div class="hud-arrow">
         <div class="hud-arrow-dial"><div class="hud-arrow-needle"></div></div>
         <span class="hud-arrow-tx">🦟 ¡Viene Denguín!</span>
       </div>
-      <div class="hud-gate"></div>
       <div class="hud-tray"></div>
       <div class="hud-tip"><span class="hud-tip-ic">💧</span><span class="hud-tip-tx"></span></div>
       <div class="hud-alert">🦟 ¡Denguín te quiere picar! ¡Escudo! (Espacio)</div>
@@ -33,6 +35,7 @@ export class HUD {
     this.timerTxt = el.querySelector('.hud-timer-txt');
     this.timerFill = el.querySelector('.hud-timer-fill');
     this.countEl = el.querySelector('.hud-count');
+    this.livesEl = el.querySelector('.hud-lives');
     this.tray = el.querySelector('.hud-tray');
     this.tip = el.querySelector('.hud-tip');
     this.tipTx = el.querySelector('.hud-tip-tx');
@@ -46,6 +49,7 @@ export class HUD {
     this.arrowNeedle = el.querySelector('.hud-arrow-needle');
     this.nextBiteEl = el.querySelector('.hud-nextbite');
     this.total = items.length;
+    this.setLives(this.maxLives);
 
     this.chips = items.map((it, i) => {
       const c = document.createElement('div');
@@ -60,26 +64,6 @@ export class HUD {
     });
   }
 
-  /** Flecha que apunta hacia Denguín (relativa a la cámara). angle en rad. */
-  setDenguinArrow(angle, show) {
-    if (!this.arrowEl) return;
-    this.arrowEl.classList.toggle('show', !!show);
-    if (show) this.arrowNeedle.style.transform = `rotate(${angle}rad)`;
-  }
-
-  /** Cuenta regresiva hasta la próxima picada de Denguín. */
-  setNextBite(secs, attacking) {
-    if (!this.nextBiteEl) return;
-    if (attacking) {
-      this.nextBiteEl.textContent = '🦟 ¡Te ataca!';
-      this.nextBiteEl.classList.add('soon');
-    } else {
-      const s = Math.max(0, Math.ceil(secs));
-      this.nextBiteEl.textContent = `🦟 Pica en ${s}s`;
-      this.nextBiteEl.classList.toggle('soon', s <= 4);
-    }
-  }
-
   setTime(seconds) {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
@@ -90,12 +74,22 @@ export class HUD {
 
   setCount(n) {
     this.countEl.textContent = `${n}/${this.total}`;
+    this.countEl.classList.remove('pop');
+    void this.countEl.offsetWidth;
+    this.countEl.classList.add('pop');
+  }
+
+  setLives(n) {
+    n = Math.max(0, Math.min(this.maxLives, n));
+    this.livesEl.innerHTML = '❤️'.repeat(n) + '🤍'.repeat(this.maxLives - n);
+    this.livesEl.classList.remove('hit');
+    void this.livesEl.offsetWidth;
+    if (n < this.maxLives) this.livesEl.classList.add('hit');
   }
 
   markCollected(index) {
     if (this.chips[index]) this.chips[index].classList.add('done');
   }
-
   unmarkCollected(index) {
     if (this.chips[index]) this.chips[index].classList.remove('done');
   }
@@ -104,12 +98,29 @@ export class HUD {
     this.alert.classList.toggle('show', !!on);
   }
 
-  /** Nivel de peligro 0..1 (Denguín cerca): tiñe los bordes de rojo y pulsa. */
   setDanger(v) {
     if (!this.dangerEl) return;
     const k = Math.max(0, Math.min(1, v));
     this.dangerEl.style.opacity = k.toFixed(2);
     this.dangerEl.classList.toggle('pulse', k > 0.45);
+  }
+
+  setDenguinArrow(angle, show) {
+    if (!this.arrowEl) return;
+    this.arrowEl.classList.toggle('show', !!show);
+    if (show) this.arrowNeedle.style.transform = `rotate(${angle}rad)`;
+  }
+
+  setNextBite(secs, attacking) {
+    if (!this.nextBiteEl) return;
+    if (attacking) {
+      this.nextBiteEl.textContent = '🦟 ¡Ataca!';
+      this.nextBiteEl.classList.add('soon');
+    } else {
+      const s = Math.max(0, Math.ceil(secs));
+      this.nextBiteEl.textContent = `🦟 ${s}s`;
+      this.nextBiteEl.classList.toggle('soon', s <= 4);
+    }
   }
 
   flash() {
@@ -139,10 +150,10 @@ export class HUD {
     }
     this.gateEl.style.display = '';
     if (open) {
-      this.gateEl.textContent = '🔓 Portón abierto — pasá al norte';
+      this.gateEl.textContent = '🔓 ¡Portón abierto!';
       this.gateEl.classList.add('open');
     } else {
-      this.gateEl.textContent = `🔒 Portón: faltan ${Math.max(0, threshold - found)}`;
+      this.gateEl.textContent = `🔒 Portón: ${Math.max(0, threshold - found)}`;
       this.gateEl.classList.remove('open');
     }
   }
@@ -151,7 +162,7 @@ export class HUD {
     this.tipTx.innerHTML = `<b>${nombre}:</b> ${tip}`;
     this.tip.classList.add('show');
     clearTimeout(this._tipTo);
-    this._tipTo = setTimeout(() => this.tip.classList.remove('show'), 3000);
+    this._tipTo = setTimeout(() => this.tip.classList.remove('show'), 3500);
   }
 
   show() {
@@ -168,6 +179,7 @@ export class HUD {
     this.chips.forEach((c) => c.classList.remove('done'));
     this.setCount(0);
     this.setTime(120);
+    this.setLives(this.maxLives);
     this.el.classList.remove('low');
   }
 }

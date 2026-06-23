@@ -12,6 +12,7 @@ export class Level {
     this.group = new THREE.Group();
     this.group.name = 'Level';
     this.colliders = []; // colisión del jugador (cajas/círculos en XZ)
+    this.occupied = []; // huellas de props {x,z,r} para no spawnear cacharros encima
     this.wallMeshes = []; // meshes que la cámara raycastea para no atravesar
     this.spawn = new THREE.Vector3(0, 0, 0);
   }

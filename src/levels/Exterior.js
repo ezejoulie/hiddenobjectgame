@@ -102,6 +102,11 @@ export class Exterior extends Level {
     });
     this.add(g);
     if (o.collide && o.colliderR) this.colliders.push({ type: 'circle', x: o.x, z: o.z, r: o.colliderR });
+    // huella para que no caigan cacharros encima (excepto pasto/decoración mínima)
+    if (!o.noOccupy) {
+      const r = o.colliderR || (o.footprint ? o.footprint * 0.5 : 0.55);
+      this.occupied.push({ x: o.x || 0, z: o.z || 0, r });
+    }
     return g;
   }
 
@@ -182,7 +187,7 @@ export class Exterior extends Level {
 
   _pasto(x, z, baseY = 0) {
     if (this._placeGLB('pasto_alto', {
-      x, z, height: 0.4 + Math.random() * 0.45, ry: Math.random() * 6.28, jitter: 0.35, baseY, noShadow: true,
+      x, z, height: 0.4 + Math.random() * 0.45, ry: Math.random() * 6.28, jitter: 0.35, baseY, noShadow: true, noOccupy: true,
     })) return;
     const g = new THREE.Group();
     const cols = [0x5fb84a, 0x4caf50, 0x6fc95a, 0x7ec96f];

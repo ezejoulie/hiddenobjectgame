@@ -85,13 +85,16 @@ export class Screens {
     });
   }
 
-  lose({ encontrados, onRetry, onMap }) {
+  lose({ encontrados, reason, onRetry, onMap }) {
     const buttons = [{ label: '🔁 Reintentar', cls: 'coral', onClick: onRetry }];
     if (onMap) buttons.push({ label: '🗺️ Mapa', cls: '', onClick: onMap });
+    const picado = reason === 'picado';
     this._show({
-      emoji: '🦟',
-      title: '¡Se acabó el tiempo!',
-      desc: `Juntaste ${encontrados} de 10 cacharros. ¡Denguín sigue suelto! Probá de nuevo.`,
+      emoji: picado ? '😵' : '🦟',
+      title: picado ? '¡Denguín te picó 3 veces!' : '¡Se acabó el tiempo!',
+      desc: picado
+        ? `Te quedaste sin corazones. Juntaste ${encontrados} de 10 cacharros. ¡Usá el escudo (Espacio) para defenderte! Probá de nuevo.`
+        : `Juntaste ${encontrados} de 10 cacharros. ¡Denguín sigue suelto! Probá de nuevo.`,
       buttons,
     });
   }

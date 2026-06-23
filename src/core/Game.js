@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Cacharro } from '../entities/Cacharro.js';
 import { Denguin } from '../entities/Denguin.js';
+import { resolveCircle } from '../systems/Collision.js';
 import { CACHARRO_TIPOS } from '../data/cacharros.js';
 
 /**
@@ -32,6 +33,8 @@ export class Game {
     this._gateOpened = false;
     this.paused = false;
 
+    this.maxLives = 3;
+    this.lives = 3;
     this.cacharros = [];
     this.fx = []; // partículas de efecto al juntar
     this.fxGroup = new THREE.Group();
@@ -65,8 +68,20 @@ export class Game {
   }
 
   _spawn() {
+    // obstáculos: colliders del nivel + huellas de props (para NO dejar cacharros
+    // metidos dentro de muebles/árboles, así se pueden encontrar)
+    const obstacles = [
+      ...((this.level && this.level.colliders) || []),
+      ...((this.level && this.level.occupied) || []).map((o) => ({ type: 'circle', x: o.x, z: o.z, r: o.r })),
+    ];
     this.spawns.forEach(([tipo, x, z], i) => {
-      const c = new Cacharro(tipo, x, z, this.cacharroModels[tipo]);
+      let nx = x, nz = z;
+      if (obstacles.length) {
+        [nx, nz] = resolveCircle(x, z, 0.55, obstacles);
+        nx = Math.max(-this.bounds.x, Math.min(this.bounds.x, nx));
+        nz = Math.max(-this.bounds.z, Math.min(this.bounds.z, nz));
+      }
+      const c = new Cacharro(tipo, nx, nz, this.cacharroModels[tipo]);
       c.index = i;
       this.scene.add(c.group);
       this.cacharros.push(c);
@@ -82,6 +97,10 @@ export class Game {
     this.screens.hide();
     this.state = 'playing';
     this.hud.show();
+    this.hud.setLives(this.lives);
+    if (this.gateAt > 0) {
+      this.hud.showTip('🚪 El portón', `Juntá los primeros ${this.gateAt} cacharros del ala sur y se abre el portón del pasillo para pasar a las otras alas de la casa.`);
+    }
   }
 
   reset() {
@@ -94,6 +113,7 @@ export class Game {
     this.time = DURACION;
     this.found = 0;
     this.score = 0;
+    this.lives = this.maxLives;
     this.hud.reset();
     this.hud.setAlert(false);
   }
@@ -146,8 +166,11 @@ export class Game {
     if (ev === 'bite') {
       this.hud.setAlert(false);
       this.hud.flash();
-      this._disperse(3);
       if (this.audio) this.audio.bite();
+      this.lives -= 1;
+      this.hud.setLives(this.lives);
+      if (this.lives <= 0) return this._lose('picado');
+      this._disperse(3);
     } else if (ev === 'repelled') {
       this.score += 50;
       this.hud.defensePopup('¡Defensa! +50');
@@ -304,11 +327,11 @@ export class Game {
     this.screens.win({ restante, score, stars, onReplay: () => this._replay(), onMap: this.onWin });
   }
 
-  _lose() {
+  _lose(reason) {
     this.state = 'lost';
     if (this.audio) this.audio.lose();
     this.hud.hide();
-    this.screens.lose({ encontrados: this.found, onRetry: () => this._replay(), onMap: this.onWin });
+    this.screens.lose({ encontrados: this.found, reason, onRetry: () => this._replay(), onMap: this.onWin });
   }
 
   dispose() {

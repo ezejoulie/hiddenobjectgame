@@ -91,6 +91,8 @@ export class Casa extends Level {
         max: { x: fb.max.x + colliderPad, z: fb.max.z + colliderPad },
       });
     }
+    // huella del mueble (aunque no tenga colisión) para no spawnear cacharros encima
+    this.occupied.push({ x, z, r: Math.max(0.4, footprint * 0.5) });
     return wrap;
   }
 

@@ -84,37 +84,47 @@ body {
 #hud.on {
   display: block;
 }
-.hud-top {
+.hud-bar {
   position: absolute;
-  top: calc(10px + env(safe-area-inset-top, 0px));
+  top: calc(8px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 12px;
-  width: min(380px, 84vw);
-  background: rgba(13, 34, 52, 0.45);
+  gap: 10px;
+  max-width: 96vw;
+  background: rgba(13, 34, 52, 0.5);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 16px;
-  padding: 8px 14px;
+  padding: 7px 12px;
   box-shadow: 0 4px 14px rgba(13, 34, 52, 0.25);
+  white-space: nowrap;
+}
+.hud-lives {
+  font-size: 1rem;
+  letter-spacing: 1px;
+  flex: 0 0 auto;
+}
+.hud-lives.hit {
+  animation: hudPulse 0.4s;
 }
 .hud-timer {
-  flex: 1;
+  flex: 0 0 auto;
+  width: 132px;
   text-align: center;
 }
 .hud-timer-txt {
   font-weight: 900;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   color: #fff;
   text-shadow: 0 1px 3px rgba(13, 34, 52, 0.7);
   line-height: 1;
 }
 .hud-timer-bar {
-  height: 9px;
-  margin-top: 4px;
+  height: 8px;
+  margin-top: 3px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.22);
   overflow: hidden;
@@ -136,34 +146,53 @@ body {
 }
 @keyframes hudPulse {
   50% {
-    transform: scale(1.12);
+    transform: scale(1.18);
   }
 }
 .hud-count {
+  flex: 0 0 auto;
   font-weight: 900;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   color: #4a3203;
   background: linear-gradient(180deg, #ffd968, #f4b72e);
   border-radius: 999px;
-  padding: 4px 13px;
+  padding: 4px 14px;
   box-shadow: 0 2px 6px rgba(13, 34, 52, 0.3);
 }
+.hud-count.pop {
+  animation: countPop 0.4s ease;
+}
+@keyframes countPop {
+  40% { transform: scale(1.35); background: linear-gradient(180deg, #aef0a0, #4fc23a); }
+}
 .hud-gate {
-  position: absolute;
-  top: calc(70px + env(safe-area-inset-top, 0px));
-  left: 14px;
+  flex: 0 0 auto;
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: #fff;
-  background: rgba(176, 90, 42, 0.9);
+  background: rgba(176, 90, 42, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
-  padding: 5px 14px;
+  padding: 4px 12px;
   white-space: nowrap;
-  box-shadow: 0 3px 8px rgba(13, 34, 52, 0.3);
 }
 .hud-gate.open {
-  background: rgba(55, 154, 44, 0.9);
+  background: rgba(55, 154, 44, 0.95);
+}
+.hud-nextbite {
+  flex: 0 0 auto;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #fff;
+  background: rgba(21, 50, 75, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+.hud-nextbite.soon {
+  background: rgba(206, 28, 22, 0.92);
+  animation: dangerPulse 0.7s ease-in-out infinite;
 }
 .hud-tray {
   position: absolute;
@@ -759,7 +788,7 @@ body {
 /* ================= Flecha indicadora de Denguín ================= */
 .hud-arrow {
   position: fixed;
-  top: calc(66px + env(safe-area-inset-top, 0px));
+  top: calc(58px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 14;
@@ -770,25 +799,6 @@ body {
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
-}
-/* cuenta regresiva de la próxima picada (arriba a la derecha) */
-.hud-nextbite {
-  position: absolute;
-  top: calc(70px + env(safe-area-inset-top, 0px));
-  right: 14px;
-  font-weight: 800;
-  font-size: 0.82rem;
-  color: #fff;
-  background: rgba(21, 50, 75, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-  padding: 5px 14px;
-  white-space: nowrap;
-  box-shadow: 0 3px 8px rgba(13, 34, 52, 0.3);
-}
-.hud-nextbite.soon {
-  background: rgba(206, 28, 22, 0.9);
-  animation: dangerPulse 0.7s ease-in-out infinite;
 }
 .hud-arrow.show { opacity: 1; }
 .hud-arrow-dial {
