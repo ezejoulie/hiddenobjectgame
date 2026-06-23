@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Cacharro } from '../entities/Cacharro.js';
+import { Denguin } from '../entities/Denguin.js';
 import { CACHARRO_TIPOS } from '../data/cacharros.js';
 
 /**
@@ -13,7 +14,7 @@ const DURACION = 120;
 const RADIO_PICKUP = 1.15;
 
 export class Game {
-  constructor({ scene, getPlayer, spawns, hud, screens }) {
+  constructor({ scene, getPlayer, spawns, hud, screens, bounds }) {
     this.scene = scene;
     this.getPlayer = getPlayer;
     this.spawns = spawns; // [[tipo,x,z], ...]
@@ -27,6 +28,26 @@ export class Game {
     this.score = 0;
 
     this._spawn();
+
+    // Denguín
+    this.denguin = new Denguin(bounds || { x: 3.5, z: 3.5 });
+    this.scene.add(this.denguin.mesh);
+
+    // burbuja de escudo (sigue al jugador, visible al defender)
+    this.shieldBubble = new THREE.Mesh(
+      new THREE.SphereGeometry(0.85, 20, 16),
+      new THREE.MeshStandardMaterial({
+        color: 0x7fd4f5,
+        transparent: true,
+        opacity: 0,
+        roughness: 0.1,
+        metalness: 0,
+        emissive: 0x2f86c8,
+        emissiveIntensity: 0.4,
+        depthWrite: false,
+      })
+    );
+    this.scene.add(this.shieldBubble);
   }
 
   _spawn() {
@@ -52,19 +73,43 @@ export class Game {
   reset() {
     this._clear();
     this._spawn();
+    this.denguin.reset();
     this.time = DURACION;
     this.found = 0;
     this.score = 0;
     this.hud.reset();
+    this.hud.setAlert(false);
   }
 
   update(dt, t) {
     const player = this.getPlayer();
     const pp = player ? player.position : new THREE.Vector3();
+    const shieldActive = !!player && player.shieldUntil > t;
 
     for (const c of this.cacharros) c.update(dt, t, pp);
 
-    if (this.state !== 'playing') return;
+    // burbuja de escudo
+    this.shieldBubble.position.set(pp.x, pp.y + 0.95, pp.z);
+    const targetOp = shieldActive ? 0.32 + Math.sin(t * 10) * 0.08 : 0;
+    this.shieldBubble.material.opacity += (targetOp - this.shieldBubble.material.opacity) * Math.min(1, dt * 8);
+
+    if (this.state !== 'playing') {
+      this.denguin.update(dt, t, pp, shieldActive); // sigue volando de fondo
+      this.hud.setAlert(false);
+      return;
+    }
+
+    // ----- Denguín -----
+    const ev = this.denguin.update(dt, t, pp, shieldActive);
+    this.hud.setAlert(this.denguin.mode === 'ataque' && !shieldActive);
+    if (ev === 'bite') {
+      this.hud.setAlert(false);
+      this.hud.flash();
+      this._disperse(3);
+    } else if (ev === 'repelled') {
+      this.score += 50;
+      this.hud.defensePopup('¡Defensa! +50');
+    }
 
     // timer
     this.time = Math.max(0, this.time - dt);
@@ -84,6 +129,26 @@ export class Game {
         if (this.found >= this.cacharros.length) return this._win();
       }
     }
+  }
+
+  /** Picadura: devuelve hasta n cacharros ya juntados (penalización). */
+  _disperse(n) {
+    let done = 0;
+    for (let i = this.cacharros.length - 1; i >= 0 && done < n; i--) {
+      const c = this.cacharros[i];
+      if (c.collected) {
+        c.collected = false;
+        c.collecting = 0;
+        c.group.visible = true;
+        c.body.scale.setScalar(1);
+        c.body.position.y = 0.04;
+        this.found = Math.max(0, this.found - 1);
+        this.hud.unmarkCollected(c.index);
+        done += 1;
+      }
+    }
+    this.hud.setCount(this.found);
+    if (done > 0) this.hud.showTip('¡Te picó Denguín!', 'Algunos cacharros se dispersaron. ¡Usá el escudo (Espacio)!');
   }
 
   _win() {

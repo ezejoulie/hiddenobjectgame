@@ -16,7 +16,10 @@ export class HUD {
         <div class="hud-count">0/${items.length}</div>
       </div>
       <div class="hud-tray"></div>
-      <div class="hud-tip"><span class="hud-tip-ic">💧</span><span class="hud-tip-tx"></span></div>`;
+      <div class="hud-tip"><span class="hud-tip-ic">💧</span><span class="hud-tip-tx"></span></div>
+      <div class="hud-alert">🦟 ¡Denguín te quiere picar! ¡Escudo! (Espacio)</div>
+      <div class="hud-defense"></div>
+      <div class="hud-flash"></div>`;
     document.body.appendChild(el);
     this.el = el;
     this.timerTxt = el.querySelector('.hud-timer-txt');
@@ -25,6 +28,9 @@ export class HUD {
     this.tray = el.querySelector('.hud-tray');
     this.tip = el.querySelector('.hud-tip');
     this.tipTx = el.querySelector('.hud-tip-tx');
+    this.alert = el.querySelector('.hud-alert');
+    this.defense = el.querySelector('.hud-defense');
+    this.flashEl = el.querySelector('.hud-flash');
     this.total = items.length;
 
     this.chips = items.map((it, i) => {
@@ -51,6 +57,27 @@ export class HUD {
 
   markCollected(index) {
     if (this.chips[index]) this.chips[index].classList.add('done');
+  }
+
+  unmarkCollected(index) {
+    if (this.chips[index]) this.chips[index].classList.remove('done');
+  }
+
+  setAlert(on) {
+    this.alert.classList.toggle('show', !!on);
+  }
+
+  flash() {
+    this.flashEl.classList.remove('show');
+    void this.flashEl.offsetWidth;
+    this.flashEl.classList.add('show');
+  }
+
+  defensePopup(text) {
+    this.defense.textContent = text;
+    this.defense.classList.remove('show');
+    void this.defense.offsetWidth;
+    this.defense.classList.add('show');
   }
 
   showTip(nombre, tip) {

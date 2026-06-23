@@ -202,6 +202,87 @@ body {
   color: #2f7a28;
 }
 
+/* alerta de ataque de Denguín */
+.hud-alert {
+  position: absolute;
+  top: 96px;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  background: linear-gradient(180deg, #ff7a77, #e84b48);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 7px 18px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(206, 57, 54, 0.5);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.hud-alert.show {
+  transform: translateX(-50%) scale(1);
+  animation: alertPulse 0.5s infinite;
+}
+@keyframes alertPulse {
+  50% {
+    transform: translateX(-50%) scale(1.07);
+  }
+}
+
+/* popup de defensa exitosa */
+.hud-defense {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-weight: 900;
+  font-size: 2rem;
+  color: #7fd4f5;
+  -webkit-text-stroke: 2px #15324b;
+  text-shadow: 0 3px 0 #15324b;
+  pointer-events: none;
+}
+.hud-defense.show {
+  animation: defPop 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes defPop {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+/* flash rojo de picadura */
+.hud-flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(232, 75, 72, 0) 45%, rgba(232, 75, 72, 0.55) 100%);
+}
+.hud-flash.show {
+  animation: flashAnim 0.7s ease-out forwards;
+}
+@keyframes flashAnim {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* ================= Pantallas (modales) ================= */
 #screens {
   position: fixed;

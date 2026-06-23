@@ -149,7 +149,8 @@ async function boot() {
   const spawns = CASA_LIVING.cacharros;
   const hud = new HUD(itemsDeSpawns(spawns));
   const screens = new Screens();
-  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens });
+  const bounds = { x: CASA_LIVING.room.width / 2 - 1, z: CASA_LIVING.room.depth / 2 - 1 };
+  const game = new Game({ scene, getPlayer: () => player, spawns, hud, screens, bounds });
   screens.intro({ nombre: CASA_LIVING.nombre, onStart: () => game.start() });
 
   // ---------- Post-procesado ----------
