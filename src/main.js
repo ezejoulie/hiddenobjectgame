@@ -43,6 +43,16 @@ const MODELS = {
   tele: `${CF}82d48ff8-617f-4a73-bb7b-a127721bb1c0.glb`,
   mesa_ratona: `${CF}e5107612-6450-4585-be48-98d6f8d63889.glb`,
   mesa_luz: `${CF}1c5bc0b5-c8d5-4c3e-9bb9-7fcd641a3078.glb`,
+  // jardín (exterior)
+  arbol: `${CF}bd3c93d8-c764-4d30-9b69-56dfe2154bf2.glb`,
+  pino: `${CF}c0d739d4-6e52-44b7-8104-c54bbeece589.glb`,
+  palmera: `${CF}2eb4778f-02dd-4361-89f2-ed9d75acb6ba.glb`,
+  arbusto: `${CF}fba18785-8c06-4d55-bf87-3a60916c229d.glb`,
+  roca: `${CF}023bd0b4-495f-4483-9bee-f3de5c58112a.glb`,
+  banco: `${CF}e9a56aee-483f-4f64-a32c-241e7a72f94b.glb`,
+  cantero: `${CF}44558271-09e4-4644-8ec7-ebd46dc3120e.glb`,
+  perro: `${CF}fc7764b2-2b75-4c0d-b96f-3dd260711fc9.glb`,
+  fuente: `${CF}94905414-b9b1-490a-8aa4-8c023f882d85.glb`,
   vase: `${BASE}assets/models/base/GlassVaseFlowers.glb`,
   plant: `${BASE}assets/models/base/DiffuseTransmissionPlant.glb`,
   lamp: `${BASE}assets/models/base/IridescenceLamp.glb`,
@@ -253,6 +263,7 @@ async function boot() {
       player.update(dt, move, tpCam.yaw, level.colliders);
       if (input.shieldPressed() && player.triggerShield(now)) hud.dobleDefensa();
       tpCam.update(player.position, dt);
+      if (level.update) level.update(dt, now);
       game.update(dt, now);
     }
 
