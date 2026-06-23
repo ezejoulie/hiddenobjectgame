@@ -79,38 +79,52 @@ export class Audio {
     src.start(t0);
   }
 
-  // ---------- música ----------
+  // ---------- música (saltarina, tipo cartoon) ----------
   startMusic() {
     this._ensure();
     if (!this.ctx || this._musicTimer) return;
-    this.musicGain.gain.linearRampToValueAtTime(0.18, this.ctx.currentTime + 1.5);
-    // progresión I–V–vi–IV en Do (alegre), notas en Hz
-    const chords = [
-      [262, 330, 392], // C
-      [294, 370, 440], // ~G/D
-      [220, 277, 330], // Am
-      [175, 262, 349], // F
-    ];
-    const arp = [392, 523, 659, 523]; // arpegio agudo
-    const beat = 0.5;
-    const schedule = () => {
+    this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);
+    this.musicGain.gain.linearRampToValueAtTime(0.26, this.ctx.currentTime + 0.8);
+    this._bar = 0;
+    this._step = 16; // 16 corcheas por compás
+    this._beat = 0.15; // ~125 BPM, bien movido
+    this._nextBar = this.ctx.currentTime + 0.1;
+    const tick = () => {
       if (!this.ctx) return;
-      const t = this.ctx.currentTime + 0.05;
-      const ch = chords[this._step % chords.length];
-      // pad: acorde sostenido
-      ch.forEach((f) =>
-        this._tone(f, t, beat * 4 - 0.1, { type: 'triangle', gain: 0.05, out: this.musicGain, attack: 0.2, release: 0.3 })
-      );
-      // arpegio brillante
-      for (let i = 0; i < 4; i++) {
-        this._tone(arp[(this._step + i) % arp.length], t + i * beat, beat * 0.8, {
-          type: 'sine', gain: 0.04, out: this.musicGain, attack: 0.02, release: 0.1,
-        });
+      while (this._nextBar < this.ctx.currentTime + 0.6) {
+        this._emitBar(this._nextBar);
+        this._nextBar += this._step * this._beat;
       }
-      this._step++;
     };
-    schedule();
-    this._musicTimer = setInterval(schedule, 2000);
+    tick();
+    this._musicTimer = setInterval(tick, 110);
+  }
+
+  /** Emite un compás divertido: bombo, hats, bajo saltarín y melodía pegadiza. */
+  _emitBar(t0) {
+    const step = this._beat;
+    // progresión alegre I–V–vi–IV (Do), raíz del bajo por compás
+    const roots = [130.81, 196.0, 220.0, 174.61]; // C3 G3 A3 F3
+    const root = roots[this._bar % 4];
+    // melodía saltarina en Do mayor (8 notas por compás)
+    const melA = [523.25, 659.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25];
+    const melB = [659.25, 523.25, 587.33, 783.99, 880.0, 783.99, 659.25, 587.33];
+    const mel = this._bar % 2 ? melB : melA;
+    for (let s = 0; s < 16; s++) {
+      const t = t0 + s * step;
+      // bombo en 1 y 3
+      if (s === 0 || s === 8) this._tone(60, t, 0.13, { type: 'sine', gain: 0.16, out: this.musicGain, attack: 0.004, release: 0.07 });
+      // hats en los contratiempos
+      if (s % 2 === 1) this._noise(t, 0.025, { gain: 0.018, freq: 7000 });
+      // bajo saltarín: raíz en la negra, quinta en la "y"
+      if (s % 4 === 0) this._tone(root, t, step * 1.5, { type: 'square', gain: 0.06, out: this.musicGain, attack: 0.004, release: 0.05 });
+      if (s % 4 === 2) this._tone(root * 1.5, t, step * 0.7, { type: 'square', gain: 0.045, out: this.musicGain, attack: 0.004, release: 0.04 });
+      // melodía (corcheas)
+      if (s % 2 === 0) {
+        this._tone(mel[(s / 2) % 8], t, step * 1.2, { type: 'triangle', gain: 0.06, out: this.musicGain, attack: 0.004, release: 0.06 });
+      }
+    }
+    this._bar++;
   }
 
   stopMusic() {
@@ -118,7 +132,7 @@ export class Audio {
       clearInterval(this._musicTimer);
       this._musicTimer = null;
     }
-    if (this.ctx && this.musicGain) this.musicGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.5);
+    if (this.ctx && this.musicGain) this.musicGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
   }
 
   // ---------- SFX ----------

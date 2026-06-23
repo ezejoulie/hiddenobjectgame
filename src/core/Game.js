@@ -68,18 +68,16 @@ export class Game {
   }
 
   _spawn() {
-    // obstáculos: colliders del nivel + huellas de props (para NO dejar cacharros
-    // metidos dentro de muebles/árboles, así se pueden encontrar)
-    const obstacles = [
-      ...((this.level && this.level.colliders) || []),
-      ...((this.level && this.level.occupied) || []).map((o) => ({ type: 'circle', x: o.x, z: o.z, r: o.r })),
-    ];
+    // Para que ningún cacharro quede metido DENTRO de un mueble/prop lo corremos
+    // apenas hacia afuera de su huella. Solo usamos las huellas (círculos), NO
+    // las paredes, y si el empuje lo mandaría lejos, lo dejamos donde estaba
+    // (mejor un poco tapado que inalcanzable → el juego siempre se puede pasar).
+    const occ = ((this.level && this.level.occupied) || []).map((o) => ({ type: 'circle', x: o.x, z: o.z, r: o.r }));
     this.spawns.forEach(([tipo, x, z], i) => {
       let nx = x, nz = z;
-      if (obstacles.length) {
-        [nx, nz] = resolveCircle(x, z, 0.55, obstacles);
-        nx = Math.max(-this.bounds.x, Math.min(this.bounds.x, nx));
-        nz = Math.max(-this.bounds.z, Math.min(this.bounds.z, nz));
+      if (occ.length) {
+        const [rx, rz] = resolveCircle(x, z, 0.4, occ);
+        if (Math.hypot(rx - x, rz - z) <= 1.6) { nx = rx; nz = rz; }
       }
       const c = new Cacharro(tipo, nx, nz, this.cacharroModels[tipo]);
       c.index = i;
