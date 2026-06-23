@@ -10,13 +10,30 @@ import { PARQUE } from '../data/levels.config.js';
 export class Parque extends Exterior {
   constructor(opts = {}) {
     super(opts, PARQUE, {
-      sky: 0x9ad6ef, fog: [42, 138], hw: 18, hd: 15, flatR: 24, relief: true,
-      ground: { type: 'grass', color: 0xffffff, repeat: 30 },
+      sky: 0x88c8e8, fog: [42, 138], hw: 18, hd: 15, flatR: 24, relief: true,
+      // césped de plaza prolijo: tono más claro/amarillento que el jardín
+      ground: { type: 'grass', color: 0xc6e2a2, repeat: 20 },
     });
+  }
+
+  _plaza(cx, cz, r) {
+    const stone = new THREE.Mesh(new THREE.CircleGeometry(r, 40), mat(0xcdbf9c, 0.95));
+    stone.rotation.x = -Math.PI / 2;
+    stone.position.set(cx, 0.02, cz);
+    stone.receiveShadow = true;
+    this.add(stone);
+    // anillo de borde
+    const ring = new THREE.Mesh(new THREE.RingGeometry(r - 0.3, r, 40), mat(0xb6a884, 0.95));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(cx, 0.025, cz);
+    this.add(ring);
   }
 
   _decorate() {
     this._entornoColinas({ trees: 26, grass: 20, mtns: 10 });
+
+    // plaza central pavimentada (diferencia el piso del jardín)
+    this._plaza(0, 1, 4.5);
 
     // senderos
     this._sendero(0, 13, 0, -2, 9);

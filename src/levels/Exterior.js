@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Level } from './Level.js';
 import { boxCollider } from '../systems/Collision.js';
-import { grassTexture, sandTexture } from '../core/Textures.js';
+import { grassTexture, sandTexture, pavementTexture, windowsTexture } from '../core/Textures.js';
 
 /**
  * Exterior.js — base de los niveles al aire libre (Jardín, Escuela, Parque,
@@ -305,8 +305,11 @@ export class Exterior extends Level {
   // ---- base: piso con relieve, sol, límite invisible, entorno ----
   _buildBase() {
     const repeat = this.ground.repeat ?? 30;
-    const gMat = mat(this.ground.color ?? 0xffffff, 0.96);
-    gMat.map = this.ground.type === 'sand' ? sandTexture(Math.round(repeat * 0.6)) : grassTexture(repeat);
+    const gMat = mat(this.ground.color ?? 0xffffff, this.ground.type === 'urban' ? 0.98 : 0.96);
+    gMat.map =
+      this.ground.type === 'sand' ? sandTexture(Math.round(repeat * 0.6))
+      : this.ground.type === 'urban' ? pavementTexture(repeat)
+      : grassTexture(repeat);
     const geo = new THREE.PlaneGeometry(190, 190, 150, 150);
     geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes.position;
@@ -347,6 +350,61 @@ export class Exterior extends Level {
     this.colliders.push(boxCollider(0, HD, 2 * HW + 4, 1.5));
     this.colliders.push(boxCollider(-HW, 0, 1.5, 2 * HD + 4));
     this.colliders.push(boxCollider(HW, 0, 1.5, 2 * HD + 4));
+  }
+
+  // ---- ciudad ----
+  _winTex() {
+    if (!this._winBase) this._winBase = windowsTexture();
+    const t = this._winBase.clone();
+    t.needsUpdate = true;
+    return t;
+  }
+
+  /** Edificio de ciudad (con ventanas). `opts.shop` agrega toldo + cartel. */
+  _edificio(x, z, w, d, h, color, opts = {}) {
+    const wt = this._winTex();
+    wt.repeat.set(Math.max(1, Math.round(w / 2.4)), Math.max(1, Math.round(h / 2.6)));
+    const wallMat = new THREE.MeshStandardMaterial({ map: wt, color, roughness: 0.92 });
+    const roofMat = mat(opts.roof ?? 0x6b5a4a, 0.9);
+    const mats = [wallMat, wallMat, roofMat, roofMat, wallMat, wallMat];
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mats);
+    m.position.set(x, h / 2, z);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    this.add(m);
+    if (opts.collide !== false) this.colliders.push(boxCollider(x, z, w, d));
+    if (opts.shop) {
+      // toldo a rayas sobre la vereda (cara +z)
+      const awn = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, 0.12, 0.9), mat(opts.shop, 0.7));
+      awn.position.set(x, 2.0, z + d / 2 + 0.45);
+      awn.rotation.x = 0.32;
+      awn.castShadow = true;
+      this.add(awn);
+      // cartel del local
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.6, 0.12), mat(0xffffff, 0.6));
+      sign.position.set(x, 2.7, z + d / 2 + 0.06);
+      this.add(sign);
+      // puerta
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.6, 0.1), mat(0x4a3a2a, 0.8));
+      door.position.set(x, 0.8, z + d / 2 + 0.06);
+      this.add(door);
+    }
+    return m;
+  }
+
+  /** Manzanas de ciudad alrededor del área jugable (fondo urbano). */
+  _entornoCiudad({ buildings = 18 } = {}) {
+    const pal = [0xd9c3a5, 0xc9d3dc, 0xe0b9a6, 0xbfcab2, 0xd6c8dd, 0xcdbfa0, 0xa9c2cf];
+    for (let i = 0; i < buildings; i++) {
+      const ang = (i / buildings) * Math.PI * 2 + (Math.random() - 0.5) * 0.18;
+      const rad = this.HW + 8 + Math.random() * 26;
+      const x = Math.cos(ang) * rad;
+      const z = Math.sin(ang) * rad * 0.92;
+      const w = 4 + Math.random() * 4;
+      const d = 4 + Math.random() * 4;
+      const h = 6 + Math.random() * 10;
+      this._edificio(x, z, w, d, h, pal[i % pal.length], { collide: false });
+    }
   }
 
   /** Colinas con árboles reales y montañas lejanas (cuenco envolvente). */

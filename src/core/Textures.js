@@ -171,6 +171,90 @@ export function sandTexture(repeat = 18) {
   return tex;
 }
 
+/** Pavimento: vereda/calzada de hormigón gris con juntas y manchas. */
+export function pavementTexture(repeat = 22) {
+  const s = 512;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = s;
+  const ctx = cv.getContext('2d');
+
+  ctx.fillStyle = '#b7b4ab';
+  ctx.fillRect(0, 0, s, s);
+  // manchas
+  for (let i = 0; i < 140; i++) {
+    ctx.fillStyle = Math.random() < 0.5 ? '#a9a69d' : '#c2bfb6';
+    ctx.globalAlpha = 0.1 + Math.random() * 0.18;
+    const r = 6 + Math.random() * 26;
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * s, Math.random() * s, r, r * 0.7, Math.random() * 3, 0, 7);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // granitos
+  for (let i = 0; i < 1200; i++) {
+    ctx.fillStyle = Math.random() < 0.5 ? '#8f8c83' : '#d4d1c8';
+    ctx.globalAlpha = 0.25;
+    ctx.fillRect(Math.random() * s, Math.random() * s, 1.5, 1.5);
+  }
+  // juntas (baldosas de vereda)
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#8a877e';
+  ctx.lineWidth = 3;
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo((i * s) / 4, 0);
+    ctx.lineTo((i * s) / 4, s);
+    ctx.moveTo(0, (i * s) / 4);
+    ctx.lineTo(s, (i * s) / 4);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repeat, repeat);
+  tex.anisotropy = 8;
+  return tex;
+}
+
+/** Fachada con ventanas (para edificios de ciudad). Tileable en vertical. */
+export function windowsTexture() {
+  const w = 128, h = 160;
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#d9d2c4';
+  ctx.fillRect(0, 0, w, h);
+  const cols = 3, rows = 4;
+  const mx = 14, my = 14;
+  const cw = (w - mx * (cols + 1)) / cols;
+  const ch = (h - my * (rows + 1)) / rows;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = mx + c * (cw + mx);
+      const y = my + r * (ch + my);
+      const lit = Math.random() < 0.35;
+      ctx.fillStyle = lit ? '#ffe9a8' : '#7fb4d6';
+      ctx.fillRect(x, y, cw, ch);
+      ctx.strokeStyle = '#5a554c';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, cw, ch);
+      ctx.beginPath();
+      ctx.moveTo(x + cw / 2, y);
+      ctx.lineTo(x + cw / 2, y + ch);
+      ctx.moveTo(x, y + ch / 2);
+      ctx.lineTo(x + cw, y + ch / 2);
+      ctx.stroke();
+    }
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
 /** "Pinturas" para los cuadros. `index` elige el estilo (determinista). */
 export function artTexture(index = 0) {
   const w = 256;
