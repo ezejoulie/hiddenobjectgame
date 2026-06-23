@@ -525,6 +525,7 @@ async function boot() {
   // ---------- Loop ----------
   const clock = new THREE.Clock();
   const _v = new THREE.Vector3();
+  let wasPaused = false;
   function loop() {
     requestAnimationFrame(loop);
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -533,7 +534,11 @@ async function boot() {
     if (level && game) {
       const paused = game.isPaused();
       if (!paused) {
-        tpCam.applyLook(input.consumeLook());
+        const look = input.consumeLook();
+        // al volver de la pausa (pop-up educativo) descartamos el delta del
+        // arrastre acumulado, para que la cámara NO pegue un salto.
+        if (!wasPaused) tpCam.applyLook(look);
+        wasPaused = false;
         const move = input.moveVector();
         player.update(dt, move, tpCam.yaw, level.colliders);
         if (input.shieldPressed() && player.triggerShield(now)) {
@@ -543,9 +548,8 @@ async function boot() {
         tpCam.update(player.position, dt);
         if (level.update) level.update(dt, now);
       } else {
-        // en pausa (pop-up educativo): descartar el arrastre acumulado para que
-        // la cámara NO pegue un salto al cerrar el pop-up.
-        input.consumeLook();
+        input.consumeLook(); // drenar mientras está en pausa
+        wasPaused = true;
       }
       game.update(dt, now);
 

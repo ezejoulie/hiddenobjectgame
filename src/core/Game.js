@@ -165,6 +165,11 @@ export class Game {
     this.hud.setDanger(danger);
     if (this.audio) this.audio.setBuzz(dD < 8 ? 1 - dD / 8 : 0);
     this.hud.setNextBite(this.denguin.nextAtk - this.denguin.localT, this.denguin.mode === 'ataque');
+
+    // barra de recarga del escudo (Doble Defensa, cooldown 8 s)
+    const SHIELD_CD = 8;
+    const rem = player ? Math.max(0, (player.shieldCd || 0) - t) : 0;
+    this.hud.setShield(rem <= 0 ? 1 : 1 - rem / SHIELD_CD, rem <= 0, shieldActive);
     if (ev === 'bite') {
       this.hud.setAlert(false);
       this.hud.flash();

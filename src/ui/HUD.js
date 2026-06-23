@@ -23,6 +23,14 @@ export class HUD {
         <div class="hud-arrow-dial"><div class="hud-arrow-needle"></div></div>
       </div>
       <div class="hud-tray"></div>
+      <div class="hud-shield">
+        <span class="hud-shield-ic">🛡️</span>
+        <div class="hud-shield-col">
+          <div class="hud-shield-lbl">Doble Defensa</div>
+          <div class="hud-shield-bar"><div class="hud-shield-fill"></div></div>
+        </div>
+        <span class="hud-shield-state">Lista</span>
+      </div>
       <div class="hud-tip"><span class="hud-tip-ic">💧</span><span class="hud-tip-tx"></span></div>
       <div class="hud-alert">🦟 ¡Denguín te quiere picar! ¡Escudo! (Espacio)</div>
       <div class="hud-defense"></div>
@@ -47,6 +55,9 @@ export class HUD {
     this.arrowEl = el.querySelector('.hud-arrow');
     this.arrowNeedle = el.querySelector('.hud-arrow-needle');
     this.nextBiteEl = el.querySelector('.hud-nextbite');
+    this.shieldEl = el.querySelector('.hud-shield');
+    this.shieldFill = el.querySelector('.hud-shield-fill');
+    this.shieldState = el.querySelector('.hud-shield-state');
     this.total = items.length;
     this.setLives(this.maxLives);
 
@@ -108,6 +119,15 @@ export class HUD {
     if (!this.arrowEl) return;
     this.arrowEl.classList.toggle('show', !!show);
     if (show) this.arrowNeedle.style.transform = `rotate(${angle}rad)`;
+  }
+
+  /** Estado del escudo: frac 0..1 de recarga, ready=listo, active=en uso. */
+  setShield(frac, ready, active) {
+    if (!this.shieldEl) return;
+    this.shieldFill.style.width = `${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%`;
+    this.shieldEl.classList.toggle('ready', ready && !active);
+    this.shieldEl.classList.toggle('active', !!active);
+    this.shieldState.textContent = active ? '¡ACTIVO!' : (ready ? '¡Lista! (Espacio)' : 'Cargando…');
   }
 
   setNextBite(secs, attacking) {
