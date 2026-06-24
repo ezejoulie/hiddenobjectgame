@@ -82,6 +82,7 @@ export class Game {
       }
       const c = new Cacharro(tipo, nx, nz, this.cacharroModels[tipo]);
       c.index = i;
+      c.home = { x: nx, z: nz }; // lugar original (para reubicarlo si se dispersa)
       this.scene.add(c.group);
       this.cacharros.push(c);
     });
@@ -284,10 +285,11 @@ export class Game {
     }
   }
 
-  /** Picadura: dispersa hasta n cacharros ya juntados a nuevos lugares
-   *  (penalización: hay que volver a buscarlos). */
+  /** Picadura: dispersa hasta n cacharros ya juntados (penalización: hay que
+   *  volver a buscarlos). Se reubican CERCA de su lugar original y SIEMPRE del
+   *  mismo lado del portón, así nunca quedan inaccesibles (el juego siempre
+   *  se puede pasar). */
   _disperse(n) {
-    const pp = this.getPlayer() ? this.getPlayer().position : new THREE.Vector3();
     let done = 0;
     for (let i = this.cacharros.length - 1; i >= 0 && done < n; i--) {
       const c = this.cacharros[i];
@@ -297,29 +299,38 @@ export class Game {
         c.group.visible = true;
         c.body.scale.setScalar(1);
         c.body.position.y = 0.04;
-        // reubicar lejos del jugador para que tenga que buscarlo de nuevo
-        const [nx, nz] = this._scatterSpot(pp);
+        const [nx, nz] = this._scatterNear(c);
         c.position.set(nx, 0, nz);
-        c.group.position.set(nx, 0, nz);
+        c.group.position.set(nx, c.group.position.y, nz);
         this.found = Math.max(0, this.found - 1);
         this.hud.unmarkCollected(c.index);
         done += 1;
       }
     }
     this.hud.setCount(this.found);
-    if (done > 0) this.hud.showTip('¡Te picó Denguín!', '¡Se te volaron cacharros y se escondieron! Buscalos de nuevo. Usá el escudo (Espacio).');
+    if (done > 0) this.hud.showTip('¡Te picó Denguín!', '¡Se te volaron cacharros y se escondieron cerca! Buscalos de nuevo. Usá el escudo (Espacio).');
   }
 
-  /** Elige un punto dentro de los límites, lejos del jugador. */
-  _scatterSpot(pp) {
-    const bx = Math.max(2, this.bounds.x - 1);
-    const bz = Math.max(2, this.bounds.z - 1);
-    let nx = 0, nz = 0;
-    for (let k = 0; k < 12; k++) {
-      nx = (Math.random() * 2 - 1) * bx;
-      nz = (Math.random() * 2 - 1) * bz;
-      if (Math.hypot(nx - pp.x, nz - pp.z) > 5) break;
+  /** Reubica un cacharro cerca de su lugar original, sin cruzar el portón. */
+  _scatterNear(c) {
+    const home = c.home || { x: c.position.x, z: c.position.z };
+    const occ = ((this.level && this.level.occupied) || []).map((o) => ({ type: 'circle', x: o.x, z: o.z, r: o.r }));
+    // lado del portón (Casa): + sur, - norte; 0 si el nivel no tiene portón
+    const side = this.gateAt > 0 ? Math.sign(home.z) || 1 : 0;
+    const bx = this.bounds.x - 0.6, bz = this.bounds.z - 0.6;
+    const ang = Math.random() * Math.PI * 2;
+    const d = 1.6 + Math.random() * 1.8;
+    let nx = home.x + Math.cos(ang) * d;
+    let nz = home.z + Math.sin(ang) * d;
+    nx = Math.max(-bx, Math.min(bx, nx));
+    nz = Math.max(-bz, Math.min(bz, nz));
+    if (occ.length) {
+      const [rx, rz] = resolveCircle(nx, nz, 0.4, occ);
+      if (Math.hypot(rx - nx, rz - nz) <= 1.2) { nx = rx; nz = rz; }
     }
+    // mantener del MISMO lado del portón (margen para no quedar en la línea)
+    if (side > 0) nz = Math.max(0.7, nz);
+    else if (side < 0) nz = Math.min(-0.7, nz);
     return [nx, nz];
   }
 
