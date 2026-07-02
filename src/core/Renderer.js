@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DPR_CAP } from './Quality.js';
+import { DPR_CAP, IS_MOBILE } from './Quality.js';
 
 /**
  * Renderer.js — WebGLRenderer configurado con el pipeline de color correcto.
@@ -16,7 +16,9 @@ import { DPR_CAP } from './Quality.js';
 export function createRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
+    // MSAA apagado en móvil: en iPhone duplica la memoria del framebuffer y
+    // WebKit mata la página. El post-procesado ya suaviza bastante.
+    antialias: !IS_MOBILE,
     powerPreference: 'high-performance',
     stencil: false,
   });

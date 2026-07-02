@@ -7,6 +7,7 @@ import { createPostFX } from './core/PostFX.js';
 import { Input } from './core/Input.js';
 import { AssetLoader } from './core/AssetLoader.js';
 import { Audio } from './core/Audio.js';
+import { IS_MOBILE } from './core/Quality.js';
 
 import { Player } from './entities/Player.js';
 import { ThirdPersonCamera } from './systems/Camera.js';
@@ -274,12 +275,20 @@ async function boot() {
 
   const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
 
-  setupEnvironment(renderer, scene);
+  // IBL (luz de entorno). Si el dispositivo no la soporta (algunas GPUs de
+  // celular fallan con PMREM), compensamos con más luz directa para que los
+  // personajes/objetos PBR no queden negros.
+  let iblOk = true;
+  try {
+    setupEnvironment(renderer, scene);
+  } catch (e) {
+    iblOk = false;
+  }
   const lights = setupLighting(scene, {
-    keyIntensity: 0.45,
-    fillIntensity: 0.3,
+    keyIntensity: iblOk ? 0.45 : 1.4,
+    fillIntensity: iblOk ? 0.3 : 0.9,
     rimIntensity: 0.4,
-    hemiIntensity: 0.55,
+    hemiIntensity: iblOk ? 0.55 : 1.6,
   });
   lights.key.castShadow = false;
 
@@ -314,6 +323,9 @@ async function boot() {
     player.mesh.traverse((o) => {
       if (o.isMesh) {
         o.castShadow = true;
+        // NO recibe sombras: evita el "acné" de auto-sombreado que en algunos
+        // dispositivos (sombras de 1024 en móvil) pintaba al personaje de negro
+        o.receiveShadow = false;
         if (o.material && 'envMapIntensity' in o.material) o.material.envMapIntensity = 1.3;
       }
     });
@@ -336,8 +348,11 @@ async function boot() {
       if (s) cacharroModels[tipo] = s;
     }
     overlay.set(0.92);
-    // miniaturas (cacharros + personajes); opcionales
+    // miniaturas (cacharros + personajes); opcionales.
+    // En móvil NO: un segundo contexto WebGL + toDataURL dispara la memoria
+    // y en iPhone tira la página (los chips usan emoji como fallback).
     try {
+      if (IS_MOBILE) throw new Error('skip-thumbs-mobile');
       const tr = makeThumbRenderer();
       for (const tipo of Object.keys(CACHARRO_TIPOS)) {
         const c = new Cacharro(tipo, 0, 0, cacharroModels[tipo]);

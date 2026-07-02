@@ -14,7 +14,9 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
  * el Sprint 1 cuando integremos el pack base (Quaternius/KayKit).
  */
 export class AssetLoader {
-  constructor({ dracoPath = 'https://www.gstatic.com/draco/versioned/decoders/1.5.7/' } = {}) {
+  // decodificador DRACO empaquetado localmente (public/draco): sin depender de
+  // gstatic.com — si ese CDN falla, los personajes no cargaban.
+  constructor({ dracoPath = `${import.meta.env.BASE_URL}draco/` } = {}) {
     this.cache = new Map(); // url -> THREE.Group (la escena del gltf)
     this.fullCache = new Map(); // url -> {scene, animations}
     this.gltf = new GLTFLoader();
