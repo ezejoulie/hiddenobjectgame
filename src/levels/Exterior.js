@@ -57,6 +57,63 @@ export class Exterior extends Level {
     this._decorate();
     this._spawnLife();
     this._buildRain();
+    this._buildSky();
+  }
+
+  // ---- cielo real: domo con gradiente + resplandor de sol + nubes ----
+  _buildSky() {
+    const sunDir = new THREE.Vector3(-10, 16, -8).normalize(); // misma dirección que el sol
+    const mat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      uniforms: {
+        cTop: { value: new THREE.Color(0x3f97dd) },
+        cHorizon: { value: this._skyCol.clone() },
+        cGrey: { value: new THREE.Color(0x8a919c) },
+        grey: { value: 0 },
+        sunDir: { value: sunDir },
+      },
+      vertexShader: /* glsl */ `
+        varying vec3 vDir;
+        void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+      `,
+      fragmentShader: /* glsl */ `
+        varying vec3 vDir;
+        uniform vec3 cTop; uniform vec3 cHorizon; uniform vec3 cGrey;
+        uniform float grey; uniform vec3 sunDir;
+        void main(){
+          vec3 d = normalize(vDir);
+          float h = smoothstep(-0.05, 0.45, d.y);
+          vec3 col = mix(cHorizon, cTop, h);
+          float sd = max(dot(d, sunDir), 0.0);
+          col += vec3(1.0, 0.95, 0.8) * (pow(sd, 200.0) * 0.9 + pow(sd, 8.0) * 0.12); // disco + halo
+          col = mix(col, cGrey, grey); // se pone gris cuando llueve
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `,
+    });
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(150, 32, 20), mat);
+    dome.renderOrder = -10;
+    this.add(dome);
+    this._skyMat = mat;
+
+    // nubes estilizadas que derivan lento por el cielo
+    this._clouds = [];
+    this._cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, transparent: true, opacity: 0.94 });
+    for (let i = 0; i < 9; i++) {
+      const g = new THREE.Group();
+      const puffs = 3 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < puffs; k++) {
+        const r = 2.2 + Math.random() * 2.6;
+        const p = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), this._cloudMat);
+        p.position.set((k - (puffs - 1) / 2) * r * 1.05, (Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 2.5);
+        p.scale.y = 0.55;
+        g.add(p);
+      }
+      g.position.set((Math.random() * 2 - 1) * 90, 26 + Math.random() * 14, (Math.random() * 2 - 1) * 90);
+      this.add(g);
+      this._clouds.push({ g, v: 0.5 + Math.random() * 0.8 });
+    }
   }
 
   // ---- lluvia (rayas que caen sobre el área jugable) ----
@@ -96,7 +153,7 @@ export class Exterior extends Level {
     this.rainIntensity += (target - this.rainIntensity) * Math.min(1, dt * 0.6);
     const r = this.rainIntensity;
 
-    // oscurecer la escena (sol + niebla + cielo) cuando llueve
+    // oscurecer la escena (sol + niebla + cielo + nubes) cuando llueve
     if (this._sun) this._sun.intensity = 2.2 * (1 - r * 0.6);
     if (this.scene) {
       if (this.scene.fog) this.scene.fog.color.copy(this._skyCol).lerp(this._greyCol, r * 0.75);
@@ -104,6 +161,8 @@ export class Exterior extends Level {
         this.scene.background.copy(this._skyCol).lerp(this._greyCol, r * 0.7);
       }
     }
+    if (this._skyMat) this._skyMat.uniforms.grey.value = r * 0.8;
+    if (this._cloudMat) this._cloudMat.color.setScalar(1 - r * 0.4);
 
     if (!this._rain) return;
     const on = r > 0.02;
@@ -587,6 +646,13 @@ export class Exterior extends Level {
 
   update(dt, t) {
     this._updateRain(dt);
+    // nubes que derivan (con vuelta al otro lado)
+    if (this._clouds) {
+      for (const c of this._clouds) {
+        c.g.position.x += c.v * dt;
+        if (c.g.position.x > 100) c.g.position.x = -100;
+      }
+    }
     for (const w of this.waters) {
       w.mesh.position.y = w.y + Math.sin(t * 1.2) * 0.01;
       w.mesh.material.emissiveIntensity = 0.22 + Math.sin(t * 2) * 0.06;

@@ -7,19 +7,18 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 /**
- * Viñeta ovalada: nítido en el centro, cae suave hacia los bordes.
- * Usa length(vUv-0.5) sin corregir aspecto, así en pantallas anchas el
- * círculo se estira a un óvalo que sigue naturalmente la forma de la pantalla.
- *  - inner: radio (0..1) hasta donde la imagen queda 100% nítida/brillante
- *  - outer: radio donde la viñeta llega a su máximo
- *  - dark : brillo en el borde (1 = sin efecto, 0 = negro)
+ * Grade + viñeta ovalada: un solo pass barato que hace el "look" final.
+ *  - saturation/contrast: grading sutil que hace reventar los colores
+ *  - inner/outer/dark: viñeta (nítido en el centro, cae suave a los bordes)
  */
-const VignetteShader = {
+const GradeVignetteShader = {
   uniforms: {
     tDiffuse: { value: null },
     inner: { value: 0.55 },
     outer: { value: 1.18 },
     dark: { value: 0.52 },
+    saturation: { value: 1.15 },
+    contrast: { value: 1.04 },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -31,12 +30,22 @@ const VignetteShader = {
     uniform float inner;
     uniform float outer;
     uniform float dark;
+    uniform float saturation;
+    uniform float contrast;
     void main(){
       vec4 c = texture2D(tDiffuse, vUv);
+      vec3 col = c.rgb;
+      // saturación (alrededor de la luminancia)
+      float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
+      col = mix(vec3(l), col, saturation);
+      // contraste suave
+      col = (col - 0.5) * contrast + 0.5;
+      col = max(col, 0.0);
+      // viñeta ovalada
       float d = length(vUv - 0.5) * 1.41421356;   // 0 centro, ~1 esquina
       float v = smoothstep(outer, inner, d);        // 1 en el centro, 0 en los bordes
       float f = mix(dark, 1.0, v);
-      gl_FragColor = vec4(c.rgb * f, c.a);
+      gl_FragColor = vec4(col * f, c.a);
     }
   `,
 };
@@ -59,10 +68,12 @@ export function createPostFX(renderer, scene, camera, opts = {}) {
     bloomStrength = 0.1,
     bloomRadius = 0.35,
     bloomThreshold = 0.92,
-    // Viñeta
+    // Viñeta + grade
     vignetteInner = 0.55,
     vignetteOuter = 1.18,
     vignetteDark = 0.52,
+    saturation = 1.15,
+    contrast = 1.04,
     enableAO = true,
     enableBloom = true,
     enableVignette = true,
@@ -103,13 +114,15 @@ export function createPostFX(renderer, scene, camera, opts = {}) {
     composer.addPass(bloom);
   }
 
-  // --- Viñeta ovalada ---
+  // --- Grade (saturación/contraste) + viñeta ovalada ---
   let vignette = null;
   if (enableVignette) {
-    vignette = new ShaderPass(VignetteShader);
+    vignette = new ShaderPass(GradeVignetteShader);
     vignette.uniforms.inner.value = vignetteInner;
     vignette.uniforms.outer.value = vignetteOuter;
     vignette.uniforms.dark.value = vignetteDark;
+    vignette.uniforms.saturation.value = saturation;
+    vignette.uniforms.contrast.value = contrast;
     composer.addPass(vignette);
   }
 

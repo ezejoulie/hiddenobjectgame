@@ -1054,3 +1054,17 @@ body {
 .hud-shield.active .hud-shield-state {
   color: #fff;
 }
+
+/* ================= Logo del juego ================= */
+.home-logo {
+  display: block;
+  width: min(430px, 80vw);
+  margin: -6px auto 10px;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35));
+}
+#loading .load-logo {
+  display: block;
+  width: min(320px, 70vw);
+  margin: 0 auto 18px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4));
+}

@@ -25,7 +25,7 @@ export function createRenderer(canvas) {
 
   // Color y tono
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 1.06; // un toque más luminoso (colores con más punch)
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   // Sombras suaves

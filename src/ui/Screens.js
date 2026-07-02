@@ -101,12 +101,14 @@ export class Screens {
     });
   }
 
-  /** Portada: nombre del juego, historia y objetivo. Antes del mapa. */
+  /** Portada: logo del juego, historia y objetivo. Antes del mapa. */
   home({ onPlay }) {
+    const logo = `${import.meta.env.BASE_URL}assets/img/logo.png`;
     this._show({
-      emoji: '🦟🛡️',
-      title: 'Patrulla Doble Defensa',
+      emoji: '',
+      title: '',
       descHtml: `
+        <img class="home-logo" src="${logo}" alt="Patrulla Anti-Dengue — Descacharrando">
         <p class="scr-lead">El mosquito <b>Denguín</b> llenó los barrios de <b>cacharros</b> con
         agua estancada, donde nacen sus crías. 🦟💧</p>
         <p class="scr-lead">¡Vos sos un <b>agente de la Patrulla</b>! Tu misión: recorrer la casa,

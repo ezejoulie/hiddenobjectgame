@@ -141,8 +141,8 @@ function makeLoadingOverlay() {
   el.id = 'loading';
   el.innerHTML = `
     <div class="load-card">
+      <img class="load-logo" src="${BASE}assets/img/logo.png" alt="Patrulla Anti-Dengue">
       <div class="load-title">Cargando videojuego…</div>
-      <div class="load-sub">🦟 Patrulla Doble Defensa</div>
       <div class="load-bar"><div class="load-fill"></div></div>
       <div class="load-pct">0%</div>
     </div>`;
@@ -309,8 +309,17 @@ async function boot() {
     player.heading = prevHeading;
     player.mesh.position.copy(prevPos);
     player.mesh.rotation.y = prevHeading;
-    // sin sombra dura del personaje (el "círculo" bajo el jugador molestaba)
-    player.mesh.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    // "más 3D": sombra real (ancla al personaje al piso) + materiales con más
+    // reflejo del entorno + luz de realce que lo sigue (lo despega del fondo)
+    player.mesh.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = true;
+        if (o.material && 'envMapIntensity' in o.material) o.material.envMapIntensity = 1.3;
+      }
+    });
+    const rim = new THREE.PointLight(0xfff2dd, 1.6, 4.5, 2);
+    rim.position.set(0.3, 2.0, -0.9); // atrás-arriba: contorno cálido
+    player.mesh.add(rim);
     scene.add(player.mesh);
   }
 
