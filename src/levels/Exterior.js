@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Level } from './Level.js';
 import { boxCollider } from '../systems/Collision.js';
 import { grassTexture, sandTexture, pavementTexture, windowsTexture } from '../core/Textures.js';
+import { SHADOW_SIZE, RAIN_DROPS } from '../core/Quality.js';
 
 /**
  * Exterior.js — base de los niveles al aire libre (Jardín, Escuela, Parque,
@@ -118,7 +119,7 @@ export class Exterior extends Level {
 
   // ---- lluvia (rayas que caen sobre el área jugable) ----
   _buildRain() {
-    const N = 1300;
+    const N = RAIN_DROPS;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(N * 6); // 2 vértices por gota (raya)
     this._rainV = new Float32Array(N);
@@ -525,7 +526,7 @@ export class Exterior extends Level {
     const sun = new THREE.DirectionalLight(0xfff3da, 2.2);
     sun.position.set(-10, 16, -8);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(SHADOW_SIZE, SHADOW_SIZE);
     sun.shadow.camera.near = 0.5;
     sun.shadow.camera.far = 70;
     sun.shadow.camera.left = -24;

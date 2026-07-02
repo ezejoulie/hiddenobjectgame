@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { SHADOW_SIZE } from './Quality.js';
 
 /**
  * Lighting.js — iluminación reutilizable: IBL + esquema de tres puntos.
@@ -59,7 +60,7 @@ export function setupLighting(scene, opts = {}) {
   const key = new THREE.DirectionalLight(keyColor, keyIntensity);
   key.position.set(7, 11, 6);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(SHADOW_SIZE, SHADOW_SIZE);
   key.shadow.camera.near = 0.5;
   key.shadow.camera.far = 60;
   key.shadow.camera.left = -shadowArea;

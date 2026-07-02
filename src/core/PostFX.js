@@ -5,6 +5,7 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { DPR_CAP, ENABLE_AO } from './Quality.js';
 
 /**
  * Grade + viñeta ovalada: un solo pass barato que hace el "look" final.
@@ -74,14 +75,15 @@ export function createPostFX(renderer, scene, camera, opts = {}) {
     vignetteDark = 0.52,
     saturation = 1.15,
     contrast = 1.04,
-    enableAO = true,
+    // en móvil el GTAO se apaga solo (memoria de GPU limitada)
+    enableAO = ENABLE_AO,
     enableBloom = true,
     enableVignette = true,
   } = opts;
 
   const w = window.innerWidth;
   const h = window.innerHeight;
-  const dpr = Math.min(window.devicePixelRatio, 2);
+  const dpr = Math.min(window.devicePixelRatio, DPR_CAP);
 
   const composer = new EffectComposer(renderer);
   composer.setPixelRatio(dpr);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DPR_CAP } from './Quality.js';
 
 /**
  * Renderer.js — WebGLRenderer configurado con el pipeline de color correcto.
@@ -20,7 +21,7 @@ export function createRenderer(canvas) {
     stencil: false,
   });
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   // Color y tono

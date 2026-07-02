@@ -3,6 +3,7 @@ import { Level } from './Level.js';
 import { boxCollider } from '../systems/Collision.js';
 import { CASA_LIVING } from '../data/levels.config.js';
 import { woodFloorTexture, artTexture } from '../core/Textures.js';
+import { SHADOW_SIZE } from '../core/Quality.js';
 
 /**
  * Casa.js — La Casa grande, con PASILLO CENTRAL y 5 ambientes separados, para
@@ -284,7 +285,7 @@ export class Casa extends Level {
     sun.position.set(3, 6, 12);
     sun.target.position.set(0, 0, 0);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(SHADOW_SIZE, SHADOW_SIZE);
     sun.shadow.camera.near = 0.5;
     sun.shadow.camera.far = 40;
     sun.shadow.camera.left = -13;

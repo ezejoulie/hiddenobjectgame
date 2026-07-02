@@ -612,4 +612,17 @@ async function boot() {
   loop();
 }
 
-boot();
+boot().catch((e) => {
+  // si el arranque falla (GPU/memoria/red), mostrar un aviso en vez de negro
+  const d = document.createElement('div');
+  d.style.cssText =
+    'position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;gap:12px;' +
+    'align-items:center;justify-content:center;background:#0e2438;color:#fff;' +
+    'font-family:system-ui;text-align:center;padding:24px';
+  d.innerHTML = `<div style="font-size:2rem">🦟</div>
+    <b>Ups, no pudimos arrancar el juego.</b>
+    <span style="opacity:.8;font-size:.85rem;max-width:420px">${(e && e.message) || e}</span>
+    <button onclick="location.reload()" style="padding:10px 22px;border-radius:12px;border:0;
+      font-weight:800;background:#46b23a;color:#fff;cursor:pointer">Reintentar</button>`;
+  document.body.appendChild(d);
+});
