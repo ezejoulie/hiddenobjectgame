@@ -1,3 +1,5 @@
+import { QUALITY, setQuality } from '../core/Quality.js';
+
 /**
  * Screens.js — modales de juego: intro, victoria y derrota.
  * Cada uno se muestra con un callback para el botón principal.
@@ -152,6 +154,22 @@ export class Screens {
         { emoji: '🗺️', lines: ['Tu misión: recorrer <b>5 lugares</b>', 'y eliminar <b>todos los cacharros</b>.', 'Sin agua acumulada… ¡no hay mosquito!'], cta: '¡Acepto la misión! 🚀' },
       ], { onDone: onPlay }),
     });
+    // selector de calidad en el splash: se elige ANTES de cargar el juego
+    const scene = this._storyEl && this._storyEl.querySelector('.story-scene');
+    if (scene) {
+      const row = document.createElement('div');
+      row.className = 'q-row';
+      const names = { low: 'Baja', medium: 'Media', high: 'Alta' };
+      row.innerHTML = '<span class="q-lbl">⚙️ Calidad gráfica</span>' +
+        ['low', 'medium', 'high'].map((q) =>
+          `<button data-q="${q}" class="${q === QUALITY ? 'on' : ''}">${names[q]}</button>`).join('');
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const b = e.target.closest('button[data-q]');
+        if (b && b.dataset.q !== QUALITY) setQuality(b.dataset.q); // guarda y recarga (instantáneo acá)
+      });
+      scene.appendChild(row);
+    }
   }
 
   /** Diploma/medalla final: se gana al descacharrar todas las escenas. */

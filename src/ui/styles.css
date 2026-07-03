@@ -1230,3 +1230,38 @@ body {
   cursor: pointer;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
+
+/* selector de calidad en el splash */
+.q-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.q-lbl {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 800;
+  font-size: 0.82rem;
+  margin-right: 4px;
+}
+.q-row button {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.q-row button:hover { background: rgba(255, 255, 255, 0.22); }
+.q-row button.on {
+  background: linear-gradient(180deg, #ffd968, #f4b72e);
+  border-color: #fff;
+  color: #4a3203;
+  box-shadow: 0 0 14px rgba(244, 183, 46, 0.5);
+}
