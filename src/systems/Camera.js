@@ -35,6 +35,9 @@ export class ThirdPersonCamera {
 
   /** Aplica el arrastre acumulado a yaw/pitch. */
   applyLook({ dx, dy }) {
+    // tope por frame: giros bruscos no "teletransportan" la cámara
+    dx = Math.max(-160, Math.min(160, dx));
+    dy = Math.max(-160, Math.min(160, dy));
     this.yaw -= dx * this.lookSensitivity;
     this.pitch = Math.min(this.maxPitch, Math.max(this.minPitch, this.pitch + dy * this.lookSensitivity));
   }

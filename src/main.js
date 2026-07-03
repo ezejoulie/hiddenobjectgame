@@ -397,6 +397,36 @@ async function boot() {
 
   const levelLoader = makeLevelLoader();
 
+  // ---------- Pausa (botón ⏸ o tecla P) ----------
+  const pauseBtn = document.createElement('button');
+  pauseBtn.id = 'btn-pause';
+  pauseBtn.textContent = '⏸';
+  pauseBtn.title = 'Pausar (P)';
+  pauseBtn.style.display = 'none';
+  document.body.appendChild(pauseBtn);
+  function togglePause() {
+    if (!game || game.state !== 'playing') return;
+    if (!game.paused) {
+      game.paused = true;
+      screens._show({
+        emoji: '⏸️', title: 'Juego en pausa',
+        desc: 'El tiempo y Denguín están congelados. ¡Tomate un respiro!',
+        buttons: [
+          { label: '▶️ Reanudar', cls: 'verde', onClick: () => { game.paused = false; screens.hide(); input.lock(); } },
+          { label: '🗺️ Salir al mapa', cls: '', onClick: () => showMap() },
+        ],
+      });
+    } else {
+      game.paused = false;
+      screens.hide();
+      input.lock();
+    }
+  }
+  pauseBtn.addEventListener('click', togglePause);
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyP') togglePause();
+  });
+
   // cortina circular (transición con onda, estilo juegos toon)
   const wipeEl = document.createElement('div');
   wipeEl.id = 'wipe';
@@ -485,6 +515,7 @@ async function boot() {
     disposeLevel();
     player.mesh.visible = false;
     screens.hide();
+    pauseBtn.style.display = '';
     const cfg = LEVEL_CONFIGS[id];
     levelLoader.show(cfg);
     const models = await loadLevelModels(id);
@@ -524,6 +555,17 @@ async function boot() {
     // pre-compila shaders/materiales + corre un frame de toda la cadena de
     // post-proceso para que NO se trabe al arrancar el nivel
     renderer.compile(scene, camera);
+    // giro 360° en frío detrás del loader: compila/precarga TODA la escena,
+    // así girar rápido la cámara después no traba ni un frame
+    for (let i = 0; i < 4; i++) {
+      tpCam.yaw = Math.PI + (i * Math.PI) / 2;
+      tpCam.snap();
+      tpCam.update(player.position, 0);
+      postfx.render(0);
+    }
+    tpCam.yaw = Math.PI;
+    tpCam.snap();
+    tpCam.update(player.position, 0);
     postfx.render(0);
     levelLoader.hide();
 
@@ -547,6 +589,7 @@ async function boot() {
 
   function showMap() {
     disposeLevel();
+    pauseBtn.style.display = 'none';
     startMenuMusic(); // volver a la música de menú entre escenas
     player.mesh.visible = false;
     // recorrido OBLIGATORIO en orden: cada nivel se desbloquea al completar el anterior

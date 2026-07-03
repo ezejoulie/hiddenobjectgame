@@ -41,8 +41,12 @@ export class Input {
     this._onPointerMove = (e) => {
       // con pointer lock: cualquier movimiento del mouse gira la cámara
       if (this._locked) {
-        this.look.dx += (e.movementX || 0);
-        this.look.dy += (e.movementY || 0);
+        const mx = e.movementX || 0;
+        const my = e.movementY || 0;
+        // filtrar picos falsos del navegador (saltos de cámara = "se traba")
+        if (Math.abs(mx) > 260 || Math.abs(my) > 260) return;
+        this.look.dx += mx;
+        this.look.dy += my;
         return;
       }
       // sin lock: arrastrar (mantener apretado) — fallback y para touch
