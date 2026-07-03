@@ -128,6 +128,15 @@ export class Cacharro {
     this.ring.visible = false;
     this.group.add(this.ring);
 
+    // destello-faro: rombo dorado girando sobre el cacharro (se ve de lejos)
+    const glow = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.07),
+      new THREE.MeshBasicMaterial({ color: 0xffe27a, transparent: true, opacity: 0.9, depthWrite: false })
+    );
+    glow.position.y = 0.95;
+    this.glow = glow;
+    this.group.add(glow);
+
     this.group.position.set(x, 0, z);
   }
 
@@ -158,6 +167,13 @@ export class Cacharro {
 
   update(dt, t, playerPos) {
     if (this.collected) return;
+
+    if (this.glow) {
+      this.glow.visible = this.collecting === 0;
+      this.glow.rotation.y += dt * 2.2;
+      this.glow.position.y = 0.95 + Math.sin(t * 2 + this.phase) * 0.08;
+      this.glow.material.opacity = 0.5 + Math.sin(t * 3 + this.phase) * 0.35;
+    }
 
     if (this.collecting > 0) {
       this.collecting = Math.min(1, this.collecting + dt * 2.2);

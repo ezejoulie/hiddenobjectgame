@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Level } from './Level.js';
 import { boxCollider } from '../systems/Collision.js';
 import { grassTexture, sandTexture, pavementTexture, windowsTexture } from '../core/Textures.js';
-import { SHADOW_SIZE, RAIN_DROPS } from '../core/Quality.js';
+import { SHADOW_SIZE, RAIN_DROPS, IS_MOBILE } from '../core/Quality.js';
 
 /**
  * Exterior.js — base de los niveles al aire libre (Jardín, Escuela, Parque,
@@ -59,6 +59,36 @@ export class Exterior extends Level {
     this._spawnLife();
     this._buildRain();
     this._buildSky();
+    if (this.ground.type === 'grass') this._buildGrass();
+  }
+
+  // ---- pasto 3D instanciado: miles de briznas reales sobre el césped ----
+  _buildGrass() {
+    const N = IS_MOBILE ? 900 : 2400;
+    const geo = new THREE.ConeGeometry(0.03, 0.3, 4);
+    geo.translate(0, 0.15, 0);
+    const gm = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
+    const inst = new THREE.InstancedMesh(geo, gm, N);
+    const d = new THREE.Object3D();
+    const col = new THREE.Color();
+    let placed = 0;
+    for (let guard = 0; placed < N && guard < N * 3; guard++) {
+      const x = (Math.random() * 2 - 1) * (this.HW - 0.5);
+      const z = (Math.random() * 2 - 1) * (this.HD - 0.5);
+      if (this._inPond(x, z)) continue;
+      d.position.set(x, 0, z);
+      d.rotation.y = Math.random() * 6.28;
+      d.rotation.z = (Math.random() - 0.5) * 0.3;
+      d.scale.set(1, 0.7 + Math.random() * 0.9, 1);
+      d.updateMatrix();
+      inst.setMatrixAt(placed, d.matrix);
+      inst.setColorAt(placed, col.setHSL(0.28 + Math.random() * 0.07, 0.55, 0.3 + Math.random() * 0.18));
+      placed += 1;
+    }
+    inst.count = placed;
+    inst.castShadow = false;
+    inst.receiveShadow = true;
+    this.add(inst);
   }
 
   // ---- cielo real: domo con gradiente + resplandor de sol + nubes ----
