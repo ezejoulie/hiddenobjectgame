@@ -83,11 +83,15 @@ export class Playa extends Exterior {
     [[-14, 12], [13, -3], [-12, -6], [8, 11]].forEach(([x, z]) => this._pastoCluster(x, z, 5, 2));
   }
 
-  // perro en la arena, sin mariposas sobre el mar
+  // perro en la arena, gaviotas y brisa
   _spawnLife() {
     const dog = this._placeGLB('perro', { x: 3, z: 4, height: 0.55, ry: -0.6 });
-    if (dog) this.critters.push({ g: dog, y0: dog.position.y, phase: 0 });
+    if (dog) {
+      this.critters.push({ g: dog, y0: dog.position.y, phase: 0 });
+      this._dog = dog;
+    }
     const cols = [0xffffff, 0xffe08a, 0x9fd9ff];
     [[-6, 5], [5, 9], [-2, 2]].forEach(([x, z], i) => this._mariposa(x, z, cols[i % cols.length]));
+    this._vida(); // gaviotas + partículas de brisa
   }
 }

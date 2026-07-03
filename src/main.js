@@ -586,6 +586,7 @@ async function boot() {
   const _v = new THREE.Vector3();
   let wasPaused = false;
   let raining = false;
+  let stepAcc = 0;
   function loop() {
     requestAnimationFrame(loop);
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -599,7 +600,18 @@ async function boot() {
         // arrastre acumulado, para que la cámara NO pegue un salto.
         if (!wasPaused) tpCam.applyLook(look);
         wasPaused = false;
-        if (level.update) level.update(dt, now);
+        if (level.update) level.update(dt, now, player.position);
+        // pasos al ritmo de la caminata real
+        const spd = Math.hypot(player.vx || 0, player.vz || 0);
+        if (spd > 0.6 && game.state === 'playing') {
+          stepAcc += spd * dt;
+          if (stepAcc > 1.35) {
+            stepAcc = 0;
+            audio.step();
+          }
+        } else {
+          stepAcc = 0.9; // el primer paso suena enseguida al arrancar
+        }
         // lluvia (exteriores): el jugador va más lento y suena el loop de lluvia
         const rain = level.rainIntensity || 0;
         player.speedScale = level.speedFactor ? level.speedFactor() : 1;

@@ -141,7 +141,7 @@ export class Game {
     if (this.paused) {
       this.hud.setAlert(false);
       this.hud.setDanger(0);
-      if (this.audio) this.audio.setBuzz(0);
+      if (this.audio) { this.audio.setBuzz(0); this.audio.setDangerMusic(0); }
       return;
     }
 
@@ -149,7 +149,7 @@ export class Game {
       this.denguin.update(dt, t, pp, shieldActive); // sigue volando de fondo
       this.hud.setAlert(false);
       this.hud.setDanger(0);
-      if (this.audio) this.audio.setBuzz(0);
+      if (this.audio) { this.audio.setBuzz(0); this.audio.setDangerMusic(0); }
       return;
     }
 
@@ -163,7 +163,10 @@ export class Game {
     if (this.denguin.mode === 'ataque') danger = Math.max(danger, 0.55);
     if (shieldActive) danger *= 0.25; // con escudo, menos tensión
     this.hud.setDanger(danger);
-    if (this.audio) this.audio.setBuzz(dD < 8 ? 1 - dD / 8 : 0);
+    if (this.audio) {
+      this.audio.setBuzz(dD < 8 ? 1 - dD / 8 : 0);
+      this.audio.setDangerMusic(this.denguin.mode === 'ataque' ? 1 : 0);
+    }
     this.hud.setNextBite(this.denguin.nextAtk - this.denguin.localT, this.denguin.mode === 'ataque');
 
     // barra de recarga del escudo (Doble Defensa, cooldown 8 s)
@@ -207,8 +210,10 @@ export class Game {
         if (this.gateAt > 0 && !this._gateOpened && this.found >= this.gateAt && this.level && this.level.openGate) {
           this._gateOpened = true;
           this.level.openGate();
+          if (this.audio) this.audio.gate();
           this.hud.showTip('¡Portón abierto! 🔓', 'Volvé al pasillo y seguí hacia el norte (cocina, baño, living).');
         }
+        if (player && player.celebrate) player.celebrate(); // saltito de festejo
         const last = this.found >= this.cacharros.length;
         // pausa educativa (nivel tutorial): muestra el elemento + cómo prevenir
         if (this.educa && this.screens.educa) {
@@ -353,7 +358,7 @@ export class Game {
   }
 
   dispose() {
-    if (this.audio) this.audio.setBuzz(0);
+    if (this.audio) { this.audio.setBuzz(0); this.audio.setDangerMusic(0); }
     this._clear();
     if (this.denguin) this.scene.remove(this.denguin.mesh);
     if (this.shieldBubble) this.scene.remove(this.shieldBubble);

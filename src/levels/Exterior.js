@@ -638,21 +638,90 @@ export class Exterior extends Level {
     }
   }
 
-  /** Perro + mariposas (vida). Llamado tras decorar; se puede sobreescribir. */
+  /** Perro + mariposas + pájaros + hojas (vida). Se puede sobreescribir. */
   _spawnLife(dogPos = [4, 5]) {
     const dog = this._placeGLB('perro', { x: dogPos[0], z: dogPos[1], height: 0.55, ry: -0.6 });
-    if (dog) this.critters.push({ g: dog, y0: dog.position.y, phase: 0 });
+    if (dog) {
+      this.critters.push({ g: dog, y0: dog.position.y, phase: 0 });
+      this._dog = dog; // te sigue por el nivel
+    }
     const cols = [0xff8ac2, 0xffc93c, 0x7ad1ff, 0xff6b6b, 0xb388ff];
     [[2, 3], [-4, 7], [9, -2], [-7, 0], [6, 7], [0, -6]].forEach(([x, z], i) =>
       this._mariposa(x, z, cols[i % cols.length])
     );
+    this._vida();
+  }
+
+  /** Pájaros altos + hojas que flotan a la deriva. */
+  _vida() {
+    // pájaros: siluetas con alas, vuelan en círculos amplios y altos
+    for (let i = 0; i < 3; i++) {
+      const g = new THREE.Group();
+      const wMat = mat(0x3c4650, 0.8);
+      const shape = new THREE.CircleGeometry(0.28, 3); // triángulo (ala)
+      const lw = new THREE.Mesh(shape, wMat);
+      const rw = new THREE.Mesh(shape, wMat);
+      lw.position.x = -0.16;
+      rw.position.x = 0.16;
+      g.add(lw, rw);
+      g.position.set(0, 9, 0);
+      this.add(g);
+      this.butterflies.push({
+        g, lw, rw, cx: (Math.random() - 0.5) * 12, cz: (Math.random() - 0.5) * 10,
+        r: 9 + Math.random() * 6, speed: 0.22 + Math.random() * 0.12,
+        phase: Math.random() * 6.28, yBase: 8 + Math.random() * 3,
+      });
+    }
+    // hojas/pétalos a la deriva
+    const N = 50;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3);
+    this._leafPh = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = (Math.random() * 2 - 1) * this.HW;
+      pos[i * 3 + 1] = 0.3 + Math.random() * 2.4;
+      pos[i * 3 + 2] = (Math.random() * 2 - 1) * this.HD;
+      this._leafPh[i] = Math.random() * 6.28;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const lm = new THREE.PointsMaterial({ color: 0xa8d878, size: 0.09, transparent: true, opacity: 0.85, depthWrite: false });
+    this._leaves = new THREE.Points(geo, lm);
+    this._leaves.frustumCulled = false;
+    this.add(this._leaves);
   }
 
   // subclases lo implementan
   _decorate() {}
 
-  update(dt, t) {
+  update(dt, t, playerPos) {
     this._updateRain(dt);
+    // el perro te sigue (trotando, sin pegarse)
+    if (this._dog && playerPos) {
+      const g = this._dog;
+      const dx = playerPos.x - g.position.x;
+      const dz = playerPos.z - g.position.z;
+      const d = Math.hypot(dx, dz);
+      if (d > 3.0) {
+        const sp = Math.min(2.6, d - 2.6); // trota más rápido cuanto más lejos
+        g.position.x += (dx / d) * sp * dt;
+        g.position.z += (dz / d) * sp * dt;
+        g.rotation.y = Math.atan2(dx, dz);
+      }
+    }
+    // hojas a la deriva
+    if (this._leaves) {
+      const p = this._leaves.geometry.attributes.position;
+      const a = p.array;
+      for (let i = 0; i < this._leafPh.length; i++) {
+        const ph = this._leafPh[i];
+        a[i * 3] += Math.sin(t * 0.5 + ph) * dt * 0.5 + dt * 0.25;
+        a[i * 3 + 1] += Math.sin(t * 1.3 + ph) * dt * 0.3;
+        if (a[i * 3] > this.HW) a[i * 3] = -this.HW;
+        if (a[i * 3 + 1] < 0.15) a[i * 3 + 1] = 2.4;
+        if (a[i * 3 + 1] > 2.8) a[i * 3 + 1] = 0.3;
+      }
+      p.needsUpdate = true;
+    }
     // árboles que se mecen con el viento (más si llueve)
     if (this._sways) {
       const wind = 0.014 + this.rainIntensity * 0.02;

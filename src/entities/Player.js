@@ -298,6 +298,11 @@ export class Player {
     this.mesh.position.copy(this.position);
   }
 
+  /** Saltito alegre al juntar un cacharro. */
+  celebrate() {
+    this._hopT = 0.38;
+  }
+
   triggerShield(now) {
     if (now < (this.shieldCd || 0)) return false; // en cooldown
     this.shieldUntil = now + 1.7;
@@ -388,6 +393,13 @@ export class Player {
     // respiración en reposo (que nunca esté "congelado")
     this.idleT = (this.idleT || 0) + dt;
     if (mag < 0.08) bobY += Math.sin(this.idleT * 2.2) * 0.012 + 0.012;
+
+    // saltito de festejo (al juntar un cacharro)
+    if (this._hopT > 0) {
+      this._hopT = Math.max(0, this._hopT - dt);
+      const k = 1 - this._hopT / 0.38; // 0..1
+      bobY += Math.sin(k * Math.PI) * 0.32;
+    }
 
     this.mesh.position.set(this.position.x, bobY, this.position.z);
     this.mesh.rotation.y = this.heading + this.facingOffset;

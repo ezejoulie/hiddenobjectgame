@@ -146,21 +146,50 @@ export class Audio {
     this._musicTimer = setInterval(tick, 110);
   }
 
-  /** Emite un compás del tema actual: bombo, hats, bajo saltarín y melodía. */
+  /** Emite un compás del tema actual: bombo, hats, bajo saltarín y melodía.
+   *  Con `danger` (Denguín atacando), la percusión se acelera y tensa. */
   _emitBar(t0) {
     const th = this.theme;
     const step = th.beat;
     const root = th.roots[this._bar % th.roots.length];
     const mel = this._bar % 2 ? th.melB : th.melA;
+    const danger = this._danger || 0;
     for (let s = 0; s < 16; s++) {
       const t = t0 + s * step;
       if (s === 0 || s === 8) this._tone(60, t, 0.13, { type: 'sine', gain: 0.16, out: this.musicGain, attack: 0.004, release: 0.07 });
-      if (s % 2 === 1) this._noise(t, 0.025, { gain: 0.018, freq: 7000 });
+      if (s % 2 === 1) this._noise(t, 0.025, { gain: 0.018 + danger * 0.012, freq: 7000 });
       if (s % 4 === 0) this._tone(root, t, step * 1.5, { type: th.bass, gain: 0.06, out: this.musicGain, attack: 0.004, release: 0.05 });
       if (s % 4 === 2) this._tone(root * 1.5, t, step * 0.7, { type: th.bass, gain: 0.045, out: this.musicGain, attack: 0.004, release: 0.04 });
       if (s % 2 === 0) this._tone(mel[(s / 2) % 8], t, step * 1.2, { type: th.mel, gain: 0.06, out: this.musicGain, attack: 0.004, release: 0.06 });
+      // capa de peligro: tom grave galopante mientras Denguín ataca
+      if (danger > 0.4 && s % 2 === 0) {
+        this._tone(root * 0.5, t, step * 0.5, { type: 'triangle', gain: 0.07 * danger, out: this.musicGain, attack: 0.003, release: 0.04 });
+      }
     }
     this._bar++;
+  }
+
+  /** 0..1: tensión musical mientras Denguín ataca. */
+  setDangerMusic(v) {
+    this._danger = Math.max(0, Math.min(1, v));
+  }
+
+  /** Pasito (se llama al ritmo de la caminata). */
+  step() {
+    this._ensure();
+    if (!this.ctx) return;
+    this._noise(this.ctx.currentTime, 0.045, { gain: 0.035, type: 'lowpass', freq: 700 });
+  }
+
+  /** Fanfarria del portón que se abre. */
+  gate() {
+    this._ensure();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [392, 523, 659, 784, 1047].forEach((f, i) =>
+      this._tone(f, t + i * 0.09, 0.16, { type: 'triangle', gain: 0.13 })
+    );
+    this._noise(t + 0.4, 0.25, { gain: 0.05, freq: 2500 });
   }
 
   stopMusic() {

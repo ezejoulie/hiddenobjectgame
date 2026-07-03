@@ -36,7 +36,7 @@ export class Input {
     // ---- arrastre (mouse/touch) para mirar ----
     this._onPointerDown = (e) => {
       this._drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
-      this.el.setPointerCapture?.(e.pointerId);
+      try { this.el.setPointerCapture?.(e.pointerId); } catch { /* con pointer lock no aplica */ }
     };
     this._onPointerMove = (e) => {
       // con pointer lock: cualquier movimiento del mouse gira la cámara
