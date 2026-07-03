@@ -39,6 +39,8 @@ export class Player {
     this.radius = 0.3;
     this.speed = 4.2;
     this.speedScale = 1; // <1 cuando llueve (afuera)
+    this.vx = 0; // velocidad actual (inercia)
+    this.vz = 0;
     this.position = new THREE.Vector3();
     this.heading = Math.PI;
     this.walkPhase = 0;
@@ -304,29 +306,47 @@ export class Player {
   }
 
   update(dt, move, camYaw, colliders) {
-    const mag = Math.min(1, Math.hypot(move.x, move.y));
+    const inputMag = Math.min(1, Math.hypot(move.x, move.y));
     let bobY = 0;
 
-    if (mag > 0.08) {
+    // ---- movimiento con INERCIA (game feel): la velocidad persigue a la
+    // deseada, así el personaje arranca/frena con peso en vez de teleportarse.
+    let dx = 0, dz = 0;
+    if (inputMag > 0.08) {
       const fwd = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
       const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
       const dir = fwd.multiplyScalar(move.y).add(right.multiplyScalar(move.x)).normalize();
+      const vel = this.speed * inputMag * (this.speedScale || 1);
+      dx = dir.x * vel;
+      dz = dir.z * vel;
+    }
+    const k = Math.min(1, dt * (inputMag > 0.08 ? 10 : 7)); // acelera rápido, frena suave
+    this.vx += (dx - this.vx) * k;
+    this.vz += (dz - this.vz) * k;
+    const sp = Math.hypot(this.vx, this.vz);
 
-      const vel = this.speed * mag * (this.speedScale || 1);
-      this.position.x += dir.x * vel * dt;
-      this.position.z += dir.z * vel * dt;
+    if (sp > 0.05) {
+      this.position.x += this.vx * dt;
+      this.position.z += this.vz * dt;
       if (colliders && colliders.length) {
         const [nx, nz] = resolveCircle(this.position.x, this.position.z, this.radius, colliders);
         this.position.x = nx;
         this.position.z = nz;
       }
-
-      const target = Math.atan2(dir.x, dir.z);
+      // mira hacia donde SE MUEVE (curvas suaves, no giros instantáneos)
+      const target = Math.atan2(this.vx, this.vz);
       let diff = target - this.heading;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      this.heading += diff * Math.min(1, dt * 12);
+      const step = diff * Math.min(1, dt * 10);
+      this.heading += step;
+      this._turn = (this._turn || 0) + (diff - (this._turn || 0)) * Math.min(1, dt * 8);
+    } else {
+      this._turn = (this._turn || 0) * (1 - Math.min(1, dt * 8));
     }
+
+    // magnitud de animación según velocidad REAL (sigue caminando al frenar)
+    const mag = Math.min(1, sp / this.speed);
 
     // ----- animación -----
     if (this.isGLB) {
@@ -365,7 +385,14 @@ export class Player {
       }
     }
 
+    // respiración en reposo (que nunca esté "congelado")
+    this.idleT = (this.idleT || 0) + dt;
+    if (mag < 0.08) bobY += Math.sin(this.idleT * 2.2) * 0.012 + 0.012;
+
     this.mesh.position.set(this.position.x, bobY, this.position.z);
     this.mesh.rotation.y = this.heading + this.facingOffset;
+    // "lean": se inclina hacia adelante al correr y hacia adentro en las curvas
+    this.mesh.rotation.x = mag * 0.07;
+    this.mesh.rotation.z = Math.max(-0.12, Math.min(0.12, -(this._turn || 0) * 0.22));
   }
 }

@@ -1068,3 +1068,41 @@ body {
   margin: 0 auto 18px;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4));
 }
+
+/* ================= Game feel: transiciones y micro-animaciones ================= */
+/* cortina circular entre pantallas (estilo juegos toon) */
+#wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, #1c4030 0%, #15324a 70%);
+  clip-path: circle(0% at 50% 50%);
+  transition: clip-path 0.48s cubic-bezier(0.5, 0, 0.35, 1);
+}
+#wipe.on {
+  clip-path: circle(78% at 50% 50%);
+  pointer-events: auto;
+}
+
+/* islas del mapa que flotan */
+.isla-pin {
+  position: relative;
+  animation: islaPop 0.4s var(--d, 0s) both, islaFloat 2.8s calc(var(--d, 0s) * 4) ease-in-out infinite;
+}
+@keyframes islaFloat {
+  0%, 100% { top: 0; }
+  50% { top: -5px; }
+}
+
+/* botones con rebote */
+.scr-btn {
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.12s;
+}
+.scr-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  filter: brightness(1.06);
+}
+.scr-btn:active {
+  transform: translateY(1px) scale(0.97);
+}

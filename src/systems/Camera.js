@@ -39,10 +39,25 @@ export class ThirdPersonCamera {
     this.pitch = Math.min(this.maxPitch, Math.max(this.minPitch, this.pitch + dy * this.lookSensitivity));
   }
 
+  /** Salto de escena: la cámara se planta sin arrastrar el retardo anterior. */
+  snap() {
+    this._followOk = false;
+  }
+
   /** Ubica la cámara detrás del jugador, evitando clipping de paredes. */
   update(playerPos, dt) {
-    // objetivo: cabeza del jugador
-    this._target.set(playerPos.x, playerPos.y + this.height, playerPos.z);
+    // seguimiento con retardo (game feel): el punto que mira la cámara persigue
+    // suavemente al jugador en vez de estar clavado a él.
+    if (!this._follow) this._follow = new THREE.Vector3();
+    if (!this._followOk || !dt) {
+      this._follow.copy(playerPos);
+      this._followOk = true;
+    } else {
+      const kf = 1 - Math.exp(-dt * 7);
+      this._follow.lerp(playerPos, kf);
+    }
+    // objetivo: cabeza del jugador (suavizada)
+    this._target.set(this._follow.x, this._follow.y + this.height, this._follow.z);
 
     // dirección desde el objetivo hacia la cámara (esférica)
     const cp = Math.cos(this.pitch);

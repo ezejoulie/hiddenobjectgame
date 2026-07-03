@@ -397,6 +397,18 @@ async function boot() {
 
   const levelLoader = makeLevelLoader();
 
+  // cortina circular (transición con onda, estilo juegos toon)
+  const wipeEl = document.createElement('div');
+  wipeEl.id = 'wipe';
+  document.body.appendChild(wipeEl);
+  function wipe(fn) {
+    wipeEl.classList.add('on');
+    setTimeout(() => {
+      fn();
+      setTimeout(() => wipeEl.classList.remove('on'), 120);
+    }, 480);
+  }
+
   function onResize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -494,6 +506,9 @@ async function boot() {
     tpCam.maxPitch = 1.45;
     tpCam.pitch = 0.55;
     tpCam.yaw = Math.PI;
+    tpCam.snap();
+    player.vx = 0;
+    player.vz = 0;
     tpCam.update(player.position, 0);
 
     const dims = cfg.room || { width: 24, depth: 22 };
@@ -514,9 +529,11 @@ async function boot() {
 
     const startGame = () => {
       audio.resume();
-      audio.startMusic(id); // música propia de cada escena
-      game.start();
-      input.lock(); // mirar con el mouse (sin mantener); Esc para soltar
+      wipe(() => {
+        audio.startMusic(id); // música propia de cada escena
+        game.start();
+        input.lock(); // mirar con el mouse (sin mantener); Esc para soltar
+      });
     };
     // la primera vez: tutorial paso a paso de la jugabilidad; después, intro corta
     if (!seenTutorial) {
@@ -537,7 +554,7 @@ async function boot() {
       ...n,
       locked: i > 0 && !completed.has(NIVELES[i - 1].id),
     }));
-    screens.map(niveles, (id) => startLevel(id), { completed, onMedal: showDiploma });
+    screens.map(niveles, (id) => wipe(() => startLevel(id)), { completed, onMedal: showDiploma });
   }
 
   function showDiploma() {

@@ -254,11 +254,17 @@ export class Exterior extends Level {
   _tree(x, z, h, opts = {}) {
     const keys = opts.keys || TREE_KEYS;
     for (const k of keys) {
-      if (this._placeGLB(k, {
+      const g = this._placeGLB(k, {
         x, z, height: h, ry: Math.random() * 6.28,
         collide: opts.collide, colliderR: opts.colliderR || 0.55,
         jitter: 0.18, baseY: opts.baseY || 0, noShadow: opts.noShadow,
-      })) return true;
+      });
+      if (g) {
+        // viento: mecerse apenas (que nada quede congelado)
+        if (!this._sways) this._sways = [];
+        this._sways.push({ g, ph: Math.random() * 6.28, sp: 0.6 + Math.random() * 0.5 });
+        return true;
+      }
     }
     this._arbolPrim(x, z, h, opts.baseY || 0);
     return false;
@@ -647,6 +653,14 @@ export class Exterior extends Level {
 
   update(dt, t) {
     this._updateRain(dt);
+    // árboles que se mecen con el viento (más si llueve)
+    if (this._sways) {
+      const wind = 0.014 + this.rainIntensity * 0.02;
+      for (const s of this._sways) {
+        s.g.rotation.z = Math.sin(t * s.sp + s.ph) * wind;
+        s.g.rotation.x = Math.cos(t * s.sp * 0.8 + s.ph) * wind * 0.6;
+      }
+    }
     // nubes que derivan (con vuelta al otro lado)
     if (this._clouds) {
       for (const c of this._clouds) {
