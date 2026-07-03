@@ -101,23 +101,56 @@ export class Screens {
     });
   }
 
-  /** Portada: logo del juego, historia y objetivo. Antes del mapa. */
+  /** Modo "historia": pantalla completa, animado, tap para avanzar. */
+  story(beats, { onDone }) {
+    this.hide();
+    let el = this._storyEl;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'story';
+      document.body.appendChild(el);
+      this._storyEl = el;
+    }
+    let i = 0;
+    const done = () => {
+      el.classList.remove('on');
+      el.innerHTML = '';
+      el.onclick = null;
+      onDone();
+    };
+    const render = () => {
+      const b = beats[i];
+      const last = i === beats.length - 1;
+      el.innerHTML = `
+        <button class="story-skip">Saltar ⏭</button>
+        <div class="story-scene">
+          ${b.logo ? `<img class="story-logo" src="${b.logo}" alt="">` : `<div class="story-big">${b.emoji}</div>`}
+          <div class="story-lines">${(b.lines || []).map((l, k) => `<p style="animation-delay:${0.2 + k * 0.55}s">${l}</p>`).join('')}</div>
+        </div>
+        ${last ? `<button class="scr-btn verde story-go">${b.cta || '¡Vamos! 🚀'}</button>` : '<div class="story-next">Tocá para seguir ▶</div>'}
+        <div class="story-dots">${beats.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join('')}</div>`;
+      el.querySelector('.story-skip').onclick = (e) => { e.stopPropagation(); done(); };
+      const go = el.querySelector('.story-go');
+      if (go) {
+        go.onclick = (e) => { e.stopPropagation(); done(); };
+        el.onclick = null;
+      } else {
+        el.onclick = () => { i += 1; render(); };
+      }
+    };
+    el.classList.add('on');
+    render();
+  }
+
+  /** Portada: SOLO logo + botón; después cuenta la historia animada. */
   home({ onPlay }) {
     const logo = `${import.meta.env.BASE_URL}assets/img/logo.png`;
-    this._show({
-      emoji: '',
-      title: '',
-      descHtml: `
-        <img class="home-logo" src="${logo}" alt="Patrulla Anti-Dengue — Descacharrando">
-        <p class="scr-lead">El mosquito <b>Denguín</b> llenó los barrios de <b>cacharros</b> con
-        agua estancada, donde nacen sus crías. 🦟💧</p>
-        <p class="scr-lead">¡Vos sos un <b>agente de la Patrulla</b>! Tu misión: recorrer la casa,
-        el jardín, la escuela, el parque y la playa, y <b>eliminar los 10 cacharros</b> de cada
-        lugar antes de que se acabe el tiempo.</p>
-        <p class="scr-note">🛡️ Denguín te va a buscar para picarte: activá tu escudo con
-        <b>Espacio</b> para la <b>¡DOBLE DEFENSA!</b> Limpiá todos los lugares y ganá la
-        <b>medalla</b> de campeón anti-dengue. 🏅</p>`,
-      buttons: [{ label: '¡Comenzar misión! 🧤', cls: 'verde', onClick: onPlay }],
+    this.story([{ logo, lines: [], cta: '¡Comenzar misión! 🧤' }], {
+      onDone: () => this.story([
+        { emoji: '🦟', lines: ['El mosquito <b>Denguín</b> anda suelto…', 'Llenó los barrios de <b>cacharros</b> con agua estancada.', '¡Ahí nacen sus crías! 💧'] },
+        { emoji: '🧤', lines: ['Pero apareciste <b>VOS</b>.', 'Agente de la <b>Patrulla Anti-Dengue</b>. 🛡️'] },
+        { emoji: '🗺️', lines: ['Tu misión: recorrer <b>5 lugares</b>', 'y eliminar <b>todos los cacharros</b>.', 'Sin agua acumulada… ¡no hay mosquito!'], cta: '¡Acepto la misión! 🚀' },
+      ], { onDone: onPlay }),
     });
   }
 
@@ -189,28 +222,14 @@ export class Screens {
     this.el.classList.add('on');
   }
 
-  /** Tutorial paso a paso de la jugabilidad (antes de arrancar). */
+  /** Tutorial dinámico (modo historia, 4 pasos). */
   tutorial({ onDone }) {
-    const steps = [
-      { emoji: '🎯', title: 'Tu misión', html: 'Sos un <b>agente anti-dengue</b>. En cada lugar tenés que <b>encontrar y eliminar los 10 cacharros</b> con agua estancada. ¡Sin agua acumulada, no hay mosquito! 💧' },
-      { emoji: '🔎', title: 'Los cacharros', html: 'Abajo, en la <b>bandeja</b>, ves los 10 elementos que tenés que buscar (balde, botella, regadera…). Cuando te <b>acercás</b> a uno, lo juntás solo y se marca como listo. ✅' },
-      { emoji: '⏱️', title: 'El tiempo', html: 'Tenés <b>2 minutos</b> (la barra de arriba). Si se acaba y no juntaste los 10, perdés. ¡Revisá bien cada rincón!' },
-      { emoji: '❤️', title: 'Tus vidas', html: 'Tenés <b>3 vidas</b> (corazones ❤️❤️❤️). Cada vez que <b>Denguín te pica</b>, perdés una vida y se te <b>escapan cacharros</b>. Si te pica <b>3 veces</b>, volvés a empezar.' },
-      { emoji: '🦟', title: 'Denguín', html: 'Cada <b>15 segundos</b> Denguín viene a picarte. Mirá la cuenta <b>“🦟 Ns”</b> y la <b>flecha roja</b> que indica de dónde viene; cuando se acerca, vas a <b>escuchar el zumbido</b>.' },
-      { emoji: '🛡️', title: '¡Doble Defensa!', html: 'Justo antes de que te pique, apretá <b>Espacio</b> (o el botón de escudo) para activar la <b>¡DOBLE DEFENSA!</b> y rebotarlo. Tarda unos segundos en recargarse.' },
-      { emoji: '🕹️', title: 'Controles', html: 'Movete con <b>WASD</b> o las <b>flechas</b>. Hacé <b>click</b> en la escena y <b>moviendo el mouse</b> mirás para todos lados (no hace falta mantener apretado; apretá <b>Esc</b> para soltar). En celular, arrastrá con el dedo. ¡Listo!' },
-    ];
-    let i = 0;
-    const render = () => {
-      const s = steps[i];
-      const last = i === steps.length - 1;
-      const dots = `<div class="tut-dots">${steps.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join('')}</div>`;
-      const buttons = [];
-      if (i > 0) buttons.push({ label: '◀', cls: '', onClick: () => { i -= 1; render(); } });
-      buttons.push({ label: last ? '¡Jugar! 🚀' : 'Siguiente ▶', cls: 'verde', onClick: () => { if (last) onDone(); else { i += 1; render(); } } });
-      this._show({ emoji: s.emoji, title: s.title, descHtml: `<p class="scr-lead">${s.html}</p>${dots}`, buttons });
-    };
-    render();
+    this.story([
+      { emoji: '🪣', lines: ['Acercate a los <b>cacharros</b> para juntarlos.', 'La bandeja de abajo muestra los <b>10</b> que buscás. ✅'] },
+      { emoji: '🕹️', lines: ['Movete con <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span> o las flechas.', 'Hacé <b>click</b> y mové el mouse para mirar.', 'En celu: arrastrá con el dedo.'] },
+      { emoji: '🦟', lines: ['Cada <b>15 segundos</b> Denguín viene a picarte.', 'Seguí la <b>flecha roja</b> y escuchá el zumbido…', 'Si te pica: perdés ❤️ y se te escapan cacharros.'] },
+      { emoji: '🛡️', lines: ['Apretá <span class="kbd">Espacio</span> justo a tiempo:', '<b>¡DOBLE DEFENSA!</b> y Denguín sale volando. ⚡', 'Tenés ❤️❤️❤️ y 2 minutos. ¡Suerte, agente!'], cta: '¡Jugar! 🚀' },
+    ], { onDone });
   }
 
   /** Pausa educativa (nivel tutorial): muestra el cacharro y cómo prevenir. */

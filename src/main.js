@@ -581,6 +581,11 @@ async function boot() {
 
   screens.home({ onPlay });
 
+  // caché persistente de assets (modelos/texturas): carga una vez, queda guardado
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(`${BASE}sw.js`).catch(() => {});
+  }
+
   // ---------- Loop ----------
   const clock = new THREE.Clock();
   const _v = new THREE.Vector3();
