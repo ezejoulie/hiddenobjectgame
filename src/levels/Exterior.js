@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Level } from './Level.js';
 import { boxCollider } from '../systems/Collision.js';
 import { grassTexture, sandTexture, pavementTexture, windowsTexture } from '../core/Textures.js';
-import { SHADOW_SIZE, RAIN_DROPS, IS_MOBILE } from '../core/Quality.js';
+import { SHADOW_SIZE, RAIN_DROPS, GRASS_N } from '../core/Quality.js';
 
 /**
  * Exterior.js — base de los niveles al aire libre (Jardín, Escuela, Parque,
@@ -64,7 +64,7 @@ export class Exterior extends Level {
 
   // ---- pasto 3D instanciado: miles de briznas reales sobre el césped ----
   _buildGrass() {
-    const N = IS_MOBILE ? 900 : 2400;
+    const N = GRASS_N;
     const geo = new THREE.ConeGeometry(0.03, 0.3, 4);
     geo.translate(0, 0.15, 0);
     const gm = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });

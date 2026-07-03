@@ -7,7 +7,7 @@ import { createPostFX } from './core/PostFX.js';
 import { Input } from './core/Input.js';
 import { AssetLoader } from './core/AssetLoader.js';
 import { Audio } from './core/Audio.js';
-import { IS_MOBILE } from './core/Quality.js';
+import { IS_MOBILE, QUALITY, setQuality } from './core/Quality.js';
 
 import { Player } from './entities/Player.js';
 import { ThirdPersonCamera } from './systems/Camera.js';
@@ -394,6 +394,18 @@ async function boot() {
   };
   window.addEventListener('pointerdown', firstGesture);
   window.addEventListener('keydown', firstGesture);
+
+  // ---------- Calidad gráfica (low/medium/high, recarga al cambiar) ----------
+  const QLABEL = { low: 'Baja', medium: 'Media', high: 'Alta' };
+  const qBtn = document.createElement('button');
+  qBtn.id = 'btn-quality';
+  qBtn.innerHTML = `⚙️ <span>${QLABEL[QUALITY]}</span>`;
+  qBtn.title = 'Calidad gráfica (si se traba, bajala)';
+  qBtn.addEventListener('click', () => {
+    const order = ['low', 'medium', 'high'];
+    setQuality(order[(order.indexOf(QUALITY) + 1) % 3]);
+  });
+  document.body.appendChild(qBtn);
 
   const levelLoader = makeLevelLoader();
 

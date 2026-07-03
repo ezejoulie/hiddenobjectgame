@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DPR_CAP, IS_MOBILE } from './Quality.js';
+import { DPR_CAP, ENABLE_AA, SHADOWS_ON } from './Quality.js';
 
 /**
  * Renderer.js — WebGLRenderer configurado con el pipeline de color correcto.
@@ -18,7 +18,7 @@ export function createRenderer(canvas) {
     canvas,
     // MSAA apagado en móvil: en iPhone duplica la memoria del framebuffer y
     // WebKit mata la página. El post-procesado ya suaviza bastante.
-    antialias: !IS_MOBILE,
+    antialias: ENABLE_AA,
     powerPreference: 'high-performance',
     stencil: false,
   });
@@ -32,7 +32,7 @@ export function createRenderer(canvas) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   // Sombras suaves
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = SHADOWS_ON; // en LOW: sin sombras (gran ahorro)
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   return renderer;
