@@ -7,7 +7,7 @@ import { createPostFX } from './core/PostFX.js';
 import { Input } from './core/Input.js';
 import { AssetLoader } from './core/AssetLoader.js';
 import { Audio } from './core/Audio.js';
-import { IS_MOBILE, QUALITY, setQuality } from './core/Quality.js';
+import { IS_MOBILE, QUALITY, setQuality, DPR_CAP } from './core/Quality.js';
 
 import { Player } from './entities/Player.js';
 import { ThirdPersonCamera } from './systems/Camera.js';
@@ -647,6 +647,10 @@ async function boot() {
   let wasPaused = false;
   let raining = false;
   let stepAcc = 0;
+  // resolución adaptativa (truco de los juegos web fluidos): si el dispositivo
+  // no llega a ~30 fps, baja la resolución interna en pasos imperceptibles y
+  // la devuelve cuando sobra potencia. Nadie deja de jugar por trabarse.
+  let ftAcc = 0, ftN = 0, lastAdj = 0, dprScale = 1;
   function loop() {
     requestAnimationFrame(loop);
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -708,6 +712,26 @@ async function boot() {
         }
       } else if (hud) {
         hud.setDenguinArrow(0, false);
+      }
+    }
+
+    // resolución adaptativa (medir fps reales y ajustar cada 2 s)
+    ftAcc += dt;
+    ftN += 1;
+    if (now - lastAdj > 2 && ftAcc > 0) {
+      const fps = ftN / ftAcc;
+      ftAcc = 0; ftN = 0; lastAdj = now;
+      if (level && game && game.state === 'playing') {
+        let ns = dprScale;
+        if (fps < 28 && dprScale > 0.55) ns = Math.max(0.55, dprScale - 0.15);
+        else if (fps > 55 && dprScale < 1) ns = Math.min(1, dprScale + 0.1);
+        if (ns !== dprScale) {
+          dprScale = ns;
+          const target = Math.min(window.devicePixelRatio, DPR_CAP) * dprScale;
+          renderer.setPixelRatio(target);
+          postfx.composer.setPixelRatio(target);
+          onResize();
+        }
       }
     }
 
