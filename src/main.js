@@ -531,6 +531,9 @@ async function boot() {
     const cfg = LEVEL_CONFIGS[id];
     levelLoader.show(cfg);
     const models = await loadLevelModels(id);
+    if (loader.failed.size) {
+      console.warn(`[assets] ${loader.failed.size} modelo(s) no cargaron (se usan primitivas):`, [...loader.failed]);
+    }
 
     const Cls = LEVEL_CLASSES[id];
     level = new Cls({ models });
@@ -610,6 +613,16 @@ async function boot() {
       locked: i > 0 && !completed.has(NIVELES[i - 1].id),
     }));
     screens.map(niveles, (id) => wipe(() => startLevel(id)), { completed, onMedal: showDiploma });
+  }
+
+  // depuración (solo con ?debug en la URL): permite verificar niveles en tests
+  if (location.search.includes('debug')) {
+    window.__pad = {
+      startLevel: (id) => startLevel(id),
+      get game() { return game; },
+      get level() { return level; },
+      get failed() { return [...loader.failed]; },
+    };
   }
 
   function showDiploma() {

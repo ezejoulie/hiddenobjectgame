@@ -18,6 +18,7 @@ export class AssetLoader {
   // gstatic.com — si ese CDN falla, los personajes no cargaban.
   constructor({ dracoPath = `${import.meta.env.BASE_URL}draco/` } = {}) {
     this.cache = new Map(); // url -> THREE.Group (la escena del gltf)
+    this.failed = new Set(); // urls que no cargaron tras los reintentos
     this.fullCache = new Map(); // url -> {scene, animations}
     this.gltf = new GLTFLoader();
 
@@ -45,8 +46,10 @@ export class AssetLoader {
     });
   }
 
-  /** Carga (o devuelve de caché) un gltf. Resuelve con la escena cruda. */
-  load(url) {
+  /** Carga (o devuelve de caché) un gltf. Resuelve con la escena cruda.
+   *  Reintenta 2 veces: en redes lentas un corte puntual dejaba el modelo como
+   *  primitiva toda la partida. */
+  load(url, tries = 3) {
     if (this.cache.has(url)) return Promise.resolve(this.cache.get(url));
     return new Promise((resolve, reject) => {
       this.gltf.load(
@@ -56,7 +59,14 @@ export class AssetLoader {
           resolve(gltf.scene);
         },
         undefined,
-        (err) => reject(err)
+        (err) => {
+          if (tries > 1) {
+            setTimeout(() => this.load(url, tries - 1).then(resolve, reject), 700);
+          } else {
+            this.failed.add(url);
+            reject(err);
+          }
+        }
       );
     });
   }

@@ -80,6 +80,9 @@ export class Game {
         const [rx, rz] = resolveCircle(x, z, 0.4, occ);
         if (Math.hypot(rx - x, rz - z) <= 1.6) { nx = rx; nz = rz; }
       }
+      // garantía: el jugador TIENE que poder pararse donde está el cacharro
+      // (si no, nunca se junta y el portón/nivel quedan trabados)
+      [nx, nz] = this._freeSpot(nx, nz, this._side(z));
       const c = new Cacharro(tipo, nx, nz, this.cacharroModels[tipo]);
       c.index = i;
       c.home = { x: nx, z: nz }; // lugar original (para reubicarlo si se dispersa)
@@ -336,7 +339,40 @@ export class Game {
     // mantener del MISMO lado del portón (margen para no quedar en la línea)
     if (side > 0) nz = Math.max(0.7, nz);
     else if (side < 0) nz = Math.min(-0.7, nz);
-    return [nx, nz];
+    return this._freeSpot(nx, nz, side);
+  }
+
+  /** Lado del portón para una z (Casa): +1 sur, -1 norte, 0 si no hay portón. */
+  _side(z) {
+    return this.gateAt > 0 ? Math.sign(z) || 1 : 0;
+  }
+
+  /** ¿Entra el jugador parado en (x,z)? (sin pisar paredes, muebles, portón…) */
+  _standable(x, z) {
+    const cols = (this.level && this.level.colliders) || [];
+    const [rx, rz] = resolveCircle(x, z, 0.35, cols);
+    return Math.hypot(rx - x, rz - z) < 1e-3;
+  }
+
+  /** Punto parable más cercano a (x,z), dentro de los límites y del lado del portón. */
+  _freeSpot(x, z, side) {
+    const bx = this.bounds.x - 0.6;
+    const bz = this.bounds.z - 0.6;
+    const ok = (px, pz) =>
+      Math.abs(px) <= bx && Math.abs(pz) <= bz &&
+      (side > 0 ? pz >= 0.7 : side < 0 ? pz <= -0.7 : true) &&
+      this._standable(px, pz);
+    if (ok(x, z)) return [x, z];
+    for (let r = 0.25; r <= 6; r += 0.25) {
+      const n = Math.max(8, Math.round(r * 10));
+      for (let k = 0; k < n; k++) {
+        const a = (k / n) * Math.PI * 2;
+        const px = x + Math.cos(a) * r;
+        const pz = z + Math.sin(a) * r;
+        if (ok(px, pz)) return [px, pz];
+      }
+    }
+    return [x, z];
   }
 
   _win() {
