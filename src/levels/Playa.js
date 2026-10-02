@@ -33,7 +33,7 @@ export class Playa extends Exterior {
     this.add(espuma);
 
     // muelle hacia el mar
-    this._prop('muelle', { x: 7, z: -HD - 3, height: 1.0, ry: 0, collide: false }, () => {
+    this._prop('muelle', { x: 7, z: -HD - 2.5, footprint: 3.6, ry: 0, collide: false }, () => {
       const m = this._box2(2.2, 0.3, 8, 0x8a5a32, 7, -HD - 1);
       m.position.y = 0.5;
     });

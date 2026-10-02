@@ -196,6 +196,13 @@ function construir(tipo, color) {
   return wrap;
 }
 
+// Lado mayor (m) de cada cacharro GLB. Los chicos van algo exagerados para que se vean.
+const TAM_GLB = {
+  balde: 0.55, tacho: 0.8, regadera: 0.6, botella: 0.5, lata: 0.34,
+  vaso: 0.32, florero: 0.5, maceta: 0.55, frasco: 0.55,
+};
+const TRANSLUCIDOS = new Set(['vaso', 'botella', 'frasco']);
+
 export class Cacharro {
   constructor(tipo, x, z, model) {
     this.tipo = tipo;
@@ -229,14 +236,24 @@ export class Cacharro {
     this.group.position.set(x, 0, z);
   }
 
-  /** Normaliza un GLB de cacharro: ~0.5 m de alto, centrado y apoyado al piso. */
+  /** Normaliza un GLB de cacharro: tamaño por tipo (lado mayor), centrado y
+   *  apoyado al piso. Se usa el lado mayor y no el alto: la botella viene acostada. */
   _normalizeModel(src) {
     const model = src.clone(true);
     const box = new THREE.Box3().setFromObject(model);
     const size = new THREE.Vector3();
     box.getSize(size);
-    const h = size.y > 0.01 ? size.y : 0.5;
-    model.scale.multiplyScalar(0.5 / h);
+    const lado = Math.max(size.x, size.y, size.z) || 0.5;
+    model.scale.multiplyScalar((TAM_GLB[this.tipo] || 0.5) / lado);
+    if (TRANSLUCIDOS.has(this.tipo)) {
+      model.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = o.material.clone(); // el material original es del caché compartido
+        o.material.transparent = true;
+        o.material.opacity = 0.62;
+        o.material.roughness = Math.min(o.material.roughness, 0.25);
+      });
+    }
     const box2 = new THREE.Box3().setFromObject(model);
     const c = new THREE.Vector3();
     box2.getCenter(c);

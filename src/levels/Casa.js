@@ -360,12 +360,12 @@ export class Casa extends Level {
   _cocina() {
     this._accent(-HW + T / 2 + 0.03, 2.3, -2.5, 4.5, 0.7, Math.PI / 2, 0xf2c94c); // amarillo
     // mesada contra la pared oeste (x=-11)
-    this._mueble('mesada', { footprint: 4, x: -HW + 0.5, z: -2.5, ry: Math.PI / 2 }, () => {
+    this._mueble('mesada', { footprint: 3.2, x: -HW + 0.5, z: -1.9, ry: Math.PI / 2 }, () => {
       this._box(0.6, 0.9, 4, 0xbfa98a, -HW + 0.45, 0.45, -2.5, { collide: true });
       this._box(0.4, 0.05, 0.5, 0x9aa7b2, -HW + 0.45, 0.92, -2.5, { cast: false, metal: 0.4, rough: 0.3 });
     });
     // heladera rincón noroeste
-    this._mueble('heladera', { footprint: 0.95, x: -HW + 0.7, z: -HD + 5.3, ry: 0 }, () =>
+    this._mueble('heladera', { footprint: 0.95, x: -HW + 0.7, z: -HD + 4.6, ry: Math.PI / 2 }, () =>
       this._box(0.95, 2.0, 0.85, 0xededed, -HW + 0.7, 1.0, -4.3, { collide: true, rough: 0.4 })
     );
     // alacena
@@ -384,7 +384,7 @@ export class Casa extends Level {
   _bano() {
     this._accent(HW - T / 2 - 0.03, 2.3, -2.5, 4.5, 0.7, Math.PI / 2, 0x5bc4f0); // celeste
     // bañadera contra la pared este (x=11)
-    this._mueble('banadera', { footprint: 2.6, x: HW - 0.9, z: -2.5, ry: Math.PI / 2 }, () => {
+    this._mueble('banadera', { footprint: 2.6, x: HW - 0.9, z: -2.5, ry: -Math.PI / 2 }, () => {
       this._box(1.3, 0.55, 2.8, 0xf2f2f2, HW - 0.75, 0.28, -2.5, { collide: true, rough: 0.3 });
       this._box(1.0, 0.06, 2.5, 0xbfe0e6, HW - 0.75, 0.5, -2.5, { cast: false });
     });
@@ -403,7 +403,7 @@ export class Casa extends Level {
 
   _lavadero() {
     this._accent(-HW + T / 2 + 0.03, 2.3, 4.5, 4.5, 0.7, Math.PI / 2, 0x6fd99a); // verde menta
-    this._mueble('lavarropas', { footprint: 0.9, x: -HW + 0.75, z: HD - 0.9, ry: 0 }, () => {
+    this._mueble('lavarropas', { footprint: 0.9, x: -HW + 0.75, z: HD - 0.9, ry: Math.PI / 2 }, () => {
       this._box(0.9, 1.2, 0.9, 0xe8e8e8, -HW + 0.75, 0.6, HD - 0.9, { collide: true, rough: 0.4 });
       const door = new THREE.Mesh(new THREE.CircleGeometry(0.28, 18), new THREE.MeshStandardMaterial({ color: 0x3a3f44, roughness: 0.2, metalness: 0.5 }));
       door.position.set(-HW + 0.75, 0.65, HD - 1.36);
@@ -430,7 +430,7 @@ export class Casa extends Level {
       this._box(0.9, 0.25, 0.5, 0xffffff, HW - 1.8, 0.62, 7.6, { cast: false });
     });
     // mesa de luz
-    this._mueble('mesa_luz', { footprint: 0.5, x: 3.6, z: 8.0, ry: 0 }, () =>
+    this._mueble('mesa_luz', { footprint: 0.5, x: 3.6, z: 8.0, ry: Math.PI }, () =>
       this._box(0.5, 0.5, 0.5, 0xc8a87c, 3.6, 0.25, 8.0, { collide: true })
     );
     // ropero contra la pared este

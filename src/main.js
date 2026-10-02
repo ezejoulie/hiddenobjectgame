@@ -31,88 +31,77 @@ import { CASA_LIVING, JARDIN, ESCUELA, PARQUE, PLAYA, NIVELES } from './data/lev
 
 const BASE = import.meta.env.BASE_URL; // './' o '/'
 
-// Muebles propios (Higgsfield) del prototipo viejo, servidos desde su CDN.
-const CF = 'https://d3u0tzju9qaucj.cloudfront.net/7d051b5a-7bfe-49fe-a484-24e7b3a9458a/';
+// Modelos propios (Higgsfield → Tripo 3D), regenerados desde las imágenes de
+// referencia y servidos desde el propio sitio: el CDN viejo dejó de responder (403).
+const HF = `${BASE}assets/models/hf/`;
+const hf = (k) => `${HF}${k}.glb`;
 
-// Manifiesto de modelos del pack base (drop-in: agregar acá y usar en el nivel)
+// Manifiesto de modelos (drop-in: agregar acá y usar en el nivel).
+// Las claves sin modelo usan su fallback de primitivas.
 const MODELS = {
   sofa: `${BASE}assets/models/base/GlamVelvetSofa.glb`,
   armchair: `${BASE}assets/models/base/SheenChair.glb`,
   chair2: `${BASE}assets/models/base/ChairDamaskPurplegold.glb`,
-  // muebles reales por ambiente (con fallback a primitivas si no cargan)
-  heladera: `${CF}a3cf4c30-d531-4ac5-87b4-a9da99cec845.glb`,
-  mesada: `${CF}03ace918-cec4-4f89-87d3-8e3db42e1622.glb`,
-  banadera: `${CF}7e217d98-653e-41f9-ba8b-a9e2ce3b2b52.glb`,
-  lavarropas: `${CF}4fefb51d-a3b2-4363-b3ee-564333133ea9.glb`,
-  pileta: `${CF}6488016f-f663-40af-a78a-2607634fd150.glb`,
-  cama: `${CF}a5fb8855-06c1-4302-be77-68445deadb38.glb`,
-  ropero: `${CF}f4c9a58d-0aee-438f-ab0e-a4d5c6ba6dbb.glb`,
-  alacena: `${CF}03634343-930e-4d02-9a28-d804d2ce78e3.glb`,
-  tele: `${CF}82d48ff8-617f-4a73-bb7b-a127721bb1c0.glb`,
-  mesa_ratona: `${CF}e5107612-6450-4585-be48-98d6f8d63889.glb`,
-  mesa_luz: `${CF}1c5bc0b5-c8d5-4c3e-9bb9-7fcd641a3078.glb`,
+  // muebles por ambiente
+  heladera: hf('heladera'),
+  mesada: hf('mesada'),
+  banadera: hf('banadera'),
+  lavarropas: hf('lavarropas'),
+  cama: hf('cama'),
+  ropero: hf('ropero'),
+  alacena: hf('alacena'),
+  tele: hf('tele'),
+  mesa_ratona: hf('mesa_ratona'),
+  mesa_luz: hf('mesa_luz'),
   // jardín (exterior)
-  arbol: `${CF}bd3c93d8-c764-4d30-9b69-56dfe2154bf2.glb`,
-  arbol_frond: `${CF}441b91c8-308f-4f07-a586-30eab6642352.glb`,
-  arbol_flor: `${CF}05f96aa7-9358-4967-ba6f-8d01618b15cb.glb`,
-  pino: `${CF}c0d739d4-6e52-44b7-8104-c54bbeece589.glb`,
-  palmera: `${CF}2eb4778f-02dd-4361-89f2-ed9d75acb6ba.glb`,
-  arbusto: `${CF}fba18785-8c06-4d55-bf87-3a60916c229d.glb`,
-  arbusto_red: `${CF}82327eab-15fe-462b-96f8-25f1cb726742.glb`,
-  roca: `${CF}023bd0b4-495f-4483-9bee-f3de5c58112a.glb`,
-  roca_grande: `${CF}20a5a656-fdc6-4196-80d9-b53dc4238d4d.glb`,
-  banco: `${CF}e9a56aee-483f-4f64-a32c-241e7a72f94b.glb`,
-  cantero: `${CF}44558271-09e4-4644-8ec7-ebd46dc3120e.glb`,
-  cantero_flor: `${CF}3245b424-b0b5-4b87-9501-da3ec7c94fc4.glb`,
-  macetero: `${CF}1042ffbf-5111-4cdd-acdb-95c08a428aca.glb`,
-  huerta: `${CF}2b5a0f73-eab9-48e5-94bd-c0ec48e3456e.glb`,
-  cobertizo: `${CF}736a1995-0f8b-4e1b-88f0-28bc458515af.glb`,
-  carretilla: `${CF}3cb5db3b-1393-4d5a-95f4-79ded4b10994.glb`,
-  sendero: `${CF}0ecf5138-5704-4d84-8a95-026244fae112.glb`,
-  perro: `${CF}fc7764b2-2b75-4c0d-b96f-3dd260711fc9.glb`,
-  fuente: `${CF}94905414-b9b1-490a-8aa4-8c023f882d85.glb`,
-  fuente_jardin: `${CF}2d3c9ce1-71ae-4c1b-af92-8854d599a20a.glb`,
-  pasto_alto: `${CF}2640c787-8cba-4b78-9c58-944e6dfbb2d5.glb`,
+  arbol: hf('arbol'),
+  arbol_frond: hf('arbol'),
+  arbol_flor: hf('arbol_flor'),
+  palmera: hf('palmera_cocos'),
+  arbusto: hf('arbusto'),
+  arbusto_red: hf('arbusto'),
+  roca: hf('roca_grande'),
+  roca_grande: hf('roca_grande'),
+  banco: hf('banco'),
+  cantero: hf('huerta'),
+  cantero_flor: hf('cantero_flor'),
+  macetero: hf('maceta'),
+  huerta: hf('huerta'),
+  cobertizo: hf('cobertizo'),
+  sendero: hf('sendero'),
+  fuente: hf('fuente'),
+  fuente_jardin: hf('fuente'),
+  pasto_alto: hf('pasto_alto'),
   // escuela
-  escuela: `${CF}815cdd67-9875-4090-a37a-d1ed4915497f.glb`,
-  tobogan: `${CF}a4e4a773-3848-4909-8814-8fb0b1707858.glb`,
-  hamacas: `${CF}57d2c7c4-0fe5-44b0-a225-100f02dc8c65.glb`,
-  arenero: `${CF}96f4d585-c334-4fb6-96c6-6558676a20d3.glb`,
-  trepador: `${CF}71efbd27-d583-40f8-9ccf-bae5d748ccac.glb`,
-  castillo: `${CF}41c888c9-1607-4773-b995-f7f5ca2b5dd8.glb`,
-  mastil: `${CF}70a8aa94-2c64-4af1-9a8e-c5c8caf002a4.glb`,
-  cesto: `${CF}b6b5c69c-26bd-42e8-a286-906d008b5240.glb`,
-  bebedero_esc: `${CF}fdf135d7-bc9a-4383-8e14-07a145df8d76.glb`,
-  pizarron: `${CF}928ea3bb-0824-4bc4-8a70-f9bf649346e5.glb`,
-  cartel_esc: `${CF}b1891686-53b7-4ef2-9dca-441b49e49172.glb`,
-  aro_basquet: `${CF}850c44ef-a0d4-4d91-90a1-984461df2215.glb`,
-  banco_plaza: `${CF}2cc9d88b-b6c9-4ec0-8e84-7b26b8069479.glb`,
+  cartel_esc: hf('cartel_esc'),
+  banco_plaza: hf('banco'),
   // parque
-  glorieta: `${CF}e05778d0-d40b-48a3-a790-040be4102ef5.glb`,
-  puente: `${CF}8cc55284-eddd-4f70-84e3-3844c141de8e.glb`,
-  estanque: `${CF}22f2152c-b630-4b2e-8e41-3c2d2d6be283.glb`,
-  tronco_caido: `${CF}81ddb424-1fe6-40c5-9983-e73a482f2241.glb`,
-  cartel_parque: `${CF}37e83b0b-be6d-4a1b-a1ae-83387ee67c04.glb`,
-  hongo: `${CF}3d6d6922-a516-4237-a4b5-6036ff42e65d.glb`,
-  calesita: `${CF}70394fb5-580d-4800-9c1b-c844cc1840f3.glb`,
-  subibaja: `${CF}225310d0-db84-4906-957f-a4eff00b612f.glb`,
-  farol: `${CF}f413c406-ad1c-4983-8534-d8d176500be9.glb`,
-  roca_grande: `${CF}20a5a656-fdc6-4196-80d9-b53dc4238d4d.glb`,
+  glorieta: hf('glorieta'),
+  puente: hf('puente'),
+  estanque: hf('estanque'),
+  tronco_caido: hf('tronco_caido'),
+  cartel_parque: hf('cartel_parque'),
+  hongo: hf('hongo'),
+  farol: hf('farol'),
   // playa
-  velero: `${CF}a8e12138-0b6a-4cfe-8f29-34a30d452fa5.glb`,
-  bote: `${CF}5135f625-059c-4abd-90ae-d340b2b1ddb0.glb`,
-  sombrilla: `${CF}eb4957c2-762f-4aa8-8331-b82a849a632b.glb`,
-  reposera: `${CF}53500306-250f-475e-b520-bcae3ed3ed1c.glb`,
-  muelle: `${CF}656e2739-db45-4d2b-886d-a9b4db974dd3.glb`,
-  toalla: `${CF}dbd1375c-2928-4e0c-b7ed-646fc8089c58.glb`,
-  caracol: `${CF}f87dafdc-f47b-431d-8a9c-51075a478008.glb`,
-  roca_costera: `${CF}844a4822-7e04-4f1e-b992-ac35bf38872f.glb`,
-  palmera_cocos: `${CF}c314c06a-8958-4b44-9901-04a203916841.glb`,
-  boya: `${CF}f752a5dd-5a8c-41bf-a118-8eb86af0a86a.glb`,
-  conservadora: `${CF}a64000b6-fba9-4ade-93db-0db9a5177509.glb`,
+  reposera: hf('reposera'),
+  muelle: hf('muelle'),
+  toalla: hf('toalla'),
+  caracol: hf('caracol'),
+  roca_costera: hf('roca_costera'),
+  palmera_cocos: hf('palmera_cocos'),
   vase: `${BASE}assets/models/base/GlassVaseFlowers.glb`,
   plant: `${BASE}assets/models/base/DiffuseTransmissionPlant.glb`,
   lamp: `${BASE}assets/models/base/IridescenceLamp.glb`,
+};
+
+// Giro (rad) que deja cada modelo HF con el frente hacia +Z, la convención de
+// `ry` en los niveles (Tripo los genera mirando a +X o -Z según la imagen).
+const YAW_FIX = {
+  heladera: -Math.PI / 2, mesada: -Math.PI / 2, banadera: -Math.PI / 2, lavarropas: -Math.PI / 2,
+  cama: -Math.PI / 2, ropero: -Math.PI / 2, alacena: -Math.PI / 2, tele: -Math.PI / 2,
+  mesa_luz: -Math.PI / 2, cobertizo: -Math.PI / 2, reposera: -Math.PI / 2,
+  cartel_esc: -Math.PI / 2, cartel_parque: -Math.PI / 2, banco: Math.PI, banco_plaza: Math.PI,
 };
 
 // Personajes jugables (Mixamo → glTF, optimizados)
@@ -120,20 +109,20 @@ const HEROES = {
   nene: `${BASE}assets/models/heroes/nene.glb`,
   nena: `${BASE}assets/models/heroes/nena.glb`,
 };
-const DENGUIN_URL = `${CF}6f01a442-57d2-41f0-be11-587d0ffe4f80.glb`;
+// Denguín: sin modelo por ahora (el GLB vivía en el CDN caído) → versión procedural
+const DENGUIN_URL = null;
 
-// Cacharros reales (GLB) por tipo, con fallback a primitiva
+// Cacharros (GLB) por tipo; los que no están usan el modelo procedural
 const CACHARRO_URLS = {
-  balde: `${CF}2e210d1e-88a4-466c-9685-80a882dcff9c.glb`,
-  tacho: `${CF}7fc43ae3-a607-4bca-bad6-501d4de2d615.glb`,
-  regadera: `${CF}57daab7e-a92c-47e9-b46c-eef6440faf77.glb`,
-  botella: `${CF}ae6965fa-c4cb-4082-b762-56650d036f7a.glb`,
-  lata: `${CF}55a338ec-6a86-4834-9cc8-d3558e9f2cdb.glb`,
-  vaso: `${CF}66c29bb0-14bf-4b5c-a632-aeac3de52b7c.glb`,
-  florero: `${CF}3d81b496-7836-4c4a-ae93-0d0bc617eb4a.glb`,
-  maceta: `${CF}4b328b48-3966-465c-b5b5-3b480f21fad9.glb`,
-  bebedero: `${CF}3ee4d0fc-5561-48c2-a5a8-aeaa060a131c.glb`,
-  frasco: `${CF}590439a9-f32c-4a13-9727-8d81c8a1f5a0.glb`, // bidón
+  balde: hf('balde'),
+  tacho: hf('tacho'),
+  regadera: hf('regadera'),
+  botella: hf('botella'),
+  lata: hf('lata'),
+  vaso: hf('vaso'),
+  florero: hf('florero'),
+  maceta: hf('maceta'),
+  frasco: hf('frasco'), // bidón
 };
 
 // ---------- Overlay de carga ----------
@@ -340,7 +329,7 @@ async function boot() {
     heroes.nene = await loader.loadGLTF(HEROES.nene).catch(() => null);
     heroes.nena = await loader.loadGLTF(HEROES.nena).catch(() => null);
     overlay.set(0.12);
-    denguinModel = await loader.loadGLTF(DENGUIN_URL).then((g) => g.scene).catch(() => null);
+    denguinModel = DENGUIN_URL ? await loader.loadGLTF(DENGUIN_URL).then((g) => g.scene).catch(() => null) : null;
     overlay.set(0.2);
     await loader.preload(Object.values(CACHARRO_URLS), (p) => overlay.set(0.2 + p * 0.7));
     for (const [tipo, url] of Object.entries(CACHARRO_URLS)) {
@@ -496,7 +485,12 @@ async function boot() {
     for (const k of keys) {
       const url = MODELS[k];
       if (!url) continue;
-      const s = loader.instance(url);
+      let s = loader.instance(url);
+      if (s && YAW_FIX[k]) {
+        // envolver: el nivel pisa la rotación del modelo con su `ry`
+        s.rotation.y = YAW_FIX[k];
+        s = new THREE.Group().add(s);
+      }
       if (s) models[k] = s;
     }
     return models;
@@ -629,6 +623,8 @@ async function boot() {
       get game() { return game; },
       get level() { return level; },
       get failed() { return [...loader.failed]; },
+      get player() { return player; },
+      get cam() { return tpCam; },
     };
   }
 
