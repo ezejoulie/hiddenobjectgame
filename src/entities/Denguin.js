@@ -101,11 +101,12 @@ export class Denguin {
 
   _fromModel(src) {
     const model = src.clone(true);
+    model.rotation.y = -Math.PI / 2; // el GLB mira a +X; el código lo orienta por +Z
     const box = new THREE.Box3().setFromObject(model);
     const size = new THREE.Vector3();
     box.getSize(size);
     const maxd = Math.max(size.x, size.y, size.z) || 1;
-    model.scale.multiplyScalar(0.55 / maxd); // ~0.55 m (más chico)
+    model.scale.multiplyScalar(0.7 / maxd); // ~0.7 m: patas largas, se lee bien de lejos
     const box2 = new THREE.Box3().setFromObject(model);
     const c = new THREE.Vector3();
     box2.getCenter(c);
@@ -115,9 +116,10 @@ export class Denguin {
     g.traverse((o) => {
       if (o.isMesh) o.castShadow = false;
     });
-    // alas procedurales que baten (el GLB venía "duro")
+    // alas procedurales casi transparentes que baten sobre las del GLB (que son
+    // fijas): se leen como el desenfoque del aleteo
     const alaMat = new THREE.MeshStandardMaterial({
-      color: 0xdcecfb, transparent: true, opacity: 0.5, roughness: 0.2, side: THREE.DoubleSide,
+      color: 0xdcecfb, transparent: true, opacity: 0.28, roughness: 0.2, side: THREE.DoubleSide, depthWrite: false,
     });
     const wing = (x) => {
       const piv = new THREE.Group();

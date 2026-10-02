@@ -199,7 +199,7 @@ function construir(tipo, color) {
 // Lado mayor (m) de cada cacharro GLB. Los chicos van algo exagerados para que se vean.
 const TAM_GLB = {
   balde: 0.55, tacho: 0.8, regadera: 0.6, botella: 0.5, lata: 0.34,
-  vaso: 0.32, florero: 0.5, maceta: 0.55, frasco: 0.55,
+  vaso: 0.32, florero: 0.5, maceta: 0.55, frasco: 0.55, bebedero: 0.45,
 };
 const TRANSLUCIDOS = new Set(['vaso', 'botella', 'frasco']);
 

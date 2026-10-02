@@ -37,7 +37,7 @@ const HF = `${BASE}assets/models/hf/`;
 const hf = (k) => `${HF}${k}.glb`;
 
 // Manifiesto de modelos (drop-in: agregar acá y usar en el nivel).
-// Las claves sin modelo usan su fallback de primitivas.
+// Si un modelo no carga, el nivel usa su fallback de primitivas.
 const MODELS = {
   sofa: `${BASE}assets/models/base/GlamVelvetSofa.glb`,
   armchair: `${BASE}assets/models/base/SheenChair.glb`,
@@ -53,6 +53,7 @@ const MODELS = {
   tele: hf('tele'),
   mesa_ratona: hf('mesa_ratona'),
   mesa_luz: hf('mesa_luz'),
+  pileta: hf('pileta'),
   // jardín (exterior)
   arbol: hf('arbol'),
   arbol_frond: hf('arbol'),
@@ -72,8 +73,19 @@ const MODELS = {
   fuente: hf('fuente'),
   fuente_jardin: hf('fuente'),
   pasto_alto: hf('pasto_alto'),
+  pino: hf('pino'),
+  carretilla: hf('carretilla'),
+  perro: hf('perro'),
   // escuela
   cartel_esc: hf('cartel_esc'),
+  escuela: hf('escuela'),
+  mastil: hf('mastil'),
+  tobogan: hf('tobogan'),
+  hamacas: hf('hamacas'),
+  arenero: hf('arenero'),
+  aro_basquet: hf('aro_basquet'),
+  cesto: hf('cesto'),
+  bebedero_esc: hf('bebedero_esc'),
   banco_plaza: hf('banco'),
   // parque
   glorieta: hf('glorieta'),
@@ -83,6 +95,8 @@ const MODELS = {
   cartel_parque: hf('cartel_parque'),
   hongo: hf('hongo'),
   farol: hf('farol'),
+  calesita: hf('calesita'),
+  subibaja: hf('subibaja'),
   // playa
   reposera: hf('reposera'),
   muelle: hf('muelle'),
@@ -90,6 +104,11 @@ const MODELS = {
   caracol: hf('caracol'),
   roca_costera: hf('roca_costera'),
   palmera_cocos: hf('palmera_cocos'),
+  bote: hf('bote'),
+  velero: hf('velero'),
+  boya: hf('boya'),
+  sombrilla: hf('sombrilla'),
+  conservadora: hf('conservadora'),
   vase: `${BASE}assets/models/base/GlassVaseFlowers.glb`,
   plant: `${BASE}assets/models/base/DiffuseTransmissionPlant.glb`,
   lamp: `${BASE}assets/models/base/IridescenceLamp.glb`,
@@ -102,6 +121,8 @@ const YAW_FIX = {
   cama: -Math.PI / 2, ropero: -Math.PI / 2, alacena: -Math.PI / 2, tele: -Math.PI / 2,
   mesa_luz: -Math.PI / 2, cobertizo: -Math.PI / 2, reposera: -Math.PI / 2,
   cartel_esc: -Math.PI / 2, cartel_parque: -Math.PI / 2, banco: Math.PI, banco_plaza: Math.PI,
+  escuela: -Math.PI / 2, aro_basquet: -Math.PI / 2, perro: -Math.PI / 2, pileta: -Math.PI / 2,
+  hamacas: -Math.PI / 2, carretilla: -Math.PI / 2,
 };
 
 // Personajes jugables (Mixamo → glTF, optimizados)
@@ -109,10 +130,10 @@ const HEROES = {
   nene: `${BASE}assets/models/heroes/nene.glb`,
   nena: `${BASE}assets/models/heroes/nena.glb`,
 };
-// Denguín: sin modelo por ahora (el GLB vivía en el CDN caído) → versión procedural
-const DENGUIN_URL = null;
+// Denguín (si no carga, versión procedural)
+const DENGUIN_URL = hf('denguin');
 
-// Cacharros (GLB) por tipo; los que no están usan el modelo procedural
+// Cacharros (GLB) por tipo; si no cargan, se usa el modelo procedural
 const CACHARRO_URLS = {
   balde: hf('balde'),
   tacho: hf('tacho'),
@@ -123,6 +144,7 @@ const CACHARRO_URLS = {
   florero: hf('florero'),
   maceta: hf('maceta'),
   frasco: hf('frasco'), // bidón
+  bebedero: hf('bebedero'),
 };
 
 // ---------- Overlay de carga ----------
