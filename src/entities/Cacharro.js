@@ -12,91 +12,178 @@ const aguaMat = () =>
 const mat = (c, r = 0.6, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
 
 function discoAgua(radio, y) {
-  const d = new THREE.Mesh(new THREE.CircleGeometry(radio, 20), aguaMat());
+  const d = new THREE.Mesh(new THREE.CircleGeometry(radio, 28), aguaMat());
   d.rotation.x = -Math.PI / 2;
   d.position.y = y;
   return d;
 }
 
+// ---- modelado torneado (LatheGeometry): siluetas suaves, sin "polígonos" ----
+const lathe = (pts, material, seg = 32) => {
+  const m = new THREE.Mesh(
+    new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg),
+    material
+  );
+  return m;
+};
+const plastico = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.32, metalness: 0, side: THREE.DoubleSide });
+const metal = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.28, metalness: 0.85, side: THREE.DoubleSide });
+const vidrio = (c) => new THREE.MeshStandardMaterial({
+  color: c, roughness: 0.05, metalness: 0, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false,
+});
+const ceramica = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.22, metalness: 0, side: THREE.DoubleSide });
+const terracota = () => new THREE.MeshStandardMaterial({ color: 0xc8643c, roughness: 0.92, side: THREE.DoubleSide });
+const aro = (r, tubo, y, material) => {
+  const t = new THREE.Mesh(new THREE.TorusGeometry(r, tubo, 8, 40), material);
+  t.rotation.x = Math.PI / 2;
+  t.position.y = y;
+  return t;
+};
+const hoja = (x, y, z, ry, s = 1) => {
+  const h = new THREE.Mesh(new THREE.SphereGeometry(0.06 * s, 10, 8), mat(0x4caf50, 0.6));
+  h.scale.set(0.45, 0.12, 1);
+  h.position.set(x, y, z);
+  h.rotation.set(0.5, ry, 0);
+  return h;
+};
+
 /** Devuelve un grupo con el recipiente según el tipo (origen en el piso). */
 function construir(tipo, color) {
   const g = new THREE.Group();
-  const cuerpoMat = mat(color, 0.5);
 
   switch (tipo) {
-    case 'balde':
+    case 'balde': {
+      g.add(lathe([[0, 0], [0.16, 0], [0.17, 0.015], [0.215, 0.32], [0.232, 0.335], [0.232, 0.345], [0.214, 0.345]], plastico(color)));
+      g.add(aro(0.226, 0.012, 0.34, plastico(color)));
+      g.add(discoAgua(0.205, 0.28));
+      const manija = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.01, 8, 32, Math.PI), metal(0xb8c2cc));
+      manija.position.y = 0.33;
+      manija.rotation.y = 0.35;
+      g.add(manija);
+      break;
+    }
     case 'tacho': {
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.17, 0.34, 18, 1, true), cuerpoMat);
-      c.position.y = 0.17;
-      const fondo = new THREE.Mesh(new THREE.CircleGeometry(0.17, 18), mat(0x1b1f24));
-      fondo.rotation.x = -Math.PI / 2;
-      fondo.position.y = 0.01;
-      g.add(c, fondo, discoAgua(0.2, 0.3));
-      break;
-    }
-    case 'florero': {
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.13, 0.34, 16), cuerpoMat);
-      c.position.y = 0.17;
-      const boca = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.06, 16), cuerpoMat);
-      boca.position.y = 0.36;
-      g.add(c, boca, discoAgua(0.085, 0.32));
-      break;
-    }
-    case 'botella': {
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.32, 14), mat(color, 0.2));
-      c.position.set(0, 0.08, 0);
-      c.rotation.z = Math.PI / 2;
-      const cuello = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.1, 12), mat(color, 0.2));
-      cuello.position.set(0.2, 0.08, 0);
-      cuello.rotation.z = Math.PI / 2;
-      g.add(c, cuello);
-      break;
-    }
-    case 'lata':
-    case 'frasco':
-    case 'vaso': {
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.26, 16, 1, true), mat(color, tipo === 'lata' ? 0.3 : 0.15, tipo === 'lata' ? 0.6 : 0));
-      c.position.y = 0.13;
-      const fondo = new THREE.Mesh(new THREE.CircleGeometry(0.09, 16), mat(0x9aa7b2));
-      fondo.rotation.x = -Math.PI / 2;
-      fondo.position.y = 0.01;
-      g.add(c, fondo, discoAgua(0.085, 0.22));
-      break;
-    }
-    case 'bebedero': {
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.1, 18, 1, true), cuerpoMat);
-      c.position.y = 0.05;
-      const fondo = new THREE.Mesh(new THREE.CircleGeometry(0.2, 18), mat(0xd84845));
-      fondo.rotation.x = -Math.PI / 2;
-      fondo.position.y = 0.01;
-      g.add(c, fondo, discoAgua(0.21, 0.08));
-      break;
-    }
-    case 'maceta': {
-      const plato = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.28, 0.05, 18), mat(0xe8884a));
-      plato.position.y = 0.025;
-      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.13, 0.26, 16), mat(color));
-      pot.position.y = 0.18;
-      g.add(plato, discoAgua(0.24, 0.05), pot);
+      g.add(lathe([[0, 0], [0.18, 0], [0.19, 0.02], [0.225, 0.47], [0.24, 0.48], [0.24, 0.495], [0.222, 0.495]], plastico(color)));
+      [0.12, 0.24, 0.36].forEach((y) => g.add(aro(0.19 + y * 0.08, 0.008, y, plastico(0x5a6672))));
+      g.add(discoAgua(0.215, 0.43));
+      // tapa caída al costado (por eso junta agua)
+      const tapa = lathe([[0, 0.03], [0.24, 0.03], [0.25, 0], [0.24, 0], [0, 0.015]], plastico(0x5a6672));
+      tapa.position.set(0.33, 0.13, 0);
+      tapa.rotation.z = 1.35;
+      g.add(tapa);
       break;
     }
     case 'regadera': {
-      const c = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.26, 0.26), mat(color, 0.4));
-      c.position.y = 0.16;
-      const pico = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.34, 10), mat(color, 0.4));
-      pico.rotation.z = Math.PI / 3;
-      pico.position.set(-0.28, 0.26, 0);
-      const asa = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.02, 8, 16, Math.PI), mat(color, 0.4));
-      asa.position.y = 0.3;
-      g.add(c, pico, asa, discoAgua(0.14, 0.29));
+      g.add(lathe([[0, 0], [0.13, 0], [0.145, 0.015], [0.15, 0.22], [0.13, 0.255], [0.07, 0.28], [0.06, 0.29]], plastico(color)));
+      g.add(discoAgua(0.06, 0.285));
+      const pico = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.026, 0.34, 12), plastico(color));
+      pico.position.set(-0.22, 0.24, 0);
+      pico.rotation.z = 0.95;
+      g.add(pico);
+      const flor = lathe([[0, 0], [0.045, 0.01], [0.05, 0.03], [0.02, 0.05]], plastico(color));
+      flor.position.set(-0.36, 0.34, 0);
+      flor.rotation.z = 0.95 + Math.PI;
+      g.add(flor);
+      const asa = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.016, 8, 24, Math.PI), plastico(color));
+      asa.position.set(0.04, 0.27, 0);
+      g.add(asa);
+      break;
+    }
+    case 'botella': {
+      // botella de PET tirada en el piso, con agua adentro
+      const b = new THREE.Group();
+      b.add(lathe([[0, 0], [0.06, 0], [0.066, 0.012], [0.066, 0.16], [0.052, 0.2], [0.022, 0.235], [0.022, 0.27], [0, 0.27]], vidrio(color)));
+      const agua = lathe([[0, 0.004], [0.058, 0.004], [0.06, 0.012], [0.06, 0.12], [0, 0.12]], aguaMat());
+      b.add(agua);
+      const tapa = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.03, 16), plastico(0x2f86c8));
+      tapa.position.y = 0.285;
+      b.add(tapa);
+      const etiqueta = new THREE.Mesh(new THREE.CylinderGeometry(0.0675, 0.0675, 0.06, 28, 1, true), plastico(0xff8a3d));
+      etiqueta.position.y = 0.09;
+      b.add(etiqueta);
+      b.rotation.z = Math.PI / 2;
+      b.position.set(0.13, 0.067, 0);
+      g.add(b);
+      break;
+    }
+    case 'lata': {
+      g.add(lathe([[0, 0], [0.058, 0], [0.066, 0.012], [0.066, 0.15], [0.058, 0.165], [0.056, 0.17]], metal(0xd8dde2)));
+      const banda = new THREE.Mesh(new THREE.CylinderGeometry(0.067, 0.067, 0.1, 32, 1, true), metal(color === 0xc8cdd2 ? 0xe0533f : color));
+      banda.position.y = 0.08;
+      g.add(banda);
+      g.add(aro(0.058, 0.004, 0.169, metal(0xd8dde2)));
+      g.add(discoAgua(0.054, 0.155));
+      break;
+    }
+    case 'vaso': {
+      g.add(lathe([[0, 0], [0.048, 0], [0.05, 0.008], [0.066, 0.18], [0.069, 0.182], [0.064, 0.182]], vidrio(0xe8f6ff)));
+      g.add(lathe([[0, 0.006], [0.047, 0.006], [0.06, 0.12], [0, 0.12]], aguaMat()));
+      break;
+    }
+    case 'florero': {
+      g.add(lathe([[0, 0], [0.07, 0], [0.085, 0.02], [0.11, 0.1], [0.105, 0.17], [0.065, 0.26], [0.055, 0.3], [0.072, 0.34], [0.076, 0.35], [0.066, 0.35]], ceramica(color)));
+      g.add(discoAgua(0.058, 0.32));
+      const colores = [0xff5e5b, 0xffc93c, 0xff8ac2];
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI * 2;
+        const tallo = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.22, 6), mat(0x3e9a38));
+        tallo.position.set(Math.cos(a) * 0.025, 0.42, Math.sin(a) * 0.025);
+        tallo.rotation.set(Math.sin(a) * 0.25, 0, -Math.cos(a) * 0.25);
+        g.add(tallo);
+        const f = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 10), mat(colores[i], 0.5));
+        f.position.set(Math.cos(a) * 0.055, 0.53, Math.sin(a) * 0.055);
+        g.add(f);
+      }
+      break;
+    }
+    case 'bebedero': {
+      // plato de mascota: pared gruesa torneada (sube y vuelve hacia adentro)
+      g.add(lathe([[0, 0], [0.17, 0], [0.245, 0.085], [0.25, 0.1], [0.232, 0.1], [0.165, 0.03], [0, 0.03]], plastico(color)));
+      g.add(discoAgua(0.205, 0.075));
+      // hueso decorativo
+      const hueso = new THREE.Mesh(new THREE.CapsuleGeometry(0.012, 0.07, 4, 8), plastico(0xffffff));
+      hueso.rotation.set(0, 0.4, Math.PI / 2);
+      hueso.position.set(0, 0.095, 0.236);
+      g.add(hueso);
+      break;
+    }
+    case 'maceta': {
+      // platito con agua (¡el criadero!) + maceta de barro + planta
+      g.add(lathe([[0, 0], [0.24, 0], [0.275, 0.04], [0.265, 0.045], [0.23, 0.012], [0, 0.012]], terracota()));
+      g.add(discoAgua(0.25, 0.03));
+      g.add(lathe([[0, 0.02], [0.13, 0.02], [0.175, 0.26], [0.195, 0.27], [0.195, 0.3], [0.178, 0.3]], terracota()));
+      const tierra = new THREE.Mesh(new THREE.CircleGeometry(0.172, 24), mat(0x4a3424, 0.95));
+      tierra.rotation.x = -Math.PI / 2;
+      tierra.position.y = 0.27;
+      g.add(tierra);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        g.add(hoja(Math.cos(a) * 0.07, 0.34 + (i % 2) * 0.04, Math.sin(a) * 0.07, -a, 1.4));
+      }
+      break;
+    }
+    case 'frasco': {
+      // bidón de plástico con la tapa abierta
+      const caja = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.32, 0.13, 2, 2, 2), plastico(color === 0xbfe3f5 ? 0x2f86c8 : color));
+      caja.position.y = 0.16;
+      g.add(caja);
+      const asa = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.014, 8, 20, Math.PI), plastico(0x2f86c8));
+      asa.position.set(-0.04, 0.32, 0);
+      g.add(asa);
+      g.add(lathe([[0.032, 0.32], [0.032, 0.365], [0.026, 0.365]], plastico(0xffc93c)));
+      g.add(discoAgua(0.026, 0.355));
       break;
     }
     default: {
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.28, 16), cuerpoMat);
-      c.position.y = 0.14;
-      g.add(c, discoAgua(0.13, 0.28));
+      g.add(lathe([[0, 0], [0.13, 0], [0.15, 0.28], [0.14, 0.28]], plastico(color)));
+      g.add(discoAgua(0.13, 0.25));
     }
   }
+
+  // los objetos chicos se agrandan para que se encuentren en el escenario
+  // (en un contenedor interno: la animación de juntar escala el cuerpo exterior)
+  const ESCALA = { botella: 1.7, lata: 2.0, vaso: 1.9, florero: 1.15, frasco: 1.2 };
+  g.scale.setScalar(ESCALA[tipo] || 1);
 
   g.traverse((o) => {
     if (o.isMesh) {
@@ -104,7 +191,9 @@ function construir(tipo, color) {
       o.receiveShadow = true;
     }
   });
-  return g;
+  const wrap = new THREE.Group();
+  wrap.add(g);
+  return wrap;
 }
 
 export class Cacharro {

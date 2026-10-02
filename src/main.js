@@ -446,8 +446,15 @@ async function boot() {
   function wipe(fn) {
     wipeEl.classList.add('on');
     setTimeout(() => {
-      fn();
-      setTimeout(() => wipeEl.classList.remove('on'), 120);
+      // la cortina SIEMPRE se retira, aunque algo falle adentro (si no, la
+      // pantalla quedaba tapada y no se podía jugar)
+      try {
+        fn();
+      } catch (e) {
+        console.error('[wipe]', e);
+      } finally {
+        setTimeout(() => wipeEl.classList.remove('on'), 120);
+      }
     }, 480);
   }
 

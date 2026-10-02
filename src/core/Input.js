@@ -63,7 +63,7 @@ export class Input {
 
     // click en la escena → activar pointer lock (mirar moviendo el mouse)
     this._onClick = () => {
-      if (!this._locked && this.el.requestPointerLock) this.el.requestPointerLock();
+      if (!this._locked) this.lock();
     };
     this._onLockChange = () => {
       this._locked = document.pointerLockElement === this.el;
@@ -81,7 +81,11 @@ export class Input {
 
   /** Pide pointer lock (debe llamarse dentro de un gesto del usuario). */
   lock() {
-    if (this.el.requestPointerLock) this.el.requestPointerLock();
+    // puede fallar (sin gesto, iframe, navegador viejo): nunca debe romper el juego
+    try {
+      const r = this.el.requestPointerLock && this.el.requestPointerLock();
+      if (r && r.catch) r.catch(() => {});
+    } catch { /* se sigue con arrastre */ }
   }
   isLocked() {
     return this._locked;

@@ -60,7 +60,10 @@ export class AssetLoader {
         },
         undefined,
         (err) => {
-          if (tries > 1) {
+          // 4xx (p. ej. 403 Access Denied) es permanente: no tiene sentido reintentar
+          const st = err && err.response && err.response.status;
+          const permanente = st >= 400 && st < 500;
+          if (tries > 1 && !permanente) {
             setTimeout(() => this.load(url, tries - 1).then(resolve, reject), 700);
           } else {
             this.failed.add(url);
