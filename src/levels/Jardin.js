@@ -54,6 +54,14 @@ export class Jardin extends Exterior {
       this.colliders.push({ type: 'circle', x: 9, z: -1, r: 1.0 });
     }
 
+    // rincón del cobertizo: enrejado con enredadera + cofre; manguera junto a la huerta
+    this._prop('enrejado', { x: -6.4, z: -9.2, height: 1.9, ry: 0.5, collide: true, colliderR: 0.35 });
+    this._prop('cofre', { x: -11.6, z: -4.8, height: 0.6, ry: 1.1, collide: true, colliderR: 0.5 });
+    this._prop('manguera', { x: 5.6, z: 0.4, height: 0.35, ry: 0.4 });
+    // canteros con flores
+    [[3.5, 6.5, 0.3], [-7, 3, -0.5]].forEach(([x, z, ry]) =>
+      this._prop('cantero_flor', { x, z, height: 0.7, ry, collide: true, colliderR: 0.6 }));
+
     // carretilla / banco / macetas
     this._prop('carretilla', { x: -6, z: 8, height: 0.85, ry: 0.6, collide: true, colliderR: 0.9 },
       () => this._box2(1.2, 0.5, 0.6, 0x3aa0a0, -6, 8));
@@ -94,6 +102,8 @@ export class Jardin extends Exterior {
 
     // estanque chico (antes de las flores, para poder evitar el agua)
     this._lago(-13, 11, 2.6, 2.0);
+    [[-15.8, 10, 0.9], [-10.6, 12.3, 0.8]].forEach(([x, z, h]) =>
+      this._prop('juncos', { x, z, height: h, ry: Math.random() * 6.28 }));
 
     // flores sueltas (nunca dentro del agua)
     for (let i = 0; i < 10; i++) {

@@ -42,6 +42,9 @@ export class Playa extends Exterior {
     this._prop('velero', { x: 14, z: -HD - 8, height: 4.0, ry: -0.3, collide: false });
     this._prop('boya', { x: -2, z: -HD - 6, height: 0.8, collide: false });
 
+    // casilla de guardavidas en la orilla (escalera hacia la playa)
+    this._prop('casilla', { x: 0, z: -7, height: 3.4, ry: 0, collide: true, colliderR: 1.3 });
+
     // ---- palmeras de coco (estructuras altas) ----
     [[-13, 8], [12, 9], [-15, -2], [15, 2], [-6, 11], [9, 12]].forEach(([x, z]) => {
       if (!this._placeGLB('palmera_cocos', { x, z, height: 5.2 + Math.random(), ry: Math.random() * 6.28, collide: true, colliderR: 0.5, jitter: 0.12 }) &&

@@ -70,6 +70,10 @@ const MODELS = {
   huerta: hf('huerta'),
   cobertizo: hf('cobertizo'),
   sendero: hf('sendero'),
+  manguera: hf('manguera'),
+  enrejado: hf('enrejado'),
+  cofre: hf('cofre'),
+  juncos: hf('juncos'),
   fuente: hf('fuente'),
   fuente_jardin: hf('fuente'),
   pasto_alto: hf('pasto_alto'),
@@ -104,6 +108,7 @@ const MODELS = {
   caracol: hf('caracol'),
   roca_costera: hf('roca_costera'),
   palmera_cocos: hf('palmera_cocos'),
+  casilla: hf('casilla'),
   bote: hf('bote'),
   velero: hf('velero'),
   boya: hf('boya'),
@@ -122,7 +127,8 @@ const YAW_FIX = {
   mesa_luz: -Math.PI / 2, cobertizo: -Math.PI / 2, reposera: -Math.PI / 2,
   cartel_esc: -Math.PI / 2, cartel_parque: -Math.PI / 2, banco: Math.PI, banco_plaza: Math.PI,
   escuela: -Math.PI / 2, aro_basquet: -Math.PI / 2, perro: -Math.PI / 2, pileta: -Math.PI / 2,
-  hamacas: -Math.PI / 2, carretilla: -Math.PI / 2,
+  hamacas: -Math.PI / 2, carretilla: -Math.PI / 2, casilla: -Math.PI / 2, cofre: -Math.PI / 2,
+  enrejado: -Math.PI / 2, cantero_flor: -Math.PI / 2,
 };
 
 // Personajes jugables (Mixamo → glTF, optimizados)
@@ -490,13 +496,16 @@ async function boot() {
     casa: ['sofa', 'armchair', 'chair2', 'heladera', 'mesada', 'banadera', 'lavarropas', 'pileta',
       'cama', 'ropero', 'alacena', 'tele', 'mesa_ratona', 'mesa_luz', 'vase', 'plant', 'lamp'],
     jardin: [...EXT, 'pino', 'arbusto', 'arbusto_red', 'banco', 'cantero', 'macetero', 'huerta',
-      'cobertizo', 'carretilla', 'fuente', 'fuente_jardin', 'roca', 'roca_grande'],
+      'cobertizo', 'carretilla', 'fuente', 'fuente_jardin', 'roca', 'roca_grande',
+      'cantero_flor', 'manguera', 'enrejado', 'cofre', 'juncos'],
     escuela: [...EXT, 'escuela', 'mastil', 'tobogan', 'hamacas', 'arenero', 'aro_basquet',
       'cesto', 'bebedero_esc', 'cartel_esc', 'farol'],
     parque: [...EXT, 'pino', 'arbusto', 'arbusto_red', 'banco', 'banco_plaza', 'calesita', 'subibaja',
-      'hamacas', 'farol', 'glorieta', 'puente', 'hongo', 'tronco_caido', 'roca', 'roca_grande'],
+      'hamacas', 'farol', 'glorieta', 'puente', 'hongo', 'tronco_caido', 'roca', 'roca_grande',
+      'juncos', 'estanque', 'cartel_parque'],
     playa: ['perro', 'pasto_alto', 'arbol', 'palmera', 'palmera_cocos', 'bote', 'velero', 'boya',
-      'sombrilla', 'reposera', 'muelle', 'toalla', 'caracol', 'conservadora', 'roca_costera', 'roca_grande'],
+      'sombrilla', 'reposera', 'muelle', 'toalla', 'caracol', 'conservadora', 'roca_costera', 'roca_grande',
+      'casilla'],
   };
 
   async function loadLevelModels(id) {

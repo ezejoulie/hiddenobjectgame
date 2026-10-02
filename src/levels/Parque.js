@@ -47,6 +47,13 @@ export class Parque extends Exterior {
       p.position.y = 0.4;
     });
 
+    // juncos en la orilla de la laguna
+    [[-13.6, -7, 1.0], [-5, -9.5, 0.9], [-11, -11, 0.85], [-6.5, -11.2, 1.0]].forEach(([x, z, h]) =>
+      this._prop('juncos', { x, z, height: h, ry: Math.random() * 6.28 }));
+    // estanque ornamental + cartel indicador
+    this._prop('estanque', { x: -5.5, z: 7.5, footprint: 2.4, collide: true, colliderR: 1.1 });
+    this._prop('cartel_parque', { x: 2, z: -5, height: 1.7, ry: -0.5, collide: true, colliderR: 0.3 });
+
     // glorieta (estructura alta)
     this._prop('glorieta', { x: 10, z: -8, height: 3.4, collide: true, colliderR: 2.4 }, () => {
       const techo = new THREE.Mesh(new THREE.ConeGeometry(2.4, 1.4, 8), mat(0xb5562f, 0.9));
