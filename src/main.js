@@ -656,6 +656,8 @@ async function boot() {
       get failed() { return [...loader.failed]; },
       get player() { return player; },
       get cam() { return tpCam; },
+      get renderer() { return renderer; },
+      get scene() { return scene; },
     };
   }
 

@@ -22,6 +22,11 @@ const PASTO_URL =
 
 const TREE_KEYS = ['arbol', 'arbol_frond', 'arbol_flor'];
 
+// Sol de "tarde de verano": ~30° sobre el horizonte, de costado a la cámara
+// inicial (que mira a -Z). Más intenso para compensar el ángulo bajo.
+const SUN_POS = new THREE.Vector3(16, 10, 6);
+const SUN_I = 3.2;
+
 export class Exterior extends Level {
   /**
    * @param {object} opts  { models }
@@ -51,7 +56,8 @@ export class Exterior extends Level {
 
     this.rainIntensity = 0;
     this._rainClock = Math.random() * 25;
-    this._skyCol = new THREE.Color(p.sky ?? 0x9bd6f0);
+    // horizonte y bruma con un toque dorado ("tarde de verano")
+    this._skyCol = new THREE.Color(p.sky ?? 0x9bd6f0).lerp(new THREE.Color(0xffd6a6), 0.24);
     this._greyCol = new THREE.Color(0x848b97);
 
     this._buildBase();
@@ -82,7 +88,7 @@ export class Exterior extends Level {
       d.scale.set(1, 0.7 + Math.random() * 0.9, 1);
       d.updateMatrix();
       inst.setMatrixAt(placed, d.matrix);
-      inst.setColorAt(placed, col.setHSL(0.28 + Math.random() * 0.07, 0.55, 0.3 + Math.random() * 0.18));
+      inst.setColorAt(placed, col.setHSL(0.21 + Math.random() * 0.07, 0.5, 0.27 + Math.random() * 0.16)); // verde de tarde, más dorado
       placed += 1;
     }
     inst.count = placed;
@@ -93,7 +99,7 @@ export class Exterior extends Level {
 
   // ---- cielo real: domo con gradiente + resplandor de sol + nubes ----
   _buildSky() {
-    const sunDir = new THREE.Vector3(-10, 16, -8).normalize(); // misma dirección que el sol
+    const sunDir = SUN_POS.clone().normalize(); // misma dirección que el sol
     const mat = new THREE.ShaderMaterial({
       side: THREE.BackSide,
       depthWrite: false,
@@ -117,7 +123,8 @@ export class Exterior extends Level {
           float h = smoothstep(-0.05, 0.45, d.y);
           vec3 col = mix(cHorizon, cTop, h);
           float sd = max(dot(d, sunDir), 0.0);
-          col += vec3(1.0, 0.95, 0.8) * (pow(sd, 200.0) * 0.9 + pow(sd, 8.0) * 0.12); // disco + halo
+          col += vec3(1.0, 0.93, 0.78) * pow(sd, 200.0) * 0.9;            // disco
+          col += vec3(1.0, 0.72, 0.42) * (pow(sd, 6.0) * 0.22 + pow(sd, 2.0) * 0.06); // halo dorado
           col = mix(col, cGrey, grey); // se pone gris cuando llueve
           gl_FragColor = vec4(col, 1.0);
         }
@@ -164,7 +171,7 @@ export class Exterior extends Level {
       this._rainV[i] = 14 + Math.random() * 9;
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const mat = new THREE.LineBasicMaterial({ color: 0xcfe0f2, transparent: true, opacity: 0 });
+    const mat = new THREE.LineBasicMaterial({ color: 0xcfe0f2, transparent: true, opacity: 0, depthWrite: false });
     const lines = new THREE.LineSegments(geo, mat);
     lines.frustumCulled = false;
     this.add(lines);
@@ -185,7 +192,7 @@ export class Exterior extends Level {
     const r = this.rainIntensity;
 
     // oscurecer la escena (sol + niebla + cielo + nubes) cuando llueve
-    if (this._sun) this._sun.intensity = 2.2 * (1 - r * 0.6);
+    if (this._sun) this._sun.intensity = SUN_I * (1 - r * 0.6);
     if (this.scene) {
       if (this.scene.fog) this.scene.fog.color.copy(this._skyCol).lerp(this._greyCol, r * 0.75);
       if (this.scene.background && this.scene.background.isColor) {
@@ -221,11 +228,30 @@ export class Exterior extends Level {
     this.scene = scene;
     scene.add(this.group);
     this._prevFog = scene.fog;
-    scene.fog = new THREE.Fog(this.sky, this.fog[0], this.fog[1]);
+    scene.fog = new THREE.Fog(this._skyCol.clone(), this.fog[0], this.fog[1]);
+    // menos luz de entorno afuera: el sol manda y las sombras se leen
+    this._prevEnvI = scene.environmentIntensity;
+    scene.environmentIntensity = 0.42;
+    // las luces globales (pensadas para interiores) no proyectan sombra: afuera
+    // se atenúan para que no "rellenen" las sombras del sol
+    this._dimmed = [];
+    const glob = scene.getObjectByName('Lighting');
+    if (glob) {
+      const factor = { DirectionalLight: 0.25, HemisphereLight: 0.45 };
+      glob.traverse((l) => {
+        if (!l.isLight || !(l.type in factor)) return;
+        this._dimmed.push([l, l.intensity]);
+        l.intensity *= factor[l.type];
+      });
+    }
     return this;
   }
   dispose() {
-    if (this.scene) this.scene.fog = this._prevFog || null;
+    if (this.scene) {
+      this.scene.fog = this._prevFog || null;
+      if (this._prevEnvI !== undefined) this.scene.environmentIntensity = this._prevEnvI;
+      for (const [l, i] of this._dimmed || []) l.intensity = i;
+    }
     super.dispose();
   }
 
@@ -536,6 +562,8 @@ export class Exterior extends Level {
   _buildBase() {
     const repeat = this.ground.repeat ?? 30;
     const gMat = mat(this.ground.color ?? 0xffffff, this.ground.type === 'urban' ? 0.98 : 0.96);
+    // pasto con tinte cálido de tarde (menos verde neón)
+    if (this.ground.type === 'grass') gMat.color.multiply(new THREE.Color(0xe9dfb2));
     gMat.map =
       this.ground.type === 'sand' ? sandTexture(Math.round(repeat * 0.6))
       : this.ground.type === 'urban' ? pavementTexture(repeat)
@@ -559,8 +587,9 @@ export class Exterior extends Level {
       }, undefined, () => {});
     }
 
-    const sun = new THREE.DirectionalLight(0xfff3da, 2.2);
-    sun.position.set(-10, 16, -8);
+    // sol de tarde: dorado, bajo y de costado → sombras largas y volumen
+    const sun = new THREE.DirectionalLight(0xffd29a, SUN_I);
+    sun.position.copy(SUN_POS);
     sun.castShadow = true;
     sun.shadow.mapSize.set(SHADOW_SIZE, SHADOW_SIZE);
     sun.shadow.camera.near = 0.5;
@@ -575,6 +604,10 @@ export class Exterior extends Level {
     this.add(sun.target);
     this.lights.push(sun);
     this._sun = sun;
+    // relleno de cielo: las sombras quedan apenas azuladas, el suelo rebota cálido
+    const cielo = new THREE.HemisphereLight(0x9ec8ff, 0x9a8250, 0.3);
+    this.add(cielo);
+    this.lights.push(cielo);
 
     const HW = this.HW, HD = this.HD;
     this.colliders.push(boxCollider(0, -HD, 2 * HW + 4, 1.5));
